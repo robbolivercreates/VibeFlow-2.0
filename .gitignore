@@ -1,0 +1,30 @@
+# Build artifacts
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# macOS
+.DS_Store
+*.dSYM
+
+# App bundles (built locally)
+*.app
+
+# Icon generation artifacts
+*.iconset/
+
+# Config with API keys (keep template only)
+Sources/Config.swift
+
+# IDE
+.idea/
+*.xcworkspace
+xcuserdata/
+
+# Logs
+*.log
+
+# Package resolved (optional - some prefer to commit this)
+# Package.resolved
