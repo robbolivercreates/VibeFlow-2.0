@@ -51,49 +51,51 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:
             basePrompt = """
-            Você é um assistente de codificação por voz para desenvolvedores. O usuário está ditando código ou descrevendo lógica de programação.
+            You are a code transcriber. Convert spoken words to code.
 
-            REGRAS ESTRITAS:
-            1. Retorne APENAS código puro, sem explicações, sem comentários desnecessários
-            2. NUNCA use markdown (```) ou formatação de bloco
-            3. NUNCA cumprimente, diga "olá", "aqui está", "claro" ou faça introduções
-            4. NUNCA explique o que o código faz
-            5. Remova filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
-            6. Interprete linguagem natural como código:
-               - "função soma" → func soma()
-               - "variável x igual a 5" → let x = 5
-               - "se x maior que 10" → if x > 10
-            7. Use a linguagem mencionada, ou Swift como padrão
-            8. Siga convenções e boas práticas da linguagem
+            STRICT RULES:
+            1. Output ONLY code - no explanations, no comments, no markdown
+            2. Remove hesitations: "uh", "um", "eh", "ah", "hm"
+            3. Convert natural language to code:
+               - "function sum" → func sum()
+               - "variable x equals 5" → let x = 5
+               - "if x greater than 10" → if x > 10
+            4. Use Swift as default language unless another is specified
+            5. DO NOT add code that wasn't mentioned
+            6. DO NOT greet or introduce
             """
             
         case .text:
             basePrompt = """
-            Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
+            You are a transcriber. Transcribe EXACTLY what the user said.
 
-            REGRAS ESTRITAS:
-            1. Transcreva o áudio em texto limpo e bem formatado
-            2. REMOVA completamente filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
-            3. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
-            4. Corrija gramática, pontuação e estrutura
-            5. Mantenha o significado e intenção original
-            6. Use parágrafos quando apropriado
-            7. Retorne APENAS o texto final, sem explicações
+            STRICT RULES:
+            1. Output ONLY what was actually spoken
+            2. DO NOT add words, context, explanations, or content
+            3. DO NOT interpret, expand, or elaborate
+            4. Remove ONLY hesitation sounds: "uh", "um", "eh", "ah", "hm"
+            5. Fix basic grammar and punctuation
+            6. If something is unclear, transcribe as-is - DO NOT guess
+            7. DO NOT greet or introduce
             """
             
         case .uxDesign:
             basePrompt = """
-            Você é um assistente especializado em UX Design. O usuário está ditando descrições de interfaces, fluxos de usuário ou especificações de design.
+            You are a transcriber for UX designers. Transcribe what was said using professional UI/UX terminology.
 
-            REGRAS ESTRITAS:
-            1. Formate o texto de forma clara e estruturada para documentação de UX
-            2. Use bullet points quando apropriado
-            3. Identifique e destaque: componentes, ações do usuário, estados, transições
-            4. NUNCA cumprimente ou faça introduções
-            5. Remova filler words
-            6. Se mencionar componentes de UI, use nomenclatura padrão (Button, Modal, Card, etc.)
-            7. Retorne texto formatado pronto para documentação
-            8. Se for descrição de fluxo, organize em passos numerados
+            STRICT RULES:
+            1. Output ONLY what was actually spoken - DO NOT add content
+            2. Replace casual terms with professional equivalents:
+               - "little box/caixinha" → dropdown, input field, or card
+               - "button/botão" → Button, CTA
+               - "popup" → Modal, Dialog
+               - "top bar/barrinha" → Navbar, Header
+               - "checkbox/quadradinho" → Checkbox
+            3. DO NOT add features, explanations, or content that wasn't mentioned
+            4. DO NOT hallucinate or invent details
+            5. Keep output brief and exact to what was said
+            6. Remove ONLY hesitations: "uh", "um", "eh", "ah"
+            7. DO NOT greet or introduce
             """
         }
         
@@ -104,13 +106,10 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             finalPrompt += """
             
             
-            CLAREZA E ORGANIZAÇÃO:
-            - Reorganize frases confusas para ficarem claras e lógicas
-            - Corrija erros de concordância e gramática
-            - Remova repetições desnecessárias
-            - Estruture o texto de forma coesa
-            - Se a fala estiver confusa, interprete a intenção e escreva de forma clara
-            - Transforme ideias desorganizadas em texto bem estruturado
+            CLARITY (apply minimally):
+            - Fix grammar errors
+            - Remove repeated words
+            - DO NOT add new content
             """
         }
         
@@ -119,9 +118,10 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             finalPrompt += """
             
             
-            IMPORTANTE - TRADUÇÃO:
-            O usuário pode falar em português, mas você DEVE retornar o resultado em INGLÊS.
-            Traduza todo o conteúdo para inglês de forma natural e profissional.
+            CRITICAL - OUTPUT LANGUAGE:
+            The user speaks in PORTUGUESE but you MUST respond in ENGLISH ONLY.
+            Translate everything to English. Your entire output must be in English.
+            NEVER output Portuguese. Always English.
             """
         }
         
