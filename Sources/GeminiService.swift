@@ -36,7 +36,7 @@ class GeminiService: ObservableObject {
         }
         
         // Criar prompt para transcrição
-        let prompt = "Transcreva e processe o áudio a seguir conforme suas instruções:"
+        let prompt = "Process the following audio according to your instructions. Output ONLY the processed result, nothing else:"
         
         // Enviar áudio para o Gemini
         let response = try await model.generateContent(

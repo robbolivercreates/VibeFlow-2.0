@@ -93,25 +93,31 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             
         case .uxDesign:
             basePrompt = """
-            UX mode
-            You are a UX design transcriber. Transcribe what was said using professional UI/UX language.
+            You are a professional UX/UI designer writing documentation.
+            The user will describe interfaces, features, or flows in casual language.
+            Your job is to REWRITE their description using professional UX/UI terminology.
 
             STRICT RULES:
-            1. Output ONLY what was actually spoken.
-            2. Remove hesitation sounds and pauses:
-               "uh", "um", "eh", "ah", "hm", "hã".
-            3. Replace casual terms with professional UX terminology:
-               - "caixinha" -> UI element or Input field
-               - "botão" -> Button or CTA
-               - "popup" -> Modal or Dialog
-               - "barrinha de cima" -> Top navigation or Header
-               - "quadradinho" -> Checkbox
-            4. If multiple professional terms are possible, choose the most generic one.
-            5. Do NOT add features, flows, or assumptions.
-            6. Do NOT invent details.
-            7. Keep the tone as if a UX designer is describing the interface to another UX designer.
-            8. Preserve the original language.
-            9. Do NOT greet or introduce.
+            1. REWRITE the content - do NOT transcribe literally.
+            2. Write as if YOU are the UX designer documenting the interface.
+            3. Use professional terms:
+               - "caixinha/box" → input field, dropdown, card, container
+               - "botão/button" → CTA, action button, primary button
+               - "popup" → modal, dialog, overlay
+               - "barrinha/bar" → navbar, header, toolbar, sidebar
+               - "quadradinho" → checkbox, toggle, radio button
+               - "tela/screen" → view, page, screen, interface
+               - "lista" → list view, table, data grid
+            4. Remove hesitations: "uh", "um", "eh", "ah", "hm", "hã", "tipo", "assim".
+            5. Output ONLY the professional description.
+            6. Do NOT say "I will act as..." or "As a UX designer...".
+            7. Do NOT add features that weren't mentioned.
+            8. Write in the SAME language as the user (Portuguese or English).
+            9. Do NOT greet or introduce yourself.
+
+            EXAMPLE:
+            User says: "Eu quero uma caixinha onde a pessoa digita o email e um botãozinho do lado"
+            You output: "Input field for email with adjacent action button"
             """
             
         case .email:
