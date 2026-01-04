@@ -92,6 +92,10 @@ struct SettingsView: View {
             }
             
             Spacer()
+            
+            Text("v\(AppVersion.current)")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
         .padding(20)
         .background(.bar)
