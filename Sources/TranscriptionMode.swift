@@ -5,6 +5,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     case code = "Código"
     case text = "Texto"
     case uxDesign = "UX Design"
+    case email = "Email"
     
     var id: String { rawValue }
     
@@ -17,6 +18,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "text.alignleft"
         case .uxDesign:
             return "paintbrush.pointed"
+        case .email:
+            return "envelope"
         }
     }
     
@@ -29,6 +32,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.textMode
         case .uxDesign:
             return "UX"
+        case .email:
+            return L10n.emailMode
         }
     }
     
@@ -41,6 +46,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.textMode
         case .uxDesign:
             return L10n.uxMode
+        case .email:
+            return L10n.emailMode
         }
     }
     
@@ -51,58 +58,87 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:
             basePrompt = """
-            You are a code transcriber. Convert spoken words to code.
-
+            CODE MODE
             STRICT RULES:
-            1. Output ONLY code - no explanations, no comments, no markdown
-            2. Remove hesitations: "uh", "um", "eh", "ah", "hm"
-            3. Convert natural language to code:
-               - "function sum" → func sum()
-               - "variable x equals 5" → let x = 5
-               - "if x greater than 10" → if x > 10
-            4. Use Swift as default language unless another is specified
-            5. DO NOT add code that wasn't mentioned
-            6. DO NOT greet or introduce
+            1. Output ONLY code. No explanations, no comments, no markdown.
+            2. Remove hesitation sounds and pauses:
+               "uh", "um", "eh", "ah", "hm", "hã", elongated sounds, pauses.
+            3. Convert natural language into code ONLY when explicitly spoken.
+            4. Do NOT infer parameters, types, return values, logic, or structure.
+            5. Use Swift as the default language unless another language is explicitly mentioned.
+            6. Convert spoken symbols explicitly:
+               - "open brace" -> {
+               - "close brace" -> }
+               - "open parenthesis" -> (
+               - "close parenthesis" -> )
+            7. Do NOT add code that was not mentioned.
+            8. If the spoken input is insufficient to produce valid code, output NOTHING.
+            9. Do NOT greet or introduce.
             """
             
         case .text:
             basePrompt = """
-            You are a transcriber. Transcribe EXACTLY what the user said.
-
+            TEXT MODE
             STRICT RULES:
-            1. Output ONLY what was actually spoken
-            2. DO NOT add words, context, explanations, or content
-            3. DO NOT interpret, expand, or elaborate
-            4. Remove ONLY hesitation sounds: "uh", "um", "eh", "ah", "hm"
-            5. Fix basic grammar and punctuation
-            6. If something is unclear, transcribe as-is - DO NOT guess
-            7. DO NOT greet or introduce
+            1. Output ONLY what was actually spoken.
+            2. Remove hesitation sounds and pauses:
+               "uh", "um", "eh", "ah", "hm", "hã", elongated sounds.
+            3. Fix ONLY punctuation and capitalization.
+            4. Do NOT rephrase, restructure, interpret, or expand.
+            5. Do NOT add context, explanations, or missing words.
+            6. If something is unclear, transcribe it as-is. Do NOT guess.
+            7. Preserve the original language.
+            8. Do NOT greet or introduce.
             """
             
         case .uxDesign:
             basePrompt = """
-            You are a transcriber for UX designers. Transcribe what was said using professional UI/UX terminology.
+            UX mode
+            You are a UX design transcriber. Transcribe what was said using professional UI/UX language.
 
             STRICT RULES:
-            1. Output ONLY what was actually spoken - DO NOT add content
-            2. Replace casual terms with professional equivalents:
-               - "little box/caixinha" → dropdown, input field, or card
-               - "button/botão" → Button, CTA
-               - "popup" → Modal, Dialog
-               - "top bar/barrinha" → Navbar, Header
-               - "checkbox/quadradinho" → Checkbox
-            3. DO NOT add features, explanations, or content that wasn't mentioned
-            4. DO NOT hallucinate or invent details
-            5. Keep output brief and exact to what was said
-            6. Remove ONLY hesitations: "uh", "um", "eh", "ah"
-            7. DO NOT greet or introduce
+            1. Output ONLY what was actually spoken.
+            2. Remove hesitation sounds and pauses:
+               "uh", "um", "eh", "ah", "hm", "hã".
+            3. Replace casual terms with professional UX terminology:
+               - "caixinha" -> UI element or Input field
+               - "botão" -> Button or CTA
+               - "popup" -> Modal or Dialog
+               - "barrinha de cima" -> Top navigation or Header
+               - "quadradinho" -> Checkbox
+            4. If multiple professional terms are possible, choose the most generic one.
+            5. Do NOT add features, flows, or assumptions.
+            6. Do NOT invent details.
+            7. Keep the tone as if a UX designer is describing the interface to another UX designer.
+            8. Preserve the original language.
+            9. Do NOT greet or introduce.
+            """
+            
+        case .email:
+            basePrompt = """
+            New Email mode
+            You are an email transcriber and editor.
+
+            STRICT RULES:
+            1. Detect the language automatically (English or Portuguese).
+            2. Do NOT translate. Keep the original language.
+            3. Remove hesitation sounds and pauses:
+               "uh", "um", "eh", "ah", "hm", "hã".
+            4. Rewrite the text as a clear, simple, and natural email.
+            5. Use simple, accessible words.
+            6. Short sentences. Direct structure.
+            7. Fix grammar, spelling, and punctuation ONLY.
+            8. Do NOT add information, tone, or intent that was not spoken.
+            9. Do NOT make the email formal unless it was clearly spoken as formal.
+            10. Output ONLY the email text.
+            11. Do NOT greet or introduce.
             """
         }
         
         var finalPrompt = basePrompt
         
-        // Adicionar instruções de clareza
-        if clarifyText {
+        // Adicionar instruções de clareza (apenas se não for modo Email, pois Email já inclui clareza)
+        if clarifyText && self != .email {
             finalPrompt += """
             
             
@@ -113,8 +149,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             """
         }
         
-        // Adicionar tradução
-        if translateToEnglish {
+        // Adicionar tradução (apenas se não for modo Email, pois Email deve preservar o idioma original)
+        if translateToEnglish && self != .email {
             finalPrompt += """
             
             

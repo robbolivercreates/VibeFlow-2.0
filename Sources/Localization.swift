@@ -164,6 +164,10 @@ struct L10n {
         current == .english ? "UX Design" : "UX Design"
     }
     
+    static var emailMode: String {
+        current == .english ? "Email" : "Email"
+    }
+    
     static var codeModeTitle: String {
         current == .english ? "Code Mode" : "Modo Código"
     }
@@ -186,6 +190,14 @@ struct L10n {
     
     static var uxModeDescription: String {
         current == .english ? "Formats interface descriptions, user flows and design specifications." : "Formata descrições de interfaces, fluxos de usuário e especificações de design."
+    }
+    
+    static var emailModeTitle: String {
+        current == .english ? "Email Mode" : "Modo Email"
+    }
+    
+    static var emailModeDescription: String {
+        current == .english ? "Writes clear and simple emails based on your dictation." : "Escreve emails claros e simples a partir do seu ditado."
     }
     
     // MARK: - Clarity features

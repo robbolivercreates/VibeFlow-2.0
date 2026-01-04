@@ -203,6 +203,13 @@ struct SettingsView: View {
                     description: L10n.uxModeDescription,
                     color: .purple
                 )
+            case .email:
+                descriptionCard(
+                    icon: "envelope",
+                    title: L10n.emailModeTitle,
+                    description: L10n.emailModeDescription,
+                    color: .orange
+                )
             }
         }
     }
