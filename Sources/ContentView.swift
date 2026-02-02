@@ -1,198 +1,209 @@
 import SwiftUI
 
-// MARK: - Main Content View (Interface Mínima)
+// MARK: - Main Content View
 struct ContentView: View {
     @EnvironmentObject var viewModel: VibeFlowViewModel
-    @State private var audioLevel: CGFloat = 0.3
-    @State private var isHovering = false
+    
+    var body: some View {
+        RecordingInterface(viewModel: viewModel)
+            .frame(width: 300, height: 110)
+    }
+}
+
+// MARK: - Modern Recording Interface
+struct RecordingInterface: View {
+    @ObservedObject var viewModel: VibeFlowViewModel
     
     var body: some View {
         ZStack {
-            // Fundo transparente clicável para fechar
-            Color.clear
-                .contentShape(Rectangle())
-            
-            VStack(spacing: 0) {
-                Spacer()
-                
-                // Interface mínima na parte inferior
-                MinimalRecordingView(viewModel: viewModel, audioLevel: $audioLevel)
-            }
-        }
-        .frame(width: 280, height: 100)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
+            // Fundo blur sem bordas
+            RoundedRectangle(cornerRadius: 24)
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.2), radius: 20, x: 0, y: 10)
-        )
-        .onAppear {
-            startAudioLevelSimulation()
-        }
-    }
-    
-    private func startAudioLevelSimulation() {
-        Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { _ in
-            if viewModel.isRecording {
-                withAnimation(.easeInOut(duration: 0.08)) {
-                    audioLevel = CGFloat.random(in: 0.3...1.0)
+                .shadow(color: Color.black.opacity(0.08), radius: 32, x: 0, y: 12)
+            
+            // Conteúdo
+            VStack(spacing: 6) {
+                // Top: Info (modo + idioma) quando gravando, ou só status
+                if viewModel.isRecording {
+                    RecordingInfoView(viewModel: viewModel)
+                        .transition(.move(edge: .top).combined(with: .opacity))
                 }
-            } else {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    audioLevel = 0.3
+                
+                // Status e botão
+                HStack(spacing: 12) {
+                    // Indicador de modo
+                    ModeIndicator(mode: viewModel.selectedMode)
+                    
+                    Spacer(minLength: 4)
+                    
+                    // Status central
+                    StatusView(viewModel: viewModel)
+                    
+                    Spacer(minLength: 4)
+                    
+                    // Botão de ação
+                    ActionButton(viewModel: viewModel)
                 }
+                .padding(.horizontal, 16)
+                
+                // Waveform
+                WaveformView(level: viewModel.isRecording ? viewModel.audioLevel : 0.02)
+                    .frame(height: 26)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 4)
             }
+            .padding(.vertical, 10)
         }
     }
 }
 
-// MARK: - Minimal Recording View
-struct MinimalRecordingView: View {
+// MARK: - Recording Info View (mostra modo e idioma durante gravação)
+struct RecordingInfoView: View {
     @ObservedObject var viewModel: VibeFlowViewModel
-    @Binding var audioLevel: CGFloat
     
     var body: some View {
-        HStack(spacing: 16) {
-            // Indicador de modo (pequeno)
-            ModeIndicator(mode: viewModel.selectedMode, translateEnabled: viewModel.translateToEnglish)
-            
-            // Ondas de áudio ou botão
-            ZStack {
-                if viewModel.isRecording {
-                    // Ondas animadas
-                    AudioWaveformView(level: audioLevel, color: .red)
-                } else if viewModel.isProcessing {
-                    // Indicador de processamento
-                    ProcessingIndicator()
-                } else {
-                    // Estado idle - mostrar status
-                    IdleStateView(viewModel: viewModel)
-                }
+        HStack(spacing: 8) {
+            // Badge do modo
+            HStack(spacing: 3) {
+                Image(systemName: viewModel.selectedMode.icon)
+                    .font(.system(size: 8))
+                Text(viewModel.selectedMode.shortDescription)
+                    .font(.system(size: 9, weight: .medium))
             }
-            .frame(maxWidth: .infinity)
+            .foregroundColor(.white)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(modeColor)
+            .cornerRadius(4)
             
-            // Botão de microfone
-            MicButton(viewModel: viewModel)
+            // Indicador de idioma (se tradução ativada)
+            if viewModel.translateToEnglish {
+                HStack(spacing: 2) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 7))
+                    Text("EN")
+                        .font(.system(size: 8, weight: .bold))
+                }
+                .foregroundColor(.blue)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(Color.blue.opacity(0.15))
+                .cornerRadius(4)
+            }
+            
+            Spacer()
+            
+            // Timer de gravação
+            RecordingTimer()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 16)
+        .padding(.top, 6)
+    }
+    
+    private var modeColor: Color {
+        switch viewModel.selectedMode {
+        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
+        case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
+        case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)  // Laranja
+        case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
+        }
+    }
+}
+
+// MARK: - Recording Timer
+struct RecordingTimer: View {
+    @State private var startTime = Date()
+    @State private var elapsed: TimeInterval = 0
+    let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        Text(formattedTime)
+            .font(.system(size: 10, weight: .medium, design: .monospaced))
+            .foregroundColor(.secondary.opacity(0.7))
+            .onReceive(timer) { _ in
+                elapsed = Date().timeIntervalSince(startTime)
+            }
+    }
+    
+    private var formattedTime: String {
+        let seconds = Int(elapsed)
+        let tenths = Int((elapsed - Double(seconds)) * 10)
+        return "\(seconds).\(tenths)s"
     }
 }
 
 // MARK: - Mode Indicator
 struct ModeIndicator: View {
     let mode: TranscriptionMode
-    let translateEnabled: Bool
     
     var body: some View {
-        VStack(spacing: 2) {
-            Image(systemName: mode.icon)
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-            
-            if translateEnabled {
-                Text("EN")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(.blue)
-            }
+        Circle()
+            .fill(modeColor)
+            .frame(width: 8, height: 8)
+    }
+    
+    private var modeColor: Color {
+        switch mode {
+        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
+        case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
+        case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)
+        case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
         }
-        .frame(width: 30)
     }
 }
 
-// MARK: - Audio Waveform
-struct AudioWaveformView: View {
-    let level: CGFloat
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<12, id: \.self) { i in
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(color.gradient)
-                    .frame(width: 4, height: barHeight(for: i))
-                    .animation(.easeInOut(duration: 0.1), value: level)
-            }
-        }
-    }
-    
-    private func barHeight(for index: Int) -> CGFloat {
-        let baseHeight: CGFloat = 8
-        let maxHeight: CGFloat = 32
-        let variation = sin(Double(index) * 0.8 + Double(level) * 10) * 0.5 + 0.5
-        return baseHeight + (maxHeight - baseHeight) * level * CGFloat(variation)
-    }
-}
-
-// MARK: - Processing Indicator
-struct ProcessingIndicator: View {
-    @State private var isAnimating = false
-    
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<3, id: \.self) { i in
-                Circle()
-                    .fill(Color.orange)
-                    .frame(width: 8, height: 8)
-                    .scaleEffect(isAnimating ? 1.0 : 0.5)
-                    .animation(
-                        .easeInOut(duration: 0.5)
-                        .repeatForever()
-                        .delay(Double(i) * 0.15),
-                        value: isAnimating
-                    )
-            }
-        }
-        .onAppear { isAnimating = true }
-    }
-}
-
-// MARK: - Idle State View
-struct IdleStateView: View {
+// MARK: - Status View
+struct StatusView: View {
     @ObservedObject var viewModel: VibeFlowViewModel
     
     var body: some View {
-        VStack(spacing: 2) {
-            if viewModel.needsAPIKey {
-                Text("⚠️ \(L10n.configureAPIKey)")
-                    .font(.system(size: 11))
-                    .foregroundColor(.orange)
-            } else if let error = viewModel.error {
-                Text(error)
-                    .font(.system(size: 10))
-                    .foregroundColor(.red)
-                    .lineLimit(1)
-            } else {
-                // Badge V2.0
-                HStack(spacing: 4) {
-                    Text("VibeFlow")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Text("2.0")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 1)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.orange, Color.red],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(4)
+        Group {
+            if viewModel.isProcessing {
+                HStack(spacing: 6) {
+                    ProgressView()
+                        .scaleEffect(0.6)
+                        .tint(.orange)
+                    Text("Processando")
+                        .foregroundColor(.orange)
                 }
-                
-                Text(L10n.holdToRecord)
-                    .font(.system(size: 9))
-                    .foregroundColor(.gray.opacity(0.6))
+            } else if viewModel.isRecording {
+                HStack(spacing: 5) {
+                    PulsingDot()
+                    Text("Gravando")
+                        .foregroundColor(.primary)
+                }
+            } else if viewModel.needsAPIKey {
+                Text("API Key necessária")
+                    .foregroundColor(.orange.opacity(0.8))
+            } else if viewModel.error != nil {
+                Text("Erro")
+                    .foregroundColor(.red.opacity(0.8))
+            } else {
+                Text("Segure ⌥⌘")
+                    .foregroundColor(.secondary.opacity(0.6))
             }
         }
+        .font(.system(size: 12, weight: .medium, design: .rounded))
     }
 }
 
-// MARK: - Mic Button
-struct MicButton: View {
+// MARK: - Pulsing Dot
+struct PulsingDot: View {
+    @State private var isPulsing = false
+    
+    var body: some View {
+        Circle()
+            .fill(Color.red)
+            .frame(width: 6, height: 6)
+            .scaleEffect(isPulsing ? 1.2 : 0.9)
+            .opacity(isPulsing ? 1.0 : 0.6)
+            .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isPulsing)
+            .onAppear { isPulsing = true }
+    }
+}
+
+// MARK: - Action Button
+struct ActionButton: View {
     @ObservedObject var viewModel: VibeFlowViewModel
     
     var body: some View {
@@ -201,12 +212,17 @@ struct MicButton: View {
         }) {
             ZStack {
                 Circle()
-                    .fill(buttonColor.gradient)
-                    .frame(width: 44, height: 44)
-                    .shadow(color: buttonColor.opacity(0.4), radius: 8, x: 0, y: 4)
+                    .fill(
+                        LinearGradient(
+                            colors: buttonColors,
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 32, height: 32)
                 
                 Image(systemName: buttonIcon)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.white)
             }
         }
@@ -214,13 +230,13 @@ struct MicButton: View {
         .disabled(viewModel.isProcessing || viewModel.needsAPIKey)
     }
     
-    private var buttonColor: Color {
+    private var buttonColors: [Color] {
         if viewModel.isProcessing {
-            return .orange
+            return [Color.orange, Color.orange.opacity(0.8)]
         } else if viewModel.isRecording {
-            return .red
+            return [Color.red, Color.red.opacity(0.8)]
         } else {
-            return .green
+            return [Color.green, Color.green.opacity(0.8)]
         }
     }
     
@@ -233,4 +249,64 @@ struct MicButton: View {
             return "mic.fill"
         }
     }
+}
+
+// MARK: - Waveform View
+struct WaveformView: View {
+    let level: CGFloat
+    
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<16, id: \.self) { i in
+                WaveBar(index: i, level: level)
+            }
+        }
+    }
+}
+
+struct WaveBar: View {
+    let index: Int
+    let level: CGFloat
+    
+    private var barHeight: CGFloat {
+        let centerIndex = 7.5
+        let distanceFromCenter = abs(CGFloat(index) - centerIndex)
+        let positionFactor = max(0, 1.0 - (distanceFromCenter / 8.0))
+        
+        let baseHeight: CGFloat = 2
+        let maxHeight: CGFloat = 24
+        
+        let effectiveLevel = max(level, 0.015)
+        
+        let wavePhase = Double(index) * 0.6
+        let wave = sin(wavePhase + Double(effectiveLevel) * 8) * 0.5 + 0.7
+        
+        let height = baseHeight + (maxHeight - baseHeight) * effectiveLevel * CGFloat(wave) * positionFactor
+        
+        return min(max(height, baseHeight), maxHeight)
+    }
+    
+    private var barColor: Color {
+        let intensity = min(max(level, 0), 1)
+        return Color(
+            red: 1.0,
+            green: 0.3 - (intensity * 0.2),
+            blue: 0.3 - (intensity * 0.1)
+        )
+        .opacity(0.3 + (intensity * 0.7))
+    }
+    
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(barColor)
+            .frame(width: 4, height: barHeight)
+            .animation(.easeOut(duration: 0.04), value: level)
+    }
+}
+
+#Preview {
+    ContentView()
+        .environmentObject(VibeFlowViewModel())
+        .padding()
+        .background(Color.gray.opacity(0.2))
 }

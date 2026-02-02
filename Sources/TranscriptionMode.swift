@@ -4,6 +4,7 @@ import Foundation
 enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     case code = "Código"
     case text = "Texto"
+    case email = "Email"
     case uxDesign = "UX Design"
     
     var id: String { rawValue }
@@ -15,6 +16,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "chevron.left.forwardslash.chevron.right"
         case .text:
             return "text.alignleft"
+        case .email:
+            return "envelope.fill"
         case .uxDesign:
             return "paintbrush.pointed"
         }
@@ -27,6 +30,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.codeMode
         case .text:
             return L10n.textMode
+        case .email:
+            return "Email"
         case .uxDesign:
             return "UX"
         }
@@ -39,6 +44,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.codeMode
         case .text:
             return L10n.textMode
+        case .email:
+            return "Email"
         case .uxDesign:
             return L10n.uxMode
         }
@@ -49,6 +56,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:     return 0.1
         case .text:     return 0.3
+        case .email:    return 0.2
         case .uxDesign: return 0.5
         }
     }
@@ -58,6 +66,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:     return 4096
         case .text:     return 2048
+        case .email:    return 2048
         case .uxDesign: return 2048
         }
     }
@@ -69,7 +78,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:
             basePrompt = """
-            Você é um assistente de codificação por voz para desenvolvedores. O usuário está ditando código ou descrevendo lógica de programação.
+            Você é um assistente de codificação por voz especializado em CONCISÃO e EFICIÊNCIA. O usuário está ditando código ou descrevendo lógica de programação.
 
             REGRAS ESTRITAS:
             1. Retorne APENAS código puro, sem explicações, sem comentários desnecessários
@@ -83,6 +92,25 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
                - "se x maior que 10" → if x > 10
             7. Use a linguagem mencionada, ou Swift como padrão
             8. Siga convenções e boas práticas da linguagem
+
+            OTIMIZAÇÃO DE TOKENS - REDUÇÃO INTELIGENTE:
+            1. ELIMINE código redundante e desnecessário
+            2. Use nomes de variáveis curtos mas claros (i, j, k para loops; err para erros)
+            3. Remova parênteses desnecessários em condições simples
+            4. Use operadores ternários quando apropriado: condition ? a : b
+            5. Combine declarações quando possível: let a = 1, b = 2
+            6. Use sintaxe curta: [].map { $0 } em vez de [].map { item in item }
+            7. Remova imports desnecessários
+            8. Use type inference: let x = 5 em vez de let x: Int = 5
+            9. Elimine espaços em branco excessivos
+            10. Mantenha APENAS o código essencial para funcionar
+
+            PRESERVAÇÃO DE CONTEXTO:
+            - Mantenha a lógica e algoritmo originais intactos
+            - Preserve nomes de funções públicas/APIs
+            - Mantenha a estrutura de dados quando relevante
+            - Não altere a semântica do código
+            - Reduza tokens sem perder funcionalidade
             """
             
         case .text:
@@ -97,6 +125,27 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             5. Mantenha o significado e intenção original
             6. Use parágrafos quando apropriado
             7. Retorne APENAS o texto final, sem explicações
+            """
+            
+        case .email:
+            basePrompt = """
+            Você é um assistente especializado em formatação de emails profissionais. O usuário está ditando o conteúdo de um email em linguagem natural.
+
+            REGRAS ESTRITAS:
+            1. Formate o texto como um email profissional bem estruturado
+            2. Corrija gramática, ortografia e pontuação automaticamente
+            3. NUNCA invente informações que o usuário não disse
+            4. NUNCA adicione assuntos que não foram mencionados
+            5. Mantenha o tom e intenção originais do usuário
+            6. Remova filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
+            7. Estruture em parágrafos claros quando apropriado
+            8. NÃO adicione saudações genéricas se o usuário já começou direto
+            9. NÃO adicione despedidas automáticas - só se o usuário indicar
+            10. Preserve nomes próprios, datas, números e dados específicos exatamente como ditos
+            
+            EXEMPLOS DE FORMATAÇÃO:
+            - "prezado senhor joão vim falar sobre a proposta" → "Prezado Senhor João,\n\nVim falar sobre a proposta..."
+            - "agradeço desde já atenciosamente maria" → "Agradeço desde já.\n\nAtenciosamente,\nMaria"
             """
             
         case .uxDesign:

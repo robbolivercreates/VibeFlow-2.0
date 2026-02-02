@@ -11,7 +11,7 @@
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>2.1.0</string>
     <key>CFBundleExecutable</key>
     <string>VibeFlow</string>
     <key>CFBundlePackageType</key>
@@ -25,6 +25,6 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>CFBundleIconFile</key>
-    <string>VibeFlow</string>
+    <string>AppIcon</string>
 </dict>
 </plist>

@@ -10,10 +10,10 @@ class VibeFlowViewModel: ObservableObject {
     @Published var translateToEnglish: Bool = false
     @Published var clarifyText: Bool = true
     @Published var needsAPIKey = false
+    @Published var audioLevel: CGFloat = 0.0
     
-    // Callback chamado após colar com sucesso
-    var onPasteComplete: (() -> Void)?
-    
+    private let settings = SettingsManager.shared
+    private let snippets = SnippetsManager.shared
     private let audioRecorder = AudioRecorder()
     private var geminiService: GeminiService?
     private var cancellables = Set<AnyCancellable>()
@@ -25,11 +25,8 @@ class VibeFlowViewModel: ObservableObject {
     }
     
     private func loadSettings() {
-        // Carregar modo salvo
-        if let modeRaw = UserDefaults.standard.string(forKey: "selectedMode"),
-           let mode = TranscriptionMode(rawValue: modeRaw) {
-            selectedMode = mode
-        }
+        // Usar SettingsManager
+        selectedMode = settings.selectedMode
         
         // Carregar preferência de tradução
         translateToEnglish = UserDefaults.standard.bool(forKey: "translateToEnglish")
@@ -49,12 +46,16 @@ class VibeFlowViewModel: ObservableObject {
         audioRecorder.$recordingError
             .compactMap { $0 }
             .assign(to: &$error)
+        
+        audioRecorder.$audioLevel
+            .assign(to: &$audioLevel)
     }
     
-    /// Obtém a API Key (prioridade: UserDefaults > Config.swift)
+    /// Obtém a API Key (prioridade: SettingsManager > Config.swift)
     private func getAPIKey() -> String? {
-        if let savedKey = UserDefaults.standard.string(forKey: "GeminiAPIKey"), !savedKey.isEmpty {
-            return savedKey
+        // SettingsManager já verifica UserDefaults
+        if settings.hasApiKey {
+            return settings.apiKey
         }
         
         let configKey = Config.geminiAPIKey
@@ -99,7 +100,7 @@ class VibeFlowViewModel: ObservableObject {
     
     func updateMode(_ mode: TranscriptionMode) {
         selectedMode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: "selectedMode")
+        settings.selectedMode = mode
         
         if let apiKey = getAPIKey() {
             geminiService = GeminiService(apiKey: apiKey, mode: mode, translateToEnglish: translateToEnglish, clarifyText: clarifyText)
@@ -131,10 +132,27 @@ class VibeFlowViewModel: ObservableObject {
     }
     
     private func stopRecording() {
+        // Verificar se detectou fala antes de parar
+        let hasSpeech = audioRecorder.isRecordingValid()
+        
         guard let _ = audioRecorder.stopRecording(),
               let audioData = audioRecorder.getRecordingData() else {
             error = L10n.recordingError
             statusText = L10n.error
+            return
+        }
+        
+        // Se não detectou fala suficiente, não processar e fechar janela
+        if !hasSpeech {
+            statusText = L10n.ready
+            error = nil
+            print("[VibeFlow] Gravação ignorada - nenhuma fala detectada")
+            
+            // Notificar para fechar a janela
+            NotificationCenter.default.post(
+                name: .recordingCancelled,
+                object: nil
+            )
             return
         }
         
@@ -158,10 +176,19 @@ class VibeFlowViewModel: ObservableObject {
                         error = L10n.noText
                         statusText = L10n.error
                     } else {
-                        ClipboardHelper.copyAndPaste(transcribedText)
+                        // Expandir snippets
+                        let finalText = self.snippets.expand(transcribedText)
+                        
+                        // Copiar e colar
+                        ClipboardHelper.copyAndPaste(finalText)
                         statusText = L10n.pasted
                         
-                        onPasteComplete?()
+                        // Notificar AppDelegate sobre transcrição completa
+                        NotificationCenter.default.post(
+                            name: .transcriptionComplete,
+                            object: nil,
+                            userInfo: ["text": finalText, "mode": self.selectedMode]
+                        )
                         
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             self.statusText = L10n.ready
