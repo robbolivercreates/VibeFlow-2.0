@@ -59,10 +59,17 @@ class ClipboardHelper {
     
     /// Copia texto e cola no app anterior
     static func copyAndPaste(_ text: String) {
+        // Verificar permissão de acessibilidade
+        if !checkAccessibilityPermission() {
+            print("⚠️ Sem permissão de Acessibilidade! O texto foi copiado, use Cmd+V para colar.")
+            copyToClipboard(text)
+            return
+        }
+        
         // Copiar para o clipboard primeiro
         copyToClipboard(text)
         
-        print("Texto copiado para clipboard: \(text.prefix(30))...")
+        print("✓ Texto copiado para clipboard: \(text.prefix(30))...")
         
         // Pegar app anterior
         let appToActivate = previousApp ?? NSWorkspace.shared.runningApplications.first { 

@@ -92,10 +92,6 @@ struct SettingsView: View {
             }
             
             Spacer()
-            
-            Text("v\(AppVersion.current)")
-                .font(.caption)
-                .foregroundColor(.secondary)
         }
         .padding(20)
         .background(.bar)
@@ -206,13 +202,6 @@ struct SettingsView: View {
                     title: L10n.uxModeTitle,
                     description: L10n.uxModeDescription,
                     color: .purple
-                )
-            case .email:
-                descriptionCard(
-                    icon: "envelope",
-                    title: L10n.emailModeTitle,
-                    description: L10n.emailModeDescription,
-                    color: .orange
                 )
             }
         }

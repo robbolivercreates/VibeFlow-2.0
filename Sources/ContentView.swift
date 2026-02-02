@@ -162,9 +162,26 @@ struct IdleStateView: View {
                     .foregroundColor(.red)
                     .lineLimit(1)
             } else {
-                Text(viewModel.statusText)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary)
+                // Badge V2.0
+                HStack(spacing: 4) {
+                    Text("VibeFlow")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("2.0")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.orange, Color.red],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
+                }
                 
                 Text(L10n.holdToRecord)
                     .font(.system(size: 9))

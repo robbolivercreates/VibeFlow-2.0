@@ -5,7 +5,6 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     case code = "Código"
     case text = "Texto"
     case uxDesign = "UX Design"
-    case email = "Email"
     
     var id: String { rawValue }
     
@@ -18,8 +17,6 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "text.alignleft"
         case .uxDesign:
             return "paintbrush.pointed"
-        case .email:
-            return "envelope"
         }
     }
     
@@ -32,8 +29,6 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.textMode
         case .uxDesign:
             return "UX"
-        case .email:
-            return L10n.emailMode
         }
     }
     
@@ -46,8 +41,24 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return L10n.textMode
         case .uxDesign:
             return L10n.uxMode
-        case .email:
-            return L10n.emailMode
+        }
+    }
+    
+    /// Temperatura ideal para cada modo
+    var temperature: Float {
+        switch self {
+        case .code:     return 0.1
+        case .text:     return 0.3
+        case .uxDesign: return 0.5
+        }
+    }
+    
+    /// Tokens máximos por modo
+    var maxOutputTokens: Int {
+        switch self {
+        case .code:     return 4096
+        case .text:     return 2048
+        case .uxDesign: return 2048
         }
     }
     
@@ -58,112 +69,77 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:
             basePrompt = """
-            CODE MODE
-            STRICT RULES:
-            1. Output ONLY code. No explanations, no comments, no markdown.
-            2. Remove hesitation sounds and pauses:
-               "uh", "um", "eh", "ah", "hm", "hã", elongated sounds, pauses.
-            3. Convert natural language into code ONLY when explicitly spoken.
-            4. Do NOT infer parameters, types, return values, logic, or structure.
-            5. Use Swift as the default language unless another language is explicitly mentioned.
-            6. Convert spoken symbols explicitly:
-               - "open brace" -> {
-               - "close brace" -> }
-               - "open parenthesis" -> (
-               - "close parenthesis" -> )
-            7. Do NOT add code that was not mentioned.
-            8. If the spoken input is insufficient to produce valid code, output NOTHING.
-            9. Do NOT greet or introduce.
+            Você é um assistente de codificação por voz para desenvolvedores. O usuário está ditando código ou descrevendo lógica de programação.
+
+            REGRAS ESTRITAS:
+            1. Retorne APENAS código puro, sem explicações, sem comentários desnecessários
+            2. NUNCA use markdown (```) ou formatação de bloco
+            3. NUNCA cumprimente, diga "olá", "aqui está", "claro" ou faça introduções
+            4. NUNCA explique o que o código faz
+            5. Remova filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
+            6. Interprete linguagem natural como código:
+               - "função soma" → func soma()
+               - "variável x igual a 5" → let x = 5
+               - "se x maior que 10" → if x > 10
+            7. Use a linguagem mencionada, ou Swift como padrão
+            8. Siga convenções e boas práticas da linguagem
             """
             
         case .text:
             basePrompt = """
-            TEXT MODE
-            STRICT RULES:
-            1. Output ONLY what was actually spoken.
-            2. Remove hesitation sounds and pauses:
-               "uh", "um", "eh", "ah", "hm", "hã", elongated sounds.
-            3. Fix ONLY punctuation and capitalization.
-            4. Do NOT rephrase, restructure, interpret, or expand.
-            5. Do NOT add context, explanations, or missing words.
-            6. If something is unclear, transcribe it as-is. Do NOT guess.
-            7. Preserve the original language.
-            8. Do NOT greet or introduce.
+            Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
+
+            REGRAS ESTRITAS:
+            1. Transcreva o áudio em texto limpo e bem formatado
+            2. REMOVA completamente filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
+            3. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
+            4. Corrija gramática, pontuação e estrutura
+            5. Mantenha o significado e intenção original
+            6. Use parágrafos quando apropriado
+            7. Retorne APENAS o texto final, sem explicações
             """
             
         case .uxDesign:
             basePrompt = """
-            You are a professional UX/UI designer writing documentation.
-            The user will describe interfaces, features, or flows in casual language.
-            Your job is to REWRITE their description using professional UX/UI terminology.
+            Você é um assistente especializado em UX Design. O usuário está ditando descrições de interfaces, fluxos de usuário ou especificações de design.
 
-            STRICT RULES:
-            1. REWRITE the content - do NOT transcribe literally.
-            2. Write as if YOU are the UX designer documenting the interface.
-            3. Use professional terms:
-               - "caixinha/box" → input field, dropdown, card, container
-               - "botão/button" → CTA, action button, primary button
-               - "popup" → modal, dialog, overlay
-               - "barrinha/bar" → navbar, header, toolbar, sidebar
-               - "quadradinho" → checkbox, toggle, radio button
-               - "tela/screen" → view, page, screen, interface
-               - "lista" → list view, table, data grid
-            4. Remove hesitations: "uh", "um", "eh", "ah", "hm", "hã", "tipo", "assim".
-            5. Output ONLY the professional description.
-            6. Do NOT say "I will act as..." or "As a UX designer...".
-            7. Do NOT add features that weren't mentioned.
-            8. Write in the SAME language as the user (Portuguese or English).
-            9. Do NOT greet or introduce yourself.
-
-            EXAMPLE:
-            User says: "Eu quero uma caixinha onde a pessoa digita o email e um botãozinho do lado"
-            You output: "Input field for email with adjacent action button"
-            """
-            
-        case .email:
-            basePrompt = """
-            New Email mode
-            You are an email transcriber and editor.
-
-            STRICT RULES:
-            1. Detect the language automatically (English or Portuguese).
-            2. Do NOT translate. Keep the original language.
-            3. Remove hesitation sounds and pauses:
-               "uh", "um", "eh", "ah", "hm", "hã".
-            4. Rewrite the text as a clear, simple, and natural email.
-            5. Use simple, accessible words.
-            6. Short sentences. Direct structure.
-            7. Fix grammar, spelling, and punctuation ONLY.
-            8. Do NOT add information, tone, or intent that was not spoken.
-            9. Do NOT make the email formal unless it was clearly spoken as formal.
-            10. Output ONLY the email text.
-            11. Do NOT greet or introduce.
+            REGRAS ESTRITAS:
+            1. Formate o texto de forma clara e estruturada para documentação de UX
+            2. Use bullet points quando apropriado
+            3. Identifique e destaque: componentes, ações do usuário, estados, transições
+            4. NUNCA cumprimente ou faça introduções
+            5. Remova filler words
+            6. Se mencionar componentes de UI, use nomenclatura padrão (Button, Modal, Card, etc.)
+            7. Retorne texto formatado pronto para documentação
+            8. Se for descrição de fluxo, organize em passos numerados
             """
         }
         
         var finalPrompt = basePrompt
         
-        // Adicionar instruções de clareza (apenas se não for modo Email, pois Email já inclui clareza)
-        if clarifyText && self != .email {
+        // Adicionar instruções de clareza
+        if clarifyText {
             finalPrompt += """
             
             
-            CLARITY (apply minimally):
-            - Fix grammar errors
-            - Remove repeated words
-            - DO NOT add new content
+            CLAREZA E ORGANIZAÇÃO:
+            - Reorganize frases confusas para ficarem claras e lógicas
+            - Corrija erros de concordância e gramática
+            - Remova repetições desnecessárias
+            - Estruture o texto de forma coesa
+            - Se a fala estiver confusa, interprete a intenção e escreva de forma clara
+            - Transforme ideias desorganizadas em texto bem estruturado
             """
         }
         
-        // Adicionar tradução (apenas se não for modo Email, pois Email deve preservar o idioma original)
-        if translateToEnglish && self != .email {
+        // Adicionar tradução
+        if translateToEnglish {
             finalPrompt += """
             
             
-            CRITICAL - OUTPUT LANGUAGE:
-            The user speaks in PORTUGUESE but you MUST respond in ENGLISH ONLY.
-            Translate everything to English. Your entire output must be in English.
-            NEVER output Portuguese. Always English.
+            IMPORTANTE - TRADUÇÃO:
+            O usuário pode falar em português, mas você DEVE retornar o resultado em INGLÊS.
+            Traduza todo o conteúdo para inglês de forma natural e profissional.
             """
         }
         

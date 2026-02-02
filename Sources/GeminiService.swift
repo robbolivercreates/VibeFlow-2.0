@@ -11,12 +11,16 @@ class GeminiService: ObservableObject {
     init(apiKey: String, mode: TranscriptionMode, translateToEnglish: Bool, clarifyText: Bool) {
         let systemPrompt = mode.systemPrompt(translateToEnglish: translateToEnglish, clarifyText: clarifyText)
         
+        // Usar temperatura dinâmica por modo
+        let temperature = mode.temperature
+        let maxTokens = mode.maxOutputTokens
+        
         self.model = GenerativeModel(
             name: "gemini-2.0-flash",
             apiKey: apiKey,
             generationConfig: GenerationConfig(
-                temperature: 0.2,
-                maxOutputTokens: 4096
+                temperature: temperature,
+                maxOutputTokens: maxTokens
             ),
             systemInstruction: ModelContent(role: "system", parts: [.text(systemPrompt)])
         )
@@ -36,7 +40,7 @@ class GeminiService: ObservableObject {
         }
         
         // Criar prompt para transcrição
-        let prompt = "Process the following audio according to your instructions. Output ONLY the processed result, nothing else:"
+        let prompt = "Transcreva e processe o áudio a seguir conforme suas instruções:"
         
         // Enviar áudio para o Gemini
         let response = try await model.generateContent(

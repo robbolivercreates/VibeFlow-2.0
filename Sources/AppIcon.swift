@@ -50,15 +50,24 @@ class AppIconGenerator {
         return image
     }
     
-    /// Cria ícone para a barra de menu
+    /// Cria ícone para a barra de menu (v2.0 - laranja)
     static func createMenuBarIcon() -> NSImage {
         let size: CGFloat = 18
         let image = NSImage(size: NSSize(width: size, height: size))
         
         image.lockFocus()
         
-        let waveColor = NSColor.labelColor
-        waveColor.setFill()
+        // Fundo laranja/vermelho para v2.0
+        let bgGradient = NSGradient(colors: [
+            NSColor(red: 1.0, green: 0.5, blue: 0.0, alpha: 1.0),  // Laranja
+            NSColor(red: 1.0, green: 0.2, blue: 0.3, alpha: 1.0)   // Vermelho
+        ])
+        let bgRect = NSRect(x: 1, y: 1, width: size-2, height: size-2)
+        let bgPath = NSBezierPath(ovalIn: bgRect)
+        bgGradient?.draw(in: bgPath, angle: -45)
+        
+        // Onda branca
+        NSColor.white.setFill()
         
         let centerY = size / 2
         let barWidth: CGFloat = 2
@@ -78,7 +87,7 @@ class AppIconGenerator {
         }
         
         image.unlockFocus()
-        image.isTemplate = true
+        image.isTemplate = false  // Manter cores
         
         return image
     }
