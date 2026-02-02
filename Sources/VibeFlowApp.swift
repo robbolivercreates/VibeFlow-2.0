@@ -436,12 +436,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .recordingCancelled,
             object: nil
         )
+        
+        // Observar ativação de licença para mostrar wizard
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleLicenseActivated),
+            name: .showWizardAfterActivation,
+            object: nil
+        )
     }
     
     @objc func handleRecordingCancelled() {
         // Fechar janela se não houve fala
         DispatchQueue.main.async { [weak self] in
             self?.window?.orderOut(nil)
+        }
+    }
+    
+    @objc func handleLicenseActivated() {
+        // Mostrar wizard após ativação da licença
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.checkFirstLaunch()
         }
     }
     

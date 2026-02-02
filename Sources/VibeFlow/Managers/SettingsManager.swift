@@ -67,6 +67,20 @@ class SettingsManager: ObservableObject {
         didSet { defaults.set(hasSeenLicensePrompt, forKey: Keys.hasSeenLicensePrompt) }
     }
     
+    @Published var shortcutRecordKey: String {
+        didSet { 
+            defaults.set(shortcutRecordKey, forKey: Keys.shortcutRecord)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
+    }
+    
+    @Published var shortcutToggleKey: String {
+        didSet { 
+            defaults.set(shortcutToggleKey, forKey: Keys.shortcutToggle)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
+    }
+    
     // MARK: - Computed
     var hasApiKey: Bool {
         !apiKey.isEmpty
@@ -87,6 +101,8 @@ class SettingsManager: ObservableObject {
         self.licenseKey = defaults.string(forKey: Keys.licenseKey) ?? ""
         self.isLicensed = defaults.bool(forKey: Keys.isLicensed)
         self.hasSeenLicensePrompt = defaults.bool(forKey: Keys.hasSeenLicensePrompt)
+        self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
+        self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
     }
     
     // MARK: - Methods
@@ -104,4 +120,6 @@ extension Notification.Name {
     static let modeChanged = Notification.Name("modeChanged")
     static let transcriptionComplete = Notification.Name("transcriptionComplete")
     static let recordingCancelled = Notification.Name("recordingCancelled")
+    static let showWizardAfterActivation = Notification.Name("showWizardAfterActivation")
+    static let shortcutChanged = Notification.Name("shortcutChanged")
 }

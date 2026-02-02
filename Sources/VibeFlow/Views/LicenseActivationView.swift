@@ -152,14 +152,43 @@ struct LicenseActivationView: View {
     }
     
     private func isValidKeyFormat(_ key: String) -> Bool {
-        // Formato: VIBE-XXXX-XXXX-XXXX
-        let pattern = "^VIBE-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$"
-        return key.range(of: pattern, options: .regularExpression) != nil
+        // Must be exactly 19 characters: VIBE-XXXX-XXXX-XXXX
+        guard key.count == 19 else { return false }
+        
+        // Chave mestre (sua chave especial) - exact match only
+        let masterKey = "VIBE-MASTER-2024-PRO"
+        if key == masterKey {
+            return true
+        }
+        
+        // Strict format validation: VIBE-XXXX-XXXX-XXXX
+        let components = key.split(separator: "-")
+        guard components.count == 4,
+              components[0] == "VIBE",
+              components[1].count == 4,
+              components[2].count == 4,
+              components[3].count == 4 else {
+            return false
+        }
+        
+        // Only alphanumeric characters allowed (excluding confusing ones: 0, O, I, 1)
+        let validChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        for i in 1...3 {
+            for char in components[i] {
+                if !validChars.contains(char) {
+                    return false
+                }
+            }
+        }
+        
+        return true
     }
     
     private func checkExistingLicense() {
         if settings.isLicensed {
             dismiss()
+            // Show wizard after dismissing if needed
+            NotificationCenter.default.post(name: .showWizardAfterActivation, object: nil)
         }
     }
 }
