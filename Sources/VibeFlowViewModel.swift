@@ -183,6 +183,9 @@ class VibeFlowViewModel: ObservableObject {
                         ClipboardHelper.copyAndPaste(finalText)
                         statusText = L10n.pasted
                         
+                        // Registrar analytics
+                        AnalyticsManager.shared.recordTranscription(characters: finalText.count)
+                        
                         // Notificar AppDelegate sobre transcrição completa
                         NotificationCenter.default.post(
                             name: .transcriptionComplete,

@@ -159,6 +159,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Novos itens
         menu.addItem(NSMenuItem(title: "Histórico", action: #selector(showHistory), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(showAnalytics), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         
         // Settings
@@ -281,6 +282,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         snippetsWindow?.title = "VibeFlow - Snippets"
         snippetsWindow?.center()
         snippetsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    var analyticsWindow: NSWindow?
+    
+    @objc func showAnalytics() {
+        if let existingWindow = analyticsWindow, existingWindow.isVisible {
+            existingWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        
+        let analyticsView = AnalyticsView()
+        let hostingView = NSHostingView(rootView: analyticsView)
+        
+        analyticsWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 550),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        analyticsWindow?.contentView = hostingView
+        analyticsWindow?.title = "VibeFlow - Estatísticas"
+        analyticsWindow?.center()
+        analyticsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
     

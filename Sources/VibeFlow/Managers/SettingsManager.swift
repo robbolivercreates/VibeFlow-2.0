@@ -16,6 +16,8 @@ class SettingsManager: ObservableObject {
         static let enableHistory = "enable_history"
         static let enableAutoPaste = "enable_auto_paste"
         static let enableAutoClose = "enable_auto_close"
+        static let shortcutRecord = "shortcut_record"  // ⌥⌘ padrão
+        static let shortcutToggle = "shortcut_toggle"  // ⌘⇧V padrão
     }
     
     // MARK: - Published Properties
