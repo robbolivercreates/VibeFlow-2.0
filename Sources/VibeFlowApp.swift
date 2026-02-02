@@ -74,17 +74,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Observar mudanças
         setupObservers()
         
-        // Mostrar wizard se necessário
+        // Mostrar wizard ou ativação se necessário
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.checkOnboarding()
+            self?.checkFirstLaunch()
         }
     }
     
-    // MARK: - Onboarding
+    // MARK: - First Launch
     
-    func checkOnboarding() {
+    func checkFirstLaunch() {
+        // Verificar licença primeiro
+        if !settings.isLicensed && !settings.hasSeenLicensePrompt {
+            showLicenseActivation()
+            return
+        }
+        
+        // Depois verificar onboarding
         guard !settings.onboardingCompleted || !settings.hasApiKey else { return }
         showWizard()
+    }
+    
+    var licenseWindow: NSWindow?
+    
+    func showLicenseActivation() {
+        settings.hasSeenLicensePrompt = true
+        
+        let licenseView = LicenseActivationView()
+        let hostingView = NSHostingView(rootView: licenseView)
+        
+        licenseWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        licenseWindow?.contentView = hostingView
+        licenseWindow?.title = "Ativar VibeFlow"
+        licenseWindow?.center()
+        licenseWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     @objc func resetAndShowWizard() {

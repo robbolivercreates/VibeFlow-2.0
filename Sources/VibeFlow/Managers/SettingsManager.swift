@@ -16,8 +16,11 @@ class SettingsManager: ObservableObject {
         static let enableHistory = "enable_history"
         static let enableAutoPaste = "enable_auto_paste"
         static let enableAutoClose = "enable_auto_close"
-        static let shortcutRecord = "shortcut_record"  // ⌥⌘ padrão
-        static let shortcutToggle = "shortcut_toggle"  // ⌘⇧V padrão
+        static let shortcutRecord = "shortcut_record"
+        static let shortcutToggle = "shortcut_toggle"
+        static let licenseKey = "license_key"
+        static let isLicensed = "is_licensed"
+        static let hasSeenLicensePrompt = "has_seen_license_prompt"
     }
     
     // MARK: - Published Properties
@@ -52,6 +55,18 @@ class SettingsManager: ObservableObject {
         didSet { defaults.set(enableAutoClose, forKey: Keys.enableAutoClose) }
     }
     
+    @Published var licenseKey: String {
+        didSet { defaults.set(licenseKey, forKey: Keys.licenseKey) }
+    }
+    
+    @Published var isLicensed: Bool {
+        didSet { defaults.set(isLicensed, forKey: Keys.isLicensed) }
+    }
+    
+    @Published var hasSeenLicensePrompt: Bool {
+        didSet { defaults.set(hasSeenLicensePrompt, forKey: Keys.hasSeenLicensePrompt) }
+    }
+    
     // MARK: - Computed
     var hasApiKey: Bool {
         !apiKey.isEmpty
@@ -69,6 +84,9 @@ class SettingsManager: ObservableObject {
         self.enableHistory = defaults.object(forKey: Keys.enableHistory) as? Bool ?? true
         self.enableAutoPaste = defaults.object(forKey: Keys.enableAutoPaste) as? Bool ?? true
         self.enableAutoClose = defaults.object(forKey: Keys.enableAutoClose) as? Bool ?? true
+        self.licenseKey = defaults.string(forKey: Keys.licenseKey) ?? ""
+        self.isLicensed = defaults.bool(forKey: Keys.isLicensed)
+        self.hasSeenLicensePrompt = defaults.bool(forKey: Keys.hasSeenLicensePrompt)
     }
     
     // MARK: - Methods
