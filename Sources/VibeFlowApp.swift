@@ -139,13 +139,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let hostingView = NSHostingView(rootView: wizardView)
         
         wizardWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 600, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 580),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         wizardWindow?.contentView = hostingView
-        wizardWindow?.title = "Bem-vindo ao VibeFlow"
+        wizardWindow?.title = "Configurar VibeFlow"
         wizardWindow?.center()
         wizardWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
