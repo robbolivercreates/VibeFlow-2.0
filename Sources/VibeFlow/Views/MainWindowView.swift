@@ -44,21 +44,18 @@ struct MainWindowView: View {
             // MARK: - Sidebar
             VStack(alignment: .leading, spacing: 0) {
                 // Logo/Brand
-                HStack(spacing: 8) {
-                    Image(systemName: "waveform.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(.purple)
+                HStack(spacing: 10) {
+                    // Custom VibeFlow logo
+                    VibeFlowLogo(size: 28)
 
-                    Text("VibeFlow")
-                        .font(.system(size: 18, weight: .semibold))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("VibeFlow")
+                            .font(.system(size: 17, weight: .semibold))
 
-                    Text("2.1")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.15))
-                        .cornerRadius(4)
+                        Text("v2.1")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
@@ -182,6 +179,55 @@ struct SidebarItem: View {
     }
 }
 
+/// Custom VibeFlow logo - Minimalist waveform in a rounded square
+struct VibeFlowLogo: View {
+    let size: CGFloat
+
+    // Brand color
+    private let brandColor = Color(red: 0.45, green: 0.38, blue: 0.85)
+
+    var body: some View {
+        ZStack {
+            // Background
+            RoundedRectangle(cornerRadius: size * 0.22)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.42, green: 0.35, blue: 0.85),
+                            Color(red: 0.52, green: 0.42, blue: 0.90)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            // Waveform bars
+            HStack(spacing: size * 0.06) {
+                ForEach(barHeights.indices, id: \.self) { index in
+                    RoundedRectangle(cornerRadius: size * 0.04)
+                        .fill(Color.white)
+                        .frame(width: size * 0.10, height: size * barHeights[index])
+                }
+            }
+        }
+        .frame(width: size, height: size)
+    }
+
+    private var barHeights: [CGFloat] {
+        [0.22, 0.42, 0.58, 0.48, 0.30]
+    }
+}
+
 #Preview {
     MainWindowView()
+}
+
+#Preview("Logo") {
+    HStack(spacing: 20) {
+        VibeFlowLogo(size: 28)
+        VibeFlowLogo(size: 48)
+        VibeFlowLogo(size: 64)
+        VibeFlowLogo(size: 128)
+    }
+    .padding()
 }
