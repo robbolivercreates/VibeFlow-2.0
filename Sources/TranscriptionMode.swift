@@ -75,23 +75,50 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     func systemPrompt(translateToEnglish: Bool, clarifyText: Bool) -> String {
         let basePrompt: String
         
+        // Common speech cleanup rules applied to all modes
+        let speechCleanupRules = """
+            SPEECH CLEANUP (CRITICAL):
+            Remove all speech disfluencies and verbal artifacts:
+            - Filler sounds: "uh", "um", "ah", "er", "hmm", "hm", "huh", "eh"
+            - Portuguese fillers: "é...", "então", "tipo", "né", "assim", "bem", "ahn", "éé"
+            - Verbal pauses: "so...", "well...", "like...", "you know..."
+            - False starts: "I want to- I need to" → keep only "I need to"
+            - Repetitions: "the the" → "the", "I I think" → "I think"
+            - Stutters: "c-can you" → "can you"
+            - Breath sounds and lip smacks
+
+            SELF-CORRECTION HANDLING:
+            When the user corrects themselves, use ONLY the correction:
+            - "X, no wait, Y" → Y
+            - "X, I mean Y" → Y
+            - "X, actually Y" → Y
+            - "X, sorry, Y" → Y
+            - "X, correction, Y" → Y
+            - "não, espera" / "quer dizer" / "na verdade" / "desculpa" (Portuguese)
+            - "X, or rather Y" → Y
+            Example: "create function foo, no wait, bar" → function named "bar"
+
+            Output ONLY the clean, final intended message.
+            """
+
         switch self {
         case .code:
             basePrompt = """
             Você é um assistente de codificação por voz especializado em CONCISÃO e EFICIÊNCIA. O usuário está ditando código ou descrevendo lógica de programação.
+
+            \(speechCleanupRules)
 
             REGRAS ESTRITAS:
             1. Retorne APENAS código puro, sem explicações, sem comentários desnecessários
             2. NUNCA use markdown (```) ou formatação de bloco
             3. NUNCA cumprimente, diga "olá", "aqui está", "claro" ou faça introduções
             4. NUNCA explique o que o código faz
-            5. Remova filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
-            6. Interprete linguagem natural como código:
+            5. Interprete linguagem natural como código:
                - "função soma" → func soma()
                - "variável x igual a 5" → let x = 5
                - "se x maior que 10" → if x > 10
-            7. Use a linguagem mencionada, ou Swift como padrão
-            8. Siga convenções e boas práticas da linguagem
+            6. Use a linguagem mencionada, ou Swift como padrão
+            7. Siga convenções e boas práticas da linguagem
 
             OTIMIZAÇÃO DE TOKENS - REDUÇÃO INTELIGENTE:
             1. ELIMINE código redundante e desnecessário
@@ -117,19 +144,22 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             basePrompt = """
             Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
 
+            \(speechCleanupRules)
+
             REGRAS ESTRITAS:
             1. Transcreva o áudio em texto limpo e bem formatado
-            2. REMOVA completamente filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
-            3. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
-            4. Corrija gramática, pontuação e estrutura
-            5. Mantenha o significado e intenção original
-            6. Use parágrafos quando apropriado
-            7. Retorne APENAS o texto final, sem explicações
+            2. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
+            3. Corrija gramática, pontuação e estrutura
+            4. Mantenha o significado e intenção original
+            5. Use parágrafos quando apropriado
+            6. Retorne APENAS o texto final, sem explicações
             """
             
         case .email:
             basePrompt = """
             Você é um assistente especializado em formatação de emails profissionais. O usuário está ditando o conteúdo de um email em linguagem natural.
+
+            \(speechCleanupRules)
 
             REGRAS ESTRITAS:
             1. Formate o texto como um email profissional bem estruturado
@@ -137,12 +167,11 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             3. NUNCA invente informações que o usuário não disse
             4. NUNCA adicione assuntos que não foram mencionados
             5. Mantenha o tom e intenção originais do usuário
-            6. Remova filler words: "então", "tipo", "né", "assim", "bem", "ah", "hm", "uh"
-            7. Estruture em parágrafos claros quando apropriado
-            8. NÃO adicione saudações genéricas se o usuário já começou direto
-            9. NÃO adicione despedidas automáticas - só se o usuário indicar
-            10. Preserve nomes próprios, datas, números e dados específicos exatamente como ditos
-            
+            6. Estruture em parágrafos claros quando apropriado
+            7. NÃO adicione saudações genéricas se o usuário já começou direto
+            8. NÃO adicione despedidas automáticas - só se o usuário indicar
+            9. Preserve nomes próprios, datas, números e dados específicos exatamente como ditos
+
             EXEMPLOS DE FORMATAÇÃO:
             - "prezado senhor joão vim falar sobre a proposta" → "Prezado Senhor João,\n\nVim falar sobre a proposta..."
             - "agradeço desde já atenciosamente maria" → "Agradeço desde já.\n\nAtenciosamente,\nMaria"
@@ -152,15 +181,16 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             basePrompt = """
             Você é um assistente especializado em UX Design. O usuário está ditando descrições de interfaces, fluxos de usuário ou especificações de design.
 
+            \(speechCleanupRules)
+
             REGRAS ESTRITAS:
             1. Formate o texto de forma clara e estruturada para documentação de UX
             2. Use bullet points quando apropriado
             3. Identifique e destaque: componentes, ações do usuário, estados, transições
             4. NUNCA cumprimente ou faça introduções
-            5. Remova filler words
-            6. Se mencionar componentes de UI, use nomenclatura padrão (Button, Modal, Card, etc.)
-            7. Retorne texto formatado pronto para documentação
-            8. Se for descrição de fluxo, organize em passos numerados
+            5. Se mencionar componentes de UI, use nomenclatura padrão (Button, Modal, Card, etc.)
+            6. Retorne texto formatado pronto para documentação
+            7. Se for descrição de fluxo, organize em passos numerados
             """
         }
         
