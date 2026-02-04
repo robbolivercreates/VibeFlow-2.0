@@ -87,6 +87,8 @@ class SettingsManager: ObservableObject {
         didSet {
             let rawValues = favoriteLanguages.map { $0.rawValue }
             defaults.set(rawValues, forKey: Keys.favoriteLanguages)
+            // Reset cycle index when favorites change
+            resetFavoriteIndex()
         }
     }
     
@@ -106,12 +108,15 @@ class SettingsManager: ObservableObject {
     }
     
     @Published var shortcutToggleKey: String {
-        didSet { 
+        didSet {
             defaults.set(shortcutToggleKey, forKey: Keys.shortcutToggle)
             NotificationCenter.default.post(name: .shortcutChanged, object: nil)
         }
     }
-    
+
+    /// Current index for cycling through favorites
+    private var currentFavoriteIndex: Int = 0
+
     // MARK: - Computed
     var hasApiKey: Bool {
         !apiKey.isEmpty
@@ -149,6 +154,11 @@ class SettingsManager: ObservableObject {
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
+
+        // Initialize favorite index based on current language
+        if let index = self.favoriteLanguages.firstIndex(of: self.outputLanguage) {
+            self.currentFavoriteIndex = index
+        }
     }
     
     // MARK: - Methods
@@ -162,14 +172,44 @@ class SettingsManager: ObservableObject {
     
     /// Cicla para o próximo idioma favorito
     func cycleToNextLanguage() {
-        guard !favoriteLanguages.isEmpty else { return }
-        
+        guard !favoriteLanguages.isEmpty else {
+            print("[SettingsManager] cycleToNextLanguage: No favorite languages configured")
+            return
+        }
+
+        // Debug current state
+        print("[SettingsManager] cycleToNextLanguage called")
+        print("[SettingsManager] Current language: \(outputLanguage.displayName)")
+        print("[SettingsManager] Favorites (\(favoriteLanguages.count)): \(favoriteLanguages.map { $0.displayName })")
+
+        // Find current language in favorites, or start from beginning
         if let currentIndex = favoriteLanguages.firstIndex(of: outputLanguage) {
-            let nextIndex = (currentIndex + 1) % favoriteLanguages.count
-            outputLanguage = favoriteLanguages[nextIndex]
+            currentFavoriteIndex = currentIndex
+        }
+
+        // Move to next index
+        currentFavoriteIndex = (currentFavoriteIndex + 1) % favoriteLanguages.count
+        let nextLanguage = favoriteLanguages[currentFavoriteIndex]
+
+        print("[SettingsManager] Next index: \(currentFavoriteIndex), Next language: \(nextLanguage.displayName)")
+
+        // Only update if different to avoid unnecessary notifications
+        if outputLanguage != nextLanguage {
+            outputLanguage = nextLanguage
+        } else if favoriteLanguages.count > 1 {
+            // If same (shouldn't happen), force move to next
+            currentFavoriteIndex = (currentFavoriteIndex + 1) % favoriteLanguages.count
+            outputLanguage = favoriteLanguages[currentFavoriteIndex]
+            print("[SettingsManager] Forced next: \(outputLanguage.displayName)")
+        }
+    }
+
+    /// Reset favorite index when favorites change
+    func resetFavoriteIndex() {
+        if let index = favoriteLanguages.firstIndex(of: outputLanguage) {
+            currentFavoriteIndex = index
         } else {
-            // Se o idioma atual não está nos favoritos, vai para o primeiro
-            outputLanguage = favoriteLanguages[0]
+            currentFavoriteIndex = 0
         }
     }
 }

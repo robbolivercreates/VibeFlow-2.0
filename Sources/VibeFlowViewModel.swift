@@ -14,7 +14,6 @@ class VibeFlowViewModel: ObservableObject {
     private let settings = SettingsManager.shared
     private let snippets = SnippetsManager.shared
     private let audioRecorder = AudioRecorder()
-    private var geminiService: GeminiService?
     private var cancellables = Set<AnyCancellable>()
 
     // Command mode: stores selected text before recording
@@ -41,20 +40,17 @@ class VibeFlowViewModel: ObservableObject {
     private func setupObservers() {
         audioRecorder.$isRecording
             .assign(to: &$isRecording)
-        
+
         audioRecorder.$recordingError
             .compactMap { $0 }
             .assign(to: &$error)
-        
+
         audioRecorder.$audioLevel
             .assign(to: &$audioLevel)
-        
-        // Observe language changes and recreate service
-        NotificationCenter.default.publisher(for: .languageChanged)
-            .sink { [weak self] _ in
-                self?.reloadAPIKey()
-            }
-            .store(in: &cancellables)
+
+        // Note: We no longer recreate service on language change.
+        // The service is created just-in-time when recording stops,
+        // using the current settings. This improves performance.
     }
     
     /// Obtém a API Key (prioridade: SettingsManager > Config.swift)
@@ -73,49 +69,25 @@ class VibeFlowViewModel: ObservableObject {
     }
     
     func loadAPIKey() {
-        guard let apiKey = getAPIKey() else {
+        // Just check if API key exists - service is created just-in-time
+        if getAPIKey() != nil {
+            needsAPIKey = false
+            error = nil
+        } else {
             needsAPIKey = true
             error = L10n.configureAPIKey
-            return
         }
-        
-        needsAPIKey = false
-        error = nil
-        geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
-        
-        geminiService?.$isProcessing
-            .assign(to: &$isProcessing)
-        
-        geminiService?.$error
-            .compactMap { $0 }
-            .assign(to: &$error)
     }
-    
+
     func reloadAPIKey() {
         loadSettings()
         loadAPIKey()
-        if let apiKey = getAPIKey() {
-            geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
-            geminiService?.$isProcessing
-                .assign(to: &$isProcessing)
-            geminiService?.$error
-                .compactMap { $0 }
-                .assign(to: &$error)
-        }
     }
-    
+
     func updateMode(_ mode: TranscriptionMode) {
         selectedMode = mode
         settings.selectedMode = mode
-
-        if let apiKey = getAPIKey() {
-            geminiService = GeminiService(apiKey: apiKey, mode: mode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
-            geminiService?.$isProcessing
-                .assign(to: &$isProcessing)
-            geminiService?.$error
-                .compactMap { $0 }
-                .assign(to: &$error)
-        }
+        // No need to recreate service - it's created just-in-time with current settings
     }
     
     func toggleRecording() {
@@ -176,21 +148,37 @@ class VibeFlowViewModel: ObservableObject {
         }
         
         statusText = L10n.processing
-        
+
         Task {
             do {
-                guard let service = geminiService else {
+                // Create service just-in-time with current settings for best performance
+                guard let apiKey = self.getAPIKey() else {
                     await MainActor.run {
-                        error = L10n.configureAPIKey
-                        statusText = L10n.error
-                        needsAPIKey = true
+                        self.error = L10n.configureAPIKey
+                        self.statusText = L10n.error
+                        self.needsAPIKey = true
                     }
                     return
                 }
 
+                // Create fresh service with current mode and language
+                let currentMode = self.selectedMode
+                let currentLanguage = self.settings.outputLanguage
+                let service = GeminiService(
+                    apiKey: apiKey,
+                    mode: currentMode,
+                    outputLanguage: currentLanguage,
+                    clarifyText: self.clarifyText
+                )
+
+                // Update processing state
+                await MainActor.run {
+                    self.isProcessing = true
+                }
+
                 // Use appropriate transcription method
                 let transcribedText: String
-                if self.selectedMode == .command, let selectedText = self.commandModeSelectedText {
+                if currentMode == .command, let selectedText = self.commandModeSelectedText {
                     // Command mode with selected text
                     transcribedText = try await service.transcribeWithSelectedText(
                         audioData: audioData,
@@ -204,29 +192,30 @@ class VibeFlowViewModel: ObservableObject {
                 await MainActor.run {
                     // Clear command mode text
                     self.commandModeSelectedText = nil
+                    self.isProcessing = false
 
                     if transcribedText.isEmpty {
-                        error = L10n.noText
-                        statusText = L10n.error
+                        self.error = L10n.noText
+                        self.statusText = L10n.error
                     } else {
                         // Expandir snippets
                         let finalText = self.snippets.expand(transcribedText)
 
                         // Copiar e colar
                         ClipboardHelper.copyAndPaste(finalText)
-                        statusText = L10n.pasted
+                        self.statusText = L10n.pasted
 
                         // Registrar analytics
                         AnalyticsManager.shared.recordTranscription(characters: finalText.count)
 
                         // Learn from successful transcription for style personalization
-                        WritingStyleManager.shared.learnFromTranscription(finalText, mode: self.selectedMode)
+                        WritingStyleManager.shared.learnFromTranscription(finalText, mode: currentMode)
 
                         // Notificar AppDelegate sobre transcrição completa
                         NotificationCenter.default.post(
                             name: .transcriptionComplete,
                             object: nil,
-                            userInfo: ["text": finalText, "mode": self.selectedMode]
+                            userInfo: ["text": finalText, "mode": currentMode]
                         )
 
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
@@ -237,6 +226,7 @@ class VibeFlowViewModel: ObservableObject {
             } catch {
                 await MainActor.run {
                     self.commandModeSelectedText = nil
+                    self.isProcessing = false
                     self.error = "\(L10n.error): \(error.localizedDescription)"
                     self.statusText = L10n.error
                 }

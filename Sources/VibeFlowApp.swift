@@ -24,6 +24,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var isHoldToTalkActive = false
     var globalKeyMonitor: Any?
     var localKeyMonitor: Any?
+
+    // Language notification window (retained to prevent memory issues)
+    var languageNotificationWindow: NSWindow?
+    var lastLanguageCycleTime: Date = .distantPast
+    let languageCycleDebounceInterval: TimeInterval = 0.3 // 300ms debounce
     
     // Managers
     let settings = SettingsManager.shared
@@ -457,35 +462,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     @objc func cycleLanguage() {
+        // Debounce rapid key presses
+        let now = Date()
+        guard now.timeIntervalSince(lastLanguageCycleTime) >= languageCycleDebounceInterval else {
+            print("[VibeFlow] Language cycle debounced")
+            return
+        }
+        lastLanguageCycleTime = now
+
         let previousLanguage = settings.outputLanguage
         settings.cycleToNextLanguage()
         let newLanguage = settings.outputLanguage
-        
+
         // Play feedback sound
         sounds.playSuccess()
-        
+
         // Show notification
         showLanguageNotification(language: newLanguage)
-        
+
+        // Update menu to reflect change
+        updateMenu()
+
         print("[VibeFlow] Language changed: \(previousLanguage.displayName) → \(newLanguage.displayName)")
     }
     
     func showLanguageNotification(language: SpeechLanguage) {
-        // Create a temporary floating notification window
+        // Close existing notification window if present
+        languageNotificationWindow?.orderOut(nil)
+        languageNotificationWindow = nil
+
+        // Create notification window (retained as property)
         let notificationWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 180, height: 60),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
-        
+
         let contentView = LanguageNotificationView(language: language)
         notificationWindow.contentView = NSHostingView(rootView: contentView)
         notificationWindow.level = .floating
         notificationWindow.backgroundColor = .clear
         notificationWindow.isOpaque = false
         notificationWindow.hasShadow = true
-        
+        notificationWindow.isReleasedWhenClosed = false
+
         // Position near the main window or centered
         if let window = window, window.isVisible {
             let windowFrame = window.frame
@@ -495,12 +516,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             notificationWindow.center()
         }
-        
+
+        // Retain the window
+        self.languageNotificationWindow = notificationWindow
         notificationWindow.makeKeyAndOrderFront(nil)
-        
+
         // Auto-close after 1.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            notificationWindow.orderOut(nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.languageNotificationWindow?.orderOut(nil)
+            self?.languageNotificationWindow = nil
         }
     }
     
