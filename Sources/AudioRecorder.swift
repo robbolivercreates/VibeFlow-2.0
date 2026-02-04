@@ -2,25 +2,181 @@ import AVFoundation
 import AppKit
 import Foundation
 import Combine
+import CoreAudio
+
+/// Represents an audio input device
+struct AudioInputDevice: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let isDefault: Bool
+
+    static func == (lhs: AudioInputDevice, rhs: AudioInputDevice) -> Bool {
+        lhs.id == rhs.id
+    }
+}
 
 class AudioRecorder: NSObject, ObservableObject {
     @Published var isRecording = false
     @Published var recordingError: String?
     @Published var audioLevel: CGFloat = 0.0
-    
+    @Published var availableDevices: [AudioInputDevice] = []
+    @Published var selectedDeviceId: String?
+
     // Detecção de fala - MAIS PERMISSIVA
     private var speechDetected = false
     private var maxAudioLevel: CGFloat = 0.0
     private var recordingStartTime: Date?
     private let minimumRecordingDuration: TimeInterval = 0.3  // Reduzido para 300ms
     private let speechThreshold: CGFloat = 0.05  // Reduzido para detectar mais fácil
-    
+
     private var audioRecorder: AVAudioRecorder?
     private var recordingURL: URL?
     private var levelTimer: Timer?
-    
+
     override init() {
         super.init()
+        refreshDevices()
+        loadSelectedDevice()
+    }
+
+    /// Refresh the list of available audio input devices
+    func refreshDevices() {
+        var devices: [AudioInputDevice] = []
+
+        // Get default device
+        var defaultDeviceID: AudioDeviceID = 0
+        var propertySize = UInt32(MemoryLayout<AudioDeviceID>.size)
+        var propertyAddress = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultInputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+
+        AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize,
+            &defaultDeviceID
+        )
+
+        // Get all devices
+        propertyAddress.mSelector = kAudioHardwarePropertyDevices
+        AudioObjectGetPropertyDataSize(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize
+        )
+
+        let deviceCount = Int(propertySize) / MemoryLayout<AudioDeviceID>.size
+        var deviceIDs = [AudioDeviceID](repeating: 0, count: deviceCount)
+
+        AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &propertyAddress,
+            0,
+            nil,
+            &propertySize,
+            &deviceIDs
+        )
+
+        for deviceID in deviceIDs {
+            // Check if device has input channels
+            var inputChannels: UInt32 = 0
+            var channelPropertySize = UInt32(MemoryLayout<UInt32>.size)
+            var channelAddress = AudioObjectPropertyAddress(
+                mSelector: kAudioDevicePropertyStreamConfiguration,
+                mScope: kAudioDevicePropertyScopeInput,
+                mElement: kAudioObjectPropertyElementMain
+            )
+
+            // Get buffer list size
+            AudioObjectGetPropertyDataSize(
+                deviceID,
+                &channelAddress,
+                0,
+                nil,
+                &channelPropertySize
+            )
+
+            if channelPropertySize > 0 {
+                let bufferListPointer = UnsafeMutablePointer<AudioBufferList>.allocate(capacity: 1)
+                defer { bufferListPointer.deallocate() }
+
+                AudioObjectGetPropertyData(
+                    deviceID,
+                    &channelAddress,
+                    0,
+                    nil,
+                    &channelPropertySize,
+                    bufferListPointer
+                )
+
+                let bufferList = bufferListPointer.pointee
+                for i in 0..<Int(bufferList.mNumberBuffers) {
+                    let buffer = bufferList.mBuffers
+                    inputChannels += buffer.mNumberChannels
+                }
+            }
+
+            // Only include devices with input channels
+            if inputChannels > 0 {
+                // Get device name
+                var namePropertySize = UInt32(MemoryLayout<CFString>.size)
+                var nameAddress = AudioObjectPropertyAddress(
+                    mSelector: kAudioDevicePropertyDeviceNameCFString,
+                    mScope: kAudioObjectPropertyScopeGlobal,
+                    mElement: kAudioObjectPropertyElementMain
+                )
+
+                var deviceName: CFString = "" as CFString
+                AudioObjectGetPropertyData(
+                    deviceID,
+                    &nameAddress,
+                    0,
+                    nil,
+                    &namePropertySize,
+                    &deviceName
+                )
+
+                let device = AudioInputDevice(
+                    id: String(deviceID),
+                    name: deviceName as String,
+                    isDefault: deviceID == defaultDeviceID
+                )
+                devices.append(device)
+            }
+        }
+
+        DispatchQueue.main.async {
+            self.availableDevices = devices
+        }
+    }
+
+    /// Load selected device from settings
+    private func loadSelectedDevice() {
+        if let savedDeviceId = UserDefaults.standard.string(forKey: "selected_microphone_id") {
+            selectedDeviceId = savedDeviceId
+        }
+    }
+
+    /// Select a specific microphone
+    func selectDevice(_ device: AudioInputDevice) {
+        selectedDeviceId = device.id
+        UserDefaults.standard.set(device.id, forKey: "selected_microphone_id")
+        print("[AudioRecorder] Selected microphone: \(device.name)")
+    }
+
+    /// Get currently selected device (or default)
+    var currentDevice: AudioInputDevice? {
+        if let selectedId = selectedDeviceId,
+           let device = availableDevices.first(where: { $0.id == selectedId }) {
+            return device
+        }
+        return availableDevices.first(where: { $0.isDefault }) ?? availableDevices.first
     }
     
     var hasSpeechDetected: Bool {

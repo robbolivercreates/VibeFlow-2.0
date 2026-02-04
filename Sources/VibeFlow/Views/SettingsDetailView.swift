@@ -4,7 +4,6 @@ import AVFoundation
 /// Clean settings view with row-based design (inspired by modern macOS apps)
 struct SettingsDetailView: View {
     @StateObject private var settings = SettingsManager.shared
-    @State private var showingWizard = false
     @State private var showingResetConfirmation = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
@@ -35,9 +34,6 @@ struct SettingsDetailView: View {
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
             checkPermissions()
-        }
-        .sheet(isPresented: $showingWizard) {
-            SetupWizardView()
         }
         .alert("Limpar Dados", isPresented: $showingResetConfirmation) {
             Button("Cancelar", role: .cancel) {}
@@ -165,7 +161,10 @@ struct SettingsDetailView: View {
                     title: "Gravar",
                     subtitle: "Segure para gravar"
                 ) {
-                    ShortcutBadge(shortcut: "⌥⌘")
+                    ShortcutEditor(
+                        shortcut: $settings.shortcutRecordKey,
+                        placeholder: "⌥⌘"
+                    )
                 }
 
                 Divider().padding(.leading, 44)
@@ -174,7 +173,10 @@ struct SettingsDetailView: View {
                     title: "Alternar idioma",
                     subtitle: "Cicla entre favoritos"
                 ) {
-                    ShortcutBadge(shortcut: "⌃⌥L")
+                    ShortcutEditor(
+                        shortcut: $settings.cycleLanguageShortcut,
+                        placeholder: "⌃⌥L"
+                    )
                 }
 
                 Divider().padding(.leading, 44)
@@ -183,7 +185,10 @@ struct SettingsDetailView: View {
                     title: "Abrir janela",
                     subtitle: "Mostra/esconde a janela principal"
                 ) {
-                    ShortcutBadge(shortcut: "⌘⇧V")
+                    ShortcutEditor(
+                        shortcut: $settings.shortcutToggleKey,
+                        placeholder: "⌘⇧V"
+                    )
                 }
 
                 Divider().padding(.leading, 44)
@@ -194,6 +199,19 @@ struct SettingsDetailView: View {
                 ) {
                     ShortcutBadge(shortcut: "⌘,")
                 }
+
+                Divider().padding(.leading, 44)
+
+                // Reset shortcuts hint
+                HStack {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                    Text("Clique em um atalho para editar. Pressione as teclas desejadas.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
             }
         }
     }
@@ -244,10 +262,11 @@ struct SettingsDetailView: View {
             VStack(spacing: 0) {
                 SettingsRow(
                     title: "Setup Wizard",
-                    subtitle: "Reconfigurar o VibeFlow"
+                    subtitle: "Reconfigurar o VibeFlow do inicio"
                 ) {
-                    Button("Abrir") {
-                        showingWizard = true
+                    Button("Abrir Wizard") {
+                        // Use notification to open wizard window properly
+                        NotificationCenter.default.post(name: .openSetupWizard, object: nil)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -265,6 +284,21 @@ struct SettingsDetailView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     .foregroundStyle(.red)
+                }
+
+                Divider().padding(.leading, 44)
+
+                SettingsRow(
+                    title: "Resetar atalhos",
+                    subtitle: "Restaura atalhos para o padrao"
+                ) {
+                    Button("Resetar") {
+                        settings.shortcutRecordKey = "⌥⌘"
+                        settings.shortcutToggleKey = "⌘⇧V"
+                        settings.cycleLanguageShortcut = "⌃⌥L"
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
 
                 Divider().padding(.leading, 44)
@@ -382,6 +416,87 @@ struct ShortcutBadge: View {
             .padding(.vertical, 5)
             .background(Color.purple.opacity(0.1))
             .cornerRadius(6)
+    }
+}
+
+// MARK: - Shortcut Editor
+
+struct ShortcutEditor: View {
+    @Binding var shortcut: String
+    let placeholder: String
+
+    @State private var isEditing = false
+    @State private var tempShortcut = ""
+
+    var body: some View {
+        Button(action: {
+            isEditing = true
+            tempShortcut = ""
+        }) {
+            HStack(spacing: 6) {
+                Text(isEditing ? (tempShortcut.isEmpty ? "..." : tempShortcut) : shortcut)
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
+                    .foregroundStyle(isEditing ? .orange : .purple)
+
+                if !isEditing {
+                    Image(systemName: "pencil")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 5)
+            .background(isEditing ? Color.orange.opacity(0.15) : Color.purple.opacity(0.1))
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isEditing ? Color.orange : Color.clear, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .onKeyPress { keyPress in
+            guard isEditing else { return .ignored }
+
+            var parts: [String] = []
+
+            // Build modifier string
+            if keyPress.modifiers.contains(.control) {
+                parts.append("⌃")
+            }
+            if keyPress.modifiers.contains(.option) {
+                parts.append("⌥")
+            }
+            if keyPress.modifiers.contains(.shift) {
+                parts.append("⇧")
+            }
+            if keyPress.modifiers.contains(.command) {
+                parts.append("⌘")
+            }
+
+            // Add key character if it's not just modifiers
+            let char = keyPress.characters.uppercased()
+            if !char.isEmpty && char != " " {
+                parts.append(char)
+            }
+
+            let newShortcut = parts.joined()
+
+            if !newShortcut.isEmpty && parts.count >= 2 {
+                // Valid shortcut (at least one modifier + one key)
+                shortcut = newShortcut
+                isEditing = false
+                return .handled
+            } else if !parts.isEmpty {
+                // Show partial shortcut while typing
+                tempShortcut = newShortcut
+            }
+
+            return .handled
+        }
+        .focusable(isEditing)
+        .onAppear {
+            tempShortcut = shortcut
+        }
     }
 }
 

@@ -57,10 +57,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Criar janela flutuante
         let contentView = ContentView()
             .environmentObject(viewModel)
-        
-        // Window size: max expanded width (440) + padding, height for compact overlay
+
+        // Window size: max expanded width (460) + padding, height for compact overlay
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 80),
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 100),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -71,8 +71,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window?.backgroundColor = .clear
         window?.isOpaque = false
-        window?.hasShadow = false // Shadow is handled by SwiftUI
-        window?.center()
+        window?.hasShadow = false // Clean look, no window shadow
+        window?.ignoresMouseEvents = false
+        centerWindow()
         window?.orderOut(nil)
         
         // Configurar atalhos globais
@@ -240,6 +241,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         menu.addItem(NSMenuItem.separator())
 
+        // Microphone selection submenu
+        let micMenu = NSMenu()
+        if let recorder = viewModel?.audioRecorder {
+            recorder.refreshDevices()
+            let devices = recorder.availableDevices
+            let currentDevice = recorder.currentDevice
+
+            if devices.isEmpty {
+                let noMicItem = NSMenuItem(title: "Nenhum microfone encontrado", action: nil, keyEquivalent: "")
+                noMicItem.isEnabled = false
+                micMenu.addItem(noMicItem)
+            } else {
+                for device in devices {
+                    let item = NSMenuItem(
+                        title: device.name + (device.isDefault ? " (Padrão)" : ""),
+                        action: #selector(selectMicrophone(_:)),
+                        keyEquivalent: ""
+                    )
+                    item.target = self
+                    item.representedObject = device
+                    if device.id == currentDevice?.id {
+                        item.state = .on
+                    }
+                    micMenu.addItem(item)
+                }
+            }
+        }
+        let micItem = NSMenuItem(title: "Microfone", action: nil, keyEquivalent: "")
+        micItem.submenu = micMenu
+        menu.addItem(micItem)
+
+        menu.addItem(NSMenuItem.separator())
+
         // Main Window (VibeFlow Central)
         let mainWindowItem = NSMenuItem(title: "Abrir VibeFlow", action: #selector(showMainWindow), keyEquivalent: "")
         mainWindowItem.target = self
@@ -272,6 +306,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.outputLanguage = language
         updateMenu()
     }
+
+    @objc func selectMicrophone(_ sender: NSMenuItem) {
+        guard let device = sender.representedObject as? AudioInputDevice else { return }
+        viewModel?.audioRecorder.selectDevice(device)
+        updateMenu()
+    }
     
     // MARK: - Window Management
     
@@ -291,9 +331,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let screen = NSScreen.main {
             let screenRect = screen.visibleFrame
             let windowRect = window.frame
+            // Center horizontally
             let x = screenRect.midX - windowRect.width / 2
-            // Posicionar na parte inferior da tela (15% acima da base)
-            let y = screenRect.minY + (screenRect.height * 0.15)
+            // Position in lower portion of screen (25% from bottom)
+            let y = screenRect.minY + (screenRect.height * 0.25)
             window.setFrameOrigin(NSPoint(x: x, y: y))
         }
     }
@@ -447,31 +488,70 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func handleGlobalKeyEvent(_ event: NSEvent) {
         let modifiers = event.modifierFlags
         let keyCode = event.keyCode
-        
-        // Debug logging
-        // print("[KeyEvent] modifiers: \(modifiers.rawValue), keyCode: \(keyCode)")
-        
-        // Cmd+Shift+V (keyCode 9 = v)
-        if modifiers.contains([.command, .shift]) && keyCode == 9 {
+
+        // Get key character
+        let keyChar = keyCodeToChar(keyCode)
+
+        // Debug logging (uncomment to debug)
+        // print("[KeyEvent] modifiers: \(modifiers.rawValue), keyCode: \(keyCode), char: \(keyChar)")
+
+        // Toggle window shortcut (default: ⌘⇧V)
+        if matchesShortcut(settings.shortcutToggleKey, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.toggleWindow()
             }
             return
         }
-        
-        // Control+Option+L (keyCode 37 = l)
-        // Note: Check for control + option specifically
-        let hasControl = modifiers.contains(.control)
-        let hasOption = modifiers.contains(.option)
-        let isLKey = (keyCode == 37) || (keyCode == 32) // 37 = L, 32 might be L on some layouts
-        
-        if hasControl && hasOption && isLKey {
+
+        // Language cycle shortcut (default: ⌃⌥L)
+        if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 print("[VibeFlow] Language shortcut detected")
                 self?.cycleLanguage()
             }
             return
         }
+    }
+
+    /// Convert key code to character
+    private func keyCodeToChar(_ keyCode: UInt16) -> String {
+        let keyMap: [UInt16: String] = [
+            0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
+            8: "C", 9: "V", 10: "B", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
+            16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
+            24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0", 30: "]", 31: "O",
+            32: "U", 33: "[", 34: "I", 35: "P", 37: "L", 38: "J", 39: "'", 40: "K",
+            41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: "."
+        ]
+        return keyMap[keyCode] ?? ""
+    }
+
+    /// Check if event matches shortcut string
+    private func matchesShortcut(_ shortcut: String, modifiers: NSEvent.ModifierFlags, keyChar: String) -> Bool {
+        // Parse expected modifiers from shortcut string
+        let expectControl = shortcut.contains("⌃")
+        let expectOption = shortcut.contains("⌥")
+        let expectShift = shortcut.contains("⇧")
+        let expectCommand = shortcut.contains("⌘")
+
+        // Check modifiers match
+        let hasControl = modifiers.contains(.control)
+        let hasOption = modifiers.contains(.option)
+        let hasShift = modifiers.contains(.shift)
+        let hasCommand = modifiers.contains(.command)
+
+        guard expectControl == hasControl,
+              expectOption == hasOption,
+              expectShift == hasShift,
+              expectCommand == hasCommand else {
+            return false
+        }
+
+        // Extract key from shortcut (last character that's not a modifier)
+        let modifierChars = Set(["⌃", "⌥", "⇧", "⌘"])
+        let expectedKey = shortcut.filter { !modifierChars.contains(String($0)) }.uppercased()
+
+        return keyChar.uppercased() == expectedKey
     }
     
     @objc func cycleLanguage() {
@@ -542,9 +622,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func handleFlagsChanged(_ event: NSEvent) {
-        let optionAndCommandPressed = event.modifierFlags.contains([.option, .command])
-        
-        if optionAndCommandPressed && !isHoldToTalkActive {
+        // Parse the record shortcut to get required modifiers
+        let recordShortcut = settings.shortcutRecordKey
+        let requireControl = recordShortcut.contains("⌃")
+        let requireOption = recordShortcut.contains("⌥")
+        let requireShift = recordShortcut.contains("⇧")
+        let requireCommand = recordShortcut.contains("⌘")
+
+        // Check if required modifiers are pressed
+        let hasControl = event.modifierFlags.contains(.control)
+        let hasOption = event.modifierFlags.contains(.option)
+        let hasShift = event.modifierFlags.contains(.shift)
+        let hasCommand = event.modifierFlags.contains(.command)
+
+        let shortcutPressed = (requireControl == hasControl) &&
+                              (requireOption == hasOption) &&
+                              (requireShift == hasShift) &&
+                              (requireCommand == hasCommand) &&
+                              (requireControl || requireOption || requireShift || requireCommand)
+
+        if shortcutPressed && !isHoldToTalkActive {
             // Iniciar gravação
             isHoldToTalkActive = true
             
@@ -570,7 +667,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
             
-        } else if !optionAndCommandPressed && isHoldToTalkActive {
+        } else if !shortcutPressed && isHoldToTalkActive {
             // Parar gravação
             isHoldToTalkActive = false
             
@@ -635,6 +732,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(showHistory),
             name: NSNotification.Name("showHistory"),
+            object: nil
+        )
+
+        // Observar pedido para abrir Setup Wizard (from Settings)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(resetAndShowWizard),
+            name: .openSetupWizard,
             object: nil
         )
     }

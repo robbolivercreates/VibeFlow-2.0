@@ -46,7 +46,11 @@ struct ContentView: View {
     @EnvironmentObject var viewModel: VibeFlowViewModel
 
     var body: some View {
-        ModernVoiceOverlay(viewModel: viewModel)
+        GeometryReader { geometry in
+            ModernVoiceOverlay(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .position(x: geometry.size.width / 2, y: geometry.size.height / 2)
+        }
     }
 }
 
@@ -134,20 +138,24 @@ struct ModernVoiceOverlay: View {
             height: containerHeight
         )
         .background(
-            ZStack {
-                // Glassmorphism background
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(isExpanded ? VoiceColors.background : VoiceColors.backgroundIdle)
-            }
+            // Clean dark background with no glassmorphism artifacts
+            RoundedRectangle(cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.12, green: 0.12, blue: 0.15),
+                            Color(red: 0.08, green: 0.08, blue: 0.10)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(VoiceColors.border, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.4), radius: 24, x: 0, y: 8)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
         .animation(.spring(response: 0.45, dampingFraction: 0.78), value: isExpanded)
         .animation(.spring(response: 0.45, dampingFraction: 0.78), value: currentState)
     }

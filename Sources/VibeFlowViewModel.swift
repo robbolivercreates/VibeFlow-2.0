@@ -13,7 +13,7 @@ class VibeFlowViewModel: ObservableObject {
 
     private let settings = SettingsManager.shared
     private let snippets = SnippetsManager.shared
-    private let audioRecorder = AudioRecorder()
+    let audioRecorder = AudioRecorder()
     private var cancellables = Set<AnyCancellable>()
 
     // Command mode: stores selected text before recording

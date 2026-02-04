@@ -222,4 +222,5 @@ extension Notification.Name {
     static let showWizardAfterActivation = Notification.Name("showWizardAfterActivation")
     static let shortcutChanged = Notification.Name("shortcutChanged")
     static let languageChanged = Notification.Name("languageChanged")
+    static let openSetupWizard = Notification.Name("openSetupWizard")
 }
