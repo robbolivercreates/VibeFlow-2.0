@@ -88,7 +88,10 @@ struct StyleView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.secondary.opacity(0.15), lineWidth: 1)
+                .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.secondary.opacity(0.15), lineWidth: 1)
+            )
         )
     }
 
@@ -101,19 +104,19 @@ struct StyleView: View {
                 .foregroundStyle(.secondary)
 
             HStack(alignment: .top, spacing: 24) {
-                FeatureCard(
+                FeatureCard2(
                     icon: "waveform",
                     title: "1. Voce Fala",
                     description: "Faca transcricoes normalmente usando o VibeFlow."
                 )
 
-                FeatureCard(
+                FeatureCard2(
                     icon: "brain",
                     title: "2. IA Aprende",
                     description: "Textos com 50+ caracteres sao salvos como amostras."
                 )
 
-                FeatureCard(
+                FeatureCard2(
                     icon: "text.quote",
                     title: "3. Personalizacao",
                     description: "Futuras transcricoes imitam seu estilo."
@@ -158,7 +161,7 @@ struct StyleView: View {
         VStack(spacing: 16) {
             Image(systemName: "text.badge.plus")
                 .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
 
             VStack(spacing: 4) {
                 Text("Nenhuma amostra ainda")
@@ -167,7 +170,7 @@ struct StyleView: View {
 
                 Text("Faca algumas transcricoes para o VibeFlow aprender seu estilo")
                     .font(.system(size: 13))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -175,7 +178,10 @@ struct StyleView: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.secondary.opacity(0.05))
-                .strokeBorder(Color.secondary.opacity(0.1), lineWidth: 1)
+                .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+            )
         )
     }
 
@@ -202,7 +208,7 @@ struct StyleView: View {
 
 // MARK: - Feature Card
 
-struct FeatureCard: View {
+struct FeatureCard2: View {
     let icon: String
     let title: String
     let description: String
@@ -281,7 +287,7 @@ struct StyleModeCard: View {
                     Button(action: { withAnimation { isExpanded.toggle() } }) {
                         Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                             .font(.system(size: 12))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -302,7 +308,7 @@ struct StyleModeCard: View {
 
                             Text(formatDate(sample.timestamp))
                                 .font(.system(size: 10))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                         }
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -332,7 +338,10 @@ struct StyleModeCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(Color.secondary.opacity(0.1), lineWidth: 1)
+                .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+            )
         )
     }
 

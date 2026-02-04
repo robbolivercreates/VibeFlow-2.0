@@ -299,7 +299,7 @@ struct LanguageSettingsSection: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Mostrar favoritos selecionados
-                    FlowLayout(spacing: 8) {
+                    FlowLayout2(spacing: 8) {
                         ForEach(settings.favoriteLanguages) { language in
                             FavoriteLanguageBadge(
                                 language: language,
@@ -325,13 +325,13 @@ struct LanguageSettingsSection: View {
             }
         }
         .sheet(isPresented: $showingLanguageSelector) {
-            LanguageSelectorView()
+            LanguageSelectorView2()
         }
     }
 }
 
 // MARK: - Language Selector View (Dropdown style)
-struct LanguageSelectorView: View {
+struct LanguageSelectorView2: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var settings = SettingsManager.shared
     @State private var searchText = ""
@@ -415,7 +415,7 @@ struct LanguageSelectorView: View {
             
             // Lista de todos os idiomas
             List(filteredLanguages) { language in
-                LanguageRow(
+                LanguageRow2(
                     language: language,
                     isSelected: settings.outputLanguage == language,
                     isFavorite: settings.favoriteLanguages.contains(language)
@@ -460,7 +460,7 @@ struct LanguageSelectorView: View {
 }
 
 // MARK: - Language Row
-struct LanguageRow: View {
+struct LanguageRow2: View {
     let language: SpeechLanguage
     let isSelected: Bool
     let isFavorite: Bool
@@ -881,7 +881,7 @@ struct FavoriteLanguageBadge: View {
 }
 
 // MARK: - Flow Layout
-struct FlowLayout: Layout {
+struct FlowLayout2: Layout {
     var spacing: CGFloat = 8
     
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

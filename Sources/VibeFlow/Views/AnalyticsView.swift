@@ -26,14 +26,14 @@ struct AnalyticsView: View {
                 VStack(spacing: 20) {
                     // Cards principais
                     HStack(spacing: 16) {
-                        StatCard(
+                        StatCard2(
                             title: "Tempo Economizado",
                             value: analytics.getFormattedTimeSaved(),
                             icon: "clock.arrow.circlepath",
                             color: .green
                         )
                         
-                        StatCard(
+                        StatCard2(
                             title: "Transcrições",
                             value: "\(analytics.totalTranscriptions)",
                             icon: "mic.fill",
@@ -43,7 +43,7 @@ struct AnalyticsView: View {
                     .padding(.horizontal)
                     
                     // Caracteres digitados
-                    StatCard(
+                    StatCard2(
                         title: "Caracteres Digitados",
                         value: "\(analytics.totalCharacters)",
                         icon: "textformat",
@@ -92,7 +92,7 @@ struct AnalyticsView: View {
 }
 
 // MARK: - Stat Card
-struct StatCard: View {
+struct StatCard2: View {
     let title: String
     let value: String
     let icon: String

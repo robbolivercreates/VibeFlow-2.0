@@ -74,7 +74,7 @@ struct ModesView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("Criatividade")
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
 
                     HStack(spacing: 4) {
                         ForEach(0..<5) { i in
@@ -92,7 +92,10 @@ struct ModesView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(settings.selectedMode.color.opacity(0.3), lineWidth: 1)
+                    .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(settings.selectedMode.color.opacity(0.3), lineWidth: 1)
+                )
             )
         }
     }
@@ -116,7 +119,7 @@ struct ModesView: View {
 
             VStack(spacing: 8) {
                 ForEach(TranscriptionMode.allCases, id: \.self) { mode in
-                    ModeCard(
+                    ModeCard2(
                         mode: mode,
                         isSelected: mode == settings.selectedMode,
                         usageCount: analytics.modeUsage[mode.rawValue] ?? 0,
@@ -153,7 +156,7 @@ struct ModesView: View {
 
 // MARK: - Mode Card
 
-struct ModeCard: View {
+struct ModeCard2: View {
     let mode: TranscriptionMode
     let isSelected: Bool
     let usageCount: Int
@@ -210,7 +213,7 @@ struct ModeCard: View {
                             .foregroundStyle(.secondary)
                         Text("usos")
                             .font(.system(size: 10))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                     }
                 }
 
@@ -218,7 +221,7 @@ struct ModeCard: View {
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -233,7 +236,7 @@ struct ModeCard: View {
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(.secondary)
 
-                    Text(mode.systemPrompt)
+                    Text(mode.systemPrompt(outputLanguage: .english, clarifyText: false))
                         .font(.system(size: 12, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .lineLimit(6)
@@ -243,7 +246,7 @@ struct ModeCard: View {
                         HStack(spacing: 4) {
                             Text("Temperatura:")
                                 .font(.system(size: 11))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary)
                             Text(String(format: "%.1f", mode.temperature))
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                         }
@@ -270,7 +273,7 @@ struct ModeCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .strokeBorder(isSelected ? mode.color.opacity(0.25) : Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(isSelected ? mode.color.opacity(0.25) : Color.secondary.opacity(0.1), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)

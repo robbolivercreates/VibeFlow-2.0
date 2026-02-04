@@ -107,7 +107,7 @@ struct MainWindowView: View {
                     // Version
                     Text("Versao 2.1.0")
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 12)
                 }

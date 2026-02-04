@@ -88,7 +88,7 @@ struct ModernVoiceOverlay: View {
             // Main container
             mainContainer
         }
-        .onChange(of: viewModel.isRecording) { _, isRecording in
+        .onChange(of: viewModel.isRecording) { isRecording in
             withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                 isExpanded = isRecording
             }
@@ -99,7 +99,7 @@ struct ModernVoiceOverlay: View {
                 glowOpacity = isRecording ? 0.5 : 0
             }
         }
-        .onChange(of: viewModel.isProcessing) { _, isProcessing in
+        .onChange(of: viewModel.isProcessing) { isProcessing in
             if isProcessing {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     isExpanded = false
@@ -410,7 +410,7 @@ struct ModePill: View {
 }
 
 // MARK: - Language Selector (Sheet)
-struct LanguageSelectorView: View {
+struct LanguageSelectorView3: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var settings = SettingsManager.shared
 

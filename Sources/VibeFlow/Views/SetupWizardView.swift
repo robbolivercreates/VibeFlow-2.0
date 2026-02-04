@@ -214,10 +214,10 @@ struct SetupWizardView: View {
 
             // Features grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                FeatureCard(icon: "mic.fill", title: "Fale Naturalmente", description: "Use sua voz para escrever codigo, emails e textos")
-                FeatureCard(icon: "bolt.fill", title: "Ultra Rapido", description: "Transcricao instantanea com Gemini 2.0 Flash")
-                FeatureCard(icon: "keyboard", title: "Atalho Simples", description: "Segure ⌥⌘ para gravar, solte para transcrever")
-                FeatureCard(icon: "doc.on.clipboard", title: "Cola Automatico", description: "O texto e colado direto no app ativo")
+                FeatureCard3(icon: "mic.fill", title: "Fale Naturalmente", description: "Use sua voz para escrever codigo, emails e textos")
+                FeatureCard3(icon: "bolt.fill", title: "Ultra Rapido", description: "Transcricao instantanea com Gemini 2.0 Flash")
+                FeatureCard3(icon: "keyboard", title: "Atalho Simples", description: "Segure ⌥⌘ para gravar, solte para transcrever")
+                FeatureCard3(icon: "doc.on.clipboard", title: "Cola Automatico", description: "O texto e colado direto no app ativo")
             }
             .padding(.top, 16)
         }
@@ -246,7 +246,7 @@ struct SetupWizardView: View {
                     TextField("Cole sua API key aqui (Cmd+V)", text: $apiKeyInput)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 14, design: .monospaced))
-                        .onChange(of: apiKeyInput) { _, newValue in
+                        .onChange(of: apiKeyInput) { newValue in
                             keyValidationResult = nil
                             keyValidationError = nil
                             settings.apiKey = newValue
@@ -402,6 +402,21 @@ struct SetupWizardView: View {
                     Text("1. Clique em 'Abrir Preferencias'\n2. Clique no cadeado para desbloquear\n3. Marque a caixa ao lado de 'VibeFlow'\n4. Volte aqui - a permissao sera detectada automaticamente")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
+                    
+                    // Botões de ação
+                    HStack(spacing: 12) {
+                        Button("Verificar Novamente") {
+                            checkPermissions()
+                        }
+                        .buttonStyle(.bordered)
+                        
+                        Button("Pular (sem colar automatico)") {
+                            accessibilityPermission = true // Forçar como concedida
+                        }
+                        .buttonStyle(.borderless)
+                        .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 8)
                 }
                 .padding()
                 .background(Color.secondary.opacity(0.05))
@@ -951,7 +966,7 @@ struct StepIndicator: View {
     }
 }
 
-struct FeatureCard: View {
+struct FeatureCard3: View {
     let icon: String
     let title: String
     let description: String

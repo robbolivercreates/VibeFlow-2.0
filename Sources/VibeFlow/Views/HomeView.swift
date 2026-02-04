@@ -53,7 +53,7 @@ struct HomeView: View {
                 // Shortcut hint
                 Text("Segure ⌥⌘ para gravar")
                     .font(.system(size: 12))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
                     .background(Color.secondary.opacity(0.1))
@@ -179,7 +179,7 @@ struct HomeView: View {
         VStack(spacing: 16) {
             Image(systemName: "waveform.badge.plus")
                 .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
 
             VStack(spacing: 4) {
                 Text("Nenhuma transcricao ainda")
@@ -188,7 +188,7 @@ struct HomeView: View {
 
                 Text("Segure ⌥⌘ para comecar a gravar")
                     .font(.system(size: 13))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -196,7 +196,10 @@ struct HomeView: View {
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.secondary.opacity(0.05))
-                .strokeBorder(Color.secondary.opacity(0.1), lineWidth: 1)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                )
         )
     }
 
@@ -239,7 +242,7 @@ struct StatCard: View {
 
                 Text(subtitle)
                     .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(16)
@@ -250,7 +253,10 @@ struct StatCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(color.opacity(0.2), lineWidth: 1)
+                .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(color.opacity(0.2), lineWidth: 1)
+            )
         )
     }
 }
@@ -282,11 +288,11 @@ struct RecentTranscriptionRow: View {
                         .foregroundStyle(.secondary)
 
                     Text("•")
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
 
                     Text(formatDate(item.timestamp))
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
                 }
             }
 

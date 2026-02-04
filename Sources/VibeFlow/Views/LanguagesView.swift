@@ -79,7 +79,7 @@ struct LanguagesView: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("Atalho para alternar")
                         .font(.system(size: 11))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
 
                     Text("⌃⌥L")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
@@ -97,7 +97,10 @@ struct LanguagesView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(Color.purple.opacity(0.3), lineWidth: 1)
+                    .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                )
             )
         }
     }
@@ -115,12 +118,12 @@ struct LanguagesView: View {
 
                 Text("\(settings.favoriteLanguages.count) idiomas")
                     .font(.system(size: 12))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
 
             Text("Use ⌃⌥L para alternar rapidamente entre seus idiomas favoritos.")
                 .font(.system(size: 12))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
 
             // Favorites list
             FlowLayout(spacing: 8) {
@@ -156,7 +159,7 @@ struct LanguagesView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "magnifyingglass")
                         .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
 
                     TextField("Buscar...", text: $searchText)
                         .textFieldStyle(.plain)
@@ -251,7 +254,10 @@ struct FavoriteLanguageChip: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .strokeBorder(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
+                .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
+            )
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -284,7 +290,7 @@ struct LanguageRow: View {
 
                 Text(language.rawValue.uppercased())
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
@@ -293,7 +299,7 @@ struct LanguageRow: View {
             Button(action: onToggleFavorite) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
                     .font(.system(size: 12))
-                    .foregroundStyle(isFavorite ? .yellow : .tertiary)
+                    .foregroundStyle(isFavorite ? .yellow : .secondary)
             }
             .buttonStyle(.plain)
             .opacity(isHovered || isFavorite ? 1 : 0)

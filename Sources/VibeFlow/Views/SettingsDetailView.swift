@@ -354,7 +354,10 @@ struct SettingsSection<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.secondary.opacity(0.1), lineWidth: 1)
+                    .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+            )
             )
         }
     }
@@ -454,49 +457,117 @@ struct ShortcutEditor: View {
             )
         }
         .buttonStyle(.plain)
-        .onKeyPress { keyPress in
-            guard isEditing else { return .ignored }
+        .background(
+            ShortcutCaptureView(isActive: $isEditing, shortcut: $shortcut, tempShortcut: $tempShortcut)
+                .frame(width: 0, height: 0)
+        )
+        .onAppear {
+            tempShortcut = shortcut
+        }
+    }
+}
+
+// MARK: - Shortcut Capture View (NSViewRepresentable for macOS 13 compatibility)
+
+struct ShortcutCaptureView: NSViewRepresentable {
+    @Binding var isActive: Bool
+    @Binding var shortcut: String
+    @Binding var tempShortcut: String
+
+    func makeNSView(context: Context) -> ShortcutCaptureNSView {
+        let view = ShortcutCaptureNSView()
+        view.delegate = context.coordinator
+        return view
+    }
+
+    func updateNSView(_ nsView: ShortcutCaptureNSView, context: Context) {
+        nsView.isActive = isActive
+        if isActive {
+            nsView.window?.makeFirstResponder(nsView)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject {
+        let parent: ShortcutCaptureView
+
+        init(_ parent: ShortcutCaptureView) {
+            self.parent = parent
+        }
+
+        func handleKeyEvent(_ event: NSEvent) -> Bool {
+            guard parent.isActive else { return false }
 
             var parts: [String] = []
 
             // Build modifier string
-            if keyPress.modifiers.contains(.control) {
+            if event.modifierFlags.contains(.control) {
                 parts.append("⌃")
             }
-            if keyPress.modifiers.contains(.option) {
+            if event.modifierFlags.contains(.option) {
                 parts.append("⌥")
             }
-            if keyPress.modifiers.contains(.shift) {
+            if event.modifierFlags.contains(.shift) {
                 parts.append("⇧")
             }
-            if keyPress.modifiers.contains(.command) {
+            if event.modifierFlags.contains(.command) {
                 parts.append("⌘")
             }
 
             // Add key character if it's not just modifiers
-            let char = keyPress.characters.uppercased()
-            if !char.isEmpty && char != " " {
-                parts.append(char)
+            if let characters = event.charactersIgnoringModifiers?.uppercased(),
+               !characters.isEmpty && characters != " " {
+                // Filter out pure modifier keys
+                let key = characters
+                if !key.isEmpty && key != "\t" && key != "\r" && key != "\n" {
+                    parts.append(key)
+                }
             }
 
             let newShortcut = parts.joined()
 
             if !newShortcut.isEmpty && parts.count >= 2 {
                 // Valid shortcut (at least one modifier + one key)
-                shortcut = newShortcut
-                isEditing = false
-                return .handled
+                parent.shortcut = newShortcut
+                parent.isActive = false
+                return true
             } else if !parts.isEmpty {
                 // Show partial shortcut while typing
-                tempShortcut = newShortcut
+                parent.tempShortcut = newShortcut
+                return true
             }
 
-            return .handled
+            return true
         }
-        .focusable(isEditing)
-        .onAppear {
-            tempShortcut = shortcut
+    }
+}
+
+// MARK: - Shortcut Capture NSView
+
+class ShortcutCaptureNSView: NSView {
+    var isActive: Bool = false
+    weak var delegate: ShortcutCaptureView.Coordinator?
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        if isActive, let delegate = delegate {
+            if delegate.handleKeyEvent(event) {
+                return
+            }
         }
+        super.keyDown(with: event)
+    }
+
+    override func flagsChanged(with event: NSEvent) {
+        // Track modifier key changes
+        if isActive, let delegate = delegate {
+            _ = delegate.handleKeyEvent(event)
+        }
+        super.flagsChanged(with: event)
     }
 }
 
