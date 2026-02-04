@@ -212,6 +212,9 @@ class VibeFlowViewModel: ObservableObject {
                         // Registrar analytics
                         AnalyticsManager.shared.recordTranscription(characters: finalText.count)
 
+                        // Learn from successful transcription for style personalization
+                        WritingStyleManager.shared.learnFromTranscription(finalText, mode: self.selectedMode)
+
                         // Notificar AppDelegate sobre transcrição completa
                         NotificationCenter.default.post(
                             name: .transcriptionComplete,

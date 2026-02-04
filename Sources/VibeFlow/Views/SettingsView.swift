@@ -90,9 +90,33 @@ struct SettingsView: View {
                 Toggle("Salvar histórico", isOn: $settings.enableHistory)
                 Toggle("Efeitos sonoros", isOn: $settings.enableSounds)
             }
+
+            Section("Personalizacao") {
+                Toggle("Aprender meu estilo de escrita", isOn: $settings.enableStyleLearning)
+
+                Text("VibeFlow aprende seu estilo com base nas transcricoes anteriores para personalizar os resultados.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if WritingStyleManager.shared.totalSamples > 0 {
+                    HStack {
+                        Text("\(WritingStyleManager.shared.totalSamples) amostras salvas")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+
+                        Spacer()
+
+                        Button("Limpar") {
+                            WritingStyleManager.shared.clearAllSamples()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+            }
         }
     }
-    
+
     private var apiTab: some View {
         Form {
             Section("Google Gemini API") {

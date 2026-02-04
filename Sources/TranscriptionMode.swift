@@ -251,6 +251,11 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             """
         }
         
+        // Adicionar aprendizado de estilo (exceto para command mode)
+        if self != .command, let stylePrompt = WritingStyleManager.shared.getStylePrompt(for: self) {
+            finalPrompt += stylePrompt
+        }
+
         // Adicionar idioma de saída
         finalPrompt += """
 
