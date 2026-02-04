@@ -665,7 +665,7 @@ struct SettingsCard<Content: View>: View {
                 .fill(Color(.controlBackgroundColor).opacity(0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
         )
     }
@@ -765,7 +765,7 @@ struct ShortcutKey: View {
                     .fill(Color(.controlBackgroundColor))
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                     )
             )
     }

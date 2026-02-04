@@ -91,7 +91,7 @@ struct SnippetRow: View {
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 4)
-                            .background(Color.secondary.opacity(0.1))
+                            .background(Color(nsColor: .controlBackgroundColor))
                             .cornerRadius(3)
                     }
                 }

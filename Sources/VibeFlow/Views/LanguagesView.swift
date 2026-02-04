@@ -168,7 +168,7 @@ struct LanguagesView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.secondary.opacity(0.1))
+                .background(Color(nsColor: .controlBackgroundColor))
                 .cornerRadius(6)
             }
 
@@ -250,7 +250,7 @@ struct FavoriteLanguageChip: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.purple.opacity(0.15) : Color.secondary.opacity(0.08))
+                .fill(isSelected ? Color.purple.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
@@ -308,7 +308,7 @@ struct LanguageRow: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.purple.opacity(0.1) : (isHovered ? Color.secondary.opacity(0.06) : Color.clear))
+                .fill(isSelected ? Color.purple.opacity(0.1) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color.clear))
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)

@@ -78,7 +78,7 @@ struct AnalyticsView: View {
                         Spacer()
                     }
                     .padding()
-                    .background(Color.secondary.opacity(0.05))
+                    .background(Color(nsColor: .controlBackgroundColor))
                     .cornerRadius(12)
                     .padding(.horizontal)
                     
@@ -120,7 +120,7 @@ struct StatCard2: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
-        .background(Color.secondary.opacity(0.05))
+        .background(Color(nsColor: .controlBackgroundColor))
         .cornerRadius(16)
     }
 }
@@ -152,7 +152,7 @@ struct MonthlyChart: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding()
-            .background(Color.secondary.opacity(0.05))
+            .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(12)
         }
     }

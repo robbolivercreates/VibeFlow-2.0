@@ -69,7 +69,7 @@ struct HistoryView: View {
                 }
             }
             .padding(8)
-            .background(Color.secondary.opacity(0.1))
+            .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -130,7 +130,7 @@ struct HistoryView: View {
         VStack(spacing: 16) {
             Image(systemName: "clock.arrow.circlepath")
                 .font(.system(size: 50))
-                .foregroundStyle(.secondary.opacity(0.5))
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
             
             Text("Nenhum item no histórico")
                 .font(.headline)
@@ -138,7 +138,7 @@ struct HistoryView: View {
             
             Text("Suas transcrições aparecerão aqui")
                 .font(.caption)
-                .foregroundStyle(.secondary.opacity(0.7))
+                .foregroundStyle(Color(nsColor: .tertiaryLabelColor))
         }
         .frame(maxHeight: .infinity)
     }
@@ -196,7 +196,7 @@ struct HistoryView: View {
             }
             .padding()
         }
-        .background(Color.secondary.opacity(0.05))
+        .background(Color(nsColor: .controlBackgroundColor))
     }
 }
 

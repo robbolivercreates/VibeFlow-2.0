@@ -441,7 +441,7 @@ struct LanguageSelectorView3: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(settings.outputLanguage == language
                                           ? VoiceColors.languageColor(for: language.rawValue)
-                                          : Color.secondary.opacity(0.1))
+                                          : Color(nsColor: .controlBackgroundColor))
                             )
                         }
                         .buttonStyle(.plain)

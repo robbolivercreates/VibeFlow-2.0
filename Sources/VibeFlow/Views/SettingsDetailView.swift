@@ -356,7 +356,7 @@ struct SettingsSection<Content: View>: View {
                 RoundedRectangle(cornerRadius: 10)
                     .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             )
             )
         }

@@ -56,7 +56,7 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color.secondary.opacity(0.1))
+                    .background(Color(nsColor: .controlBackgroundColor))
                     .cornerRadius(4)
             }
         }
@@ -195,10 +195,10 @@ struct HomeView: View {
         .padding(.vertical, 40)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.secondary.opacity(0.05))
+                .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
                 )
         )
     }
@@ -312,7 +312,7 @@ struct RecentTranscriptionRow: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isHovered ? Color.secondary.opacity(0.08) : Color.secondary.opacity(0.04))
+                .fill(isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

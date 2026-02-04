@@ -90,7 +90,7 @@ struct StyleView: View {
             RoundedRectangle(cornerRadius: 12)
                 .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.secondary.opacity(0.15), lineWidth: 1)
+                    .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
             )
         )
     }
@@ -177,10 +177,10 @@ struct StyleView: View {
         .padding(.vertical, 40)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.secondary.opacity(0.05))
+                .fill(Color(nsColor: .controlBackgroundColor))
                 .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             )
         )
     }
@@ -279,7 +279,7 @@ struct StyleModeCard: View {
                     HStack(spacing: 2) {
                         ForEach(0..<5) { i in
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(i < sampleCount ? mode.color : Color.secondary.opacity(0.2))
+                                .fill(i < sampleCount ? mode.color : Color(nsColor: .controlColor).opacity(0.1))
                                 .frame(width: 16, height: 4)
                         }
                     }
@@ -312,7 +312,7 @@ struct StyleModeCard: View {
                         }
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.secondary.opacity(0.05))
+                        .background(Color(nsColor: .controlBackgroundColor))
                         .cornerRadius(6)
                     }
 
@@ -340,7 +340,7 @@ struct StyleModeCard: View {
             RoundedRectangle(cornerRadius: 10)
                 .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.secondary.opacity(0.1), lineWidth: 1)
+                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
             )
         )
     }

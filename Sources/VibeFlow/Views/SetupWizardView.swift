@@ -107,7 +107,7 @@ struct SetupWizardView: View {
 
                     if step != .ready {
                         Rectangle()
-                            .fill(step.rawValue < currentStep.rawValue ? Color.purple : Color.secondary.opacity(0.3))
+                            .fill(step.rawValue < currentStep.rawValue ? Color.purple : Color(nsColor: .separatorColor))
                             .frame(height: 2)
                             .frame(maxWidth: 30)
                     }
@@ -419,7 +419,7 @@ struct SetupWizardView: View {
                     .padding(.top, 8)
                 }
                 .padding()
-                .background(Color.secondary.opacity(0.05))
+                .background(Color(nsColor: .controlBackgroundColor))
                 .cornerRadius(8)
             }
         }
@@ -569,7 +569,7 @@ struct SetupWizardView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
         }
         .onAppear {
@@ -663,7 +663,7 @@ struct SetupWizardView: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.secondary.opacity(0.1))
+                        .background(Color(nsColor: .controlBackgroundColor))
                         .cornerRadius(6)
                     }
                 }
@@ -688,7 +688,7 @@ struct SetupWizardView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.secondary.opacity(0.08))
+                            .background(Color(nsColor: .controlBackgroundColor))
                             .cornerRadius(4)
                         }
 
@@ -769,7 +769,7 @@ struct SetupWizardView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.secondary.opacity(0.05))
+            .background(Color(nsColor: .controlBackgroundColor))
             .cornerRadius(8)
         }
     }
@@ -950,7 +950,7 @@ struct StepIndicator: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(isCompleted ? Color.purple : (isActive ? Color.purple.opacity(0.2) : Color.secondary.opacity(0.1)))
+                .fill(isCompleted ? Color.purple : (isActive ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor)))
                 .frame(width: 32, height: 32)
 
             if isCompleted {

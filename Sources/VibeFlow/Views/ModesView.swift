@@ -79,7 +79,7 @@ struct ModesView: View {
                     HStack(spacing: 4) {
                         ForEach(0..<5) { i in
                             Circle()
-                                .fill(i < temperatureLevel ? settings.selectedMode.color : Color.secondary.opacity(0.2))
+                                .fill(i < temperatureLevel ? settings.selectedMode.color : Color(nsColor: .controlColor).opacity(0.1))
                                 .frame(width: 6, height: 6)
                         }
                     }
@@ -269,11 +269,11 @@ struct ModeCard2: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? mode.color.opacity(0.06) : (isHovered ? Color.secondary.opacity(0.05) : Color(nsColor: .controlBackgroundColor)))
+                .fill(isSelected ? mode.color.opacity(0.06) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color(nsColor: .controlBackgroundColor)))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? mode.color.opacity(0.25) : Color.secondary.opacity(0.1), lineWidth: 1)
+                .stroke(isSelected ? mode.color.opacity(0.25) : Color(nsColor: .separatorColor), lineWidth: 1)
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)
