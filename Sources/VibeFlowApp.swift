@@ -47,12 +47,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.image = AppIconGenerator.createMenuBarIcon()
             button.action = #selector(toggleWindow)
             button.target = self
-            updateMenu()
         }
         
         // Criar view model
         let viewModel = VibeFlowViewModel()
         self.viewModel = viewModel
+        
+        // Update menu after viewModel is created (so microphone list shows)
+        updateMenu()
         
         // Criar janela flutuante
         let contentView = ContentView()

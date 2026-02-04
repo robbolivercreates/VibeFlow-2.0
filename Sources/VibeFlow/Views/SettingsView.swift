@@ -84,17 +84,27 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 
                 // Atalho para ciclar idiomas
-                HStack {
-                    Text("Atalho para mudar idioma")
-                    Spacer()
-                    Text(settings.cycleLanguageShortcut)
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Atalho para mudar idioma")
+                        Spacer()
+                        Text(settings.cycleLanguageShortcut)
+                            .foregroundStyle(.purple)
+                            .font(.system(.body, design: .monospaced, weight: .bold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.purple.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                    
+                    Text("Pressione ⌃⌥L (Control+Option+L) enquanto segura ⌥⌘ para alternar entre idiomas favoritos")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .font(.system(.body, design: .monospaced))
                 }
             }
             
             Section("Idiomas Favoritos") {
-                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌃⌥L")
+                Text("Marque pelo menos 2 idiomas abaixo para poder alternar entre eles com o atalho ⌃⌥L")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
