@@ -48,6 +48,13 @@ class VibeFlowViewModel: ObservableObject {
         
         audioRecorder.$audioLevel
             .assign(to: &$audioLevel)
+        
+        // Observe language changes and recreate service
+        NotificationCenter.default.publisher(for: .languageChanged)
+            .sink { [weak self] _ in
+                self?.reloadAPIKey()
+            }
+            .store(in: &cancellables)
     }
     
     /// Obtém a API Key (prioridade: SettingsManager > Config.swift)
@@ -222,8 +229,8 @@ class VibeFlowViewModel: ObservableObject {
                             userInfo: ["text": finalText, "mode": self.selectedMode]
                         )
 
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                            self.statusText = L10n.ready
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                            self?.statusText = L10n.ready
                         }
                     }
                 }

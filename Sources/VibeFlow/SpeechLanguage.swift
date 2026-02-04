@@ -75,7 +75,7 @@ enum SpeechLanguage: String, CaseIterable, Identifiable, Codable {
     /// Flag emoji for the language
     var flag: String {
         switch self {
-        case .english: return "🇺🇸"
+        case .english: return "🇬🇧"
         case .portuguese: return "🇧🇷"
         case .spanish: return "🇪🇸"
         case .french: return "🇫🇷"

@@ -28,7 +28,7 @@ class AnalyticsManager: ObservableObject {
     private let avgWordLength = 5.0       // Caracteres por palavra
     
     struct MonthlyStat: Codable, Identifiable {
-        let id = UUID()
+        var id = UUID()
         let month: String  // "2026-02"
         let transcriptions: Int
         let characters: Int

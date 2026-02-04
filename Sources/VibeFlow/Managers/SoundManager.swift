@@ -71,9 +71,9 @@ class SoundManager: ObservableObject {
             data[i] = Float(sin(2 * .pi * frequency * t) * envelope * 0.3)
         }
         
-        let player = AVAudioPlayer()
-        // Não podemos usar init com buffer diretamente, então salvamos em arquivo temporário
-        return nil // Placeholder - vamos usar sistema de áudio diferente
+        // TODO: Implementar geração de som com AVAudioPlayer + buffer
+        // Por enquanto retornamos nil (usando NSSound para feedback)
+        return nil
     }
     
     func play(_ sound: Sound) {

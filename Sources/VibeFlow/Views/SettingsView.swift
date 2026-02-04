@@ -82,6 +82,53 @@ struct SettingsView: View {
                 Text("O texto transcrito sera gerado neste idioma, independente do idioma falado.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                
+                // Atalho para ciclar idiomas
+                HStack {
+                    Text("Atalho para mudar idioma")
+                    Spacer()
+                    Text(settings.cycleLanguageShortcut)
+                        .foregroundStyle(.secondary)
+                        .font(.system(.body, design: .monospaced))
+                }
+            }
+            
+            Section("Idiomas Favoritos") {
+                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌃⌥L")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                
+                // List of all languages with checkmarks for favorites
+                let columns = [GridItem(.adaptive(minimum: 120))]
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 4) {
+                    ForEach(SpeechLanguage.allCases) { language in
+                        Button(action: {
+                            toggleFavorite(language: language)
+                        }) {
+                            HStack(spacing: 4) {
+                                Text(language.flag)
+                                    .font(.system(size: 12))
+                                Text(language.rawValue.uppercased())
+                                    .font(.system(size: 11))
+                                Spacer()
+                                if settings.favoriteLanguages.contains(language) {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.blue)
+                                }
+                            }
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(
+                                settings.favoriteLanguages.contains(language)
+                                ? Color.blue.opacity(0.1)
+                                : Color.clear
+                            )
+                            .cornerRadius(4)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
 
             Section("Comportamento") {
@@ -311,6 +358,19 @@ struct SettingsView: View {
             return "Permitido"
         @unknown default:
             return "Desconhecido"
+        }
+    }
+    
+    private func toggleFavorite(language: SpeechLanguage) {
+        if let index = settings.favoriteLanguages.firstIndex(of: language) {
+            // Don't remove if it's the last favorite
+            if settings.favoriteLanguages.count > 1 {
+                settings.favoriteLanguages.remove(at: index)
+            }
+        } else {
+            settings.favoriteLanguages.append(language)
+            // Sort to maintain consistent order
+            settings.favoriteLanguages.sort { $0.displayName < $1.displayName }
         }
     }
 }

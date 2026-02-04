@@ -184,6 +184,55 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         menu.addItem(NSMenuItem.separator())
         
+        // Idioma atual e favoritos
+        let currentLangItem = NSMenuItem(
+            title: "Idioma: \(settings.outputLanguage.displayWithFlag)",
+            action: nil,
+            keyEquivalent: ""
+        )
+        currentLangItem.isEnabled = false
+        menu.addItem(currentLangItem)
+        
+        // Submenu de idiomas favoritos
+        if settings.favoriteLanguages.count > 1 {
+            let langMenu = NSMenu()
+            for language in settings.favoriteLanguages {
+                let item = NSMenuItem(
+                    title: language.displayWithFlag,
+                    action: #selector(selectLanguage(_:)),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = language
+                if settings.outputLanguage == language {
+                    item.state = .on
+                }
+                langMenu.addItem(item)
+            }
+            langMenu.addItem(NSMenuItem.separator())
+            let cycleItem = NSMenuItem(
+                title: "Próximo (⌃⌥L)",
+                action: #selector(cycleLanguage),
+                keyEquivalent: ""
+            )
+            cycleItem.target = self
+            langMenu.addItem(cycleItem)
+            
+            let langItem = NSMenuItem(title: "Idiomas Favoritos", action: nil, keyEquivalent: "")
+            langItem.submenu = langMenu
+            menu.addItem(langItem)
+        } else {
+            let cycleItem = NSMenuItem(
+                title: "Mudar Idioma (⌃⌥L)",
+                action: #selector(cycleLanguage),
+                keyEquivalent: ""
+            )
+            cycleItem.target = self
+            menu.addItem(cycleItem)
+        }
+        
+        menu.addItem(NSMenuItem.separator())
+        
         // Novos itens
         menu.addItem(NSMenuItem(title: "Histórico", action: #selector(showHistory), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
@@ -202,6 +251,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let mode = sender.representedObject as? TranscriptionMode else { return }
         settings.selectedMode = mode
         viewModel?.updateMode(mode)
+        updateMenu()
+    }
+    
+    @objc func selectLanguage(_ sender: NSMenuItem) {
+        guard let language = sender.representedObject as? SpeechLanguage else { return }
+        settings.outputLanguage = language
         updateMenu()
     }
     
@@ -239,17 +294,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         
-        let settingsView = SettingsView()
+        // Close existing window if present
+        settingsWindow?.close()
+        
+        let settingsView = ModernSettingsView()
         let hostingView = NSHostingView(rootView: settingsView)
         
         settingsWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 450, height: 350),
+            contentRect: NSRect(x: 0, y: 0, width: 550, height: 500),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
         settingsWindow?.contentView = hostingView
-        settingsWindow?.title = "VibeFlow - \(L10n.settingsTitle)"
+        settingsWindow?.title = "VibeFlow - Configurações"
         settingsWindow?.center()
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -340,14 +398,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Global Shortcuts
     
+    var localKeyDownMonitor: Any?
+    
     func setupGlobalShortcuts() {
-        // Cmd+Shift+V - Toggle window
+        // Cmd+Shift+V - Toggle window (global)
         globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 9 {
-                DispatchQueue.main.async {
-                    self?.toggleWindow()
-                }
-            }
+            self?.handleGlobalKeyEvent(event)
+        }
+        
+        // Local key monitor (works when app is active)
+        localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            self?.handleGlobalKeyEvent(event)
+            return event
         }
         
         // Hold-to-Talk: Option + Command
@@ -361,6 +423,84 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self = self else { return event }
             self.handleFlagsChanged(event)
             return event
+        }
+    }
+    
+    func handleGlobalKeyEvent(_ event: NSEvent) {
+        let modifiers = event.modifierFlags
+        let keyCode = event.keyCode
+        
+        // Debug logging
+        // print("[KeyEvent] modifiers: \(modifiers.rawValue), keyCode: \(keyCode)")
+        
+        // Cmd+Shift+V (keyCode 9 = v)
+        if modifiers.contains([.command, .shift]) && keyCode == 9 {
+            DispatchQueue.main.async { [weak self] in
+                self?.toggleWindow()
+            }
+            return
+        }
+        
+        // Control+Option+L (keyCode 37 = l)
+        // Note: Check for control + option specifically
+        let hasControl = modifiers.contains(.control)
+        let hasOption = modifiers.contains(.option)
+        let isLKey = (keyCode == 37) || (keyCode == 32) // 37 = L, 32 might be L on some layouts
+        
+        if hasControl && hasOption && isLKey {
+            DispatchQueue.main.async { [weak self] in
+                print("[VibeFlow] Language shortcut detected")
+                self?.cycleLanguage()
+            }
+            return
+        }
+    }
+    
+    @objc func cycleLanguage() {
+        let previousLanguage = settings.outputLanguage
+        settings.cycleToNextLanguage()
+        let newLanguage = settings.outputLanguage
+        
+        // Play feedback sound
+        sounds.playSuccess()
+        
+        // Show notification
+        showLanguageNotification(language: newLanguage)
+        
+        print("[VibeFlow] Language changed: \(previousLanguage.displayName) → \(newLanguage.displayName)")
+    }
+    
+    func showLanguageNotification(language: SpeechLanguage) {
+        // Create a temporary floating notification window
+        let notificationWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 180, height: 60),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        
+        let contentView = LanguageNotificationView(language: language)
+        notificationWindow.contentView = NSHostingView(rootView: contentView)
+        notificationWindow.level = .floating
+        notificationWindow.backgroundColor = .clear
+        notificationWindow.isOpaque = false
+        notificationWindow.hasShadow = true
+        
+        // Position near the main window or centered
+        if let window = window, window.isVisible {
+            let windowFrame = window.frame
+            let x = windowFrame.midX - 90
+            let y = windowFrame.maxY + 20
+            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            notificationWindow.center()
+        }
+        
+        notificationWindow.makeKeyAndOrderFront(nil)
+        
+        // Auto-close after 1.5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            notificationWindow.orderOut(nil)
         }
     }
     
@@ -444,6 +584,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .showWizardAfterActivation,
             object: nil
         )
+        
+        // Observar mudanças de idioma para atualizar menu
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateMenu),
+            name: .languageChanged,
+            object: nil
+        )
     }
     
     @objc func handleRecordingCancelled() {
@@ -477,6 +625,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSEvent.removeMonitor(monitor)
         }
         if let monitor = localKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+        }
+        if let monitor = localKeyDownMonitor {
             NSEvent.removeMonitor(monitor)
         }
     }

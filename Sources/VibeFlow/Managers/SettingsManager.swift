@@ -22,6 +22,8 @@ class SettingsManager: ObservableObject {
         static let isLicensed = "is_licensed"
         static let hasSeenLicensePrompt = "has_seen_license_prompt"
         static let outputLanguage = "output_language"
+        static let favoriteLanguages = "favorite_languages"
+        static let cycleLanguageShortcut = "cycle_language_shortcut"
         static let enableStyleLearning = "enable_style_learning"
     }
     
@@ -70,11 +72,30 @@ class SettingsManager: ObservableObject {
     }
 
     @Published var outputLanguage: SpeechLanguage {
-        didSet { defaults.set(outputLanguage.rawValue, forKey: Keys.outputLanguage) }
+        didSet { 
+            defaults.set(outputLanguage.rawValue, forKey: Keys.outputLanguage)
+            NotificationCenter.default.post(name: .languageChanged, object: outputLanguage)
+        }
     }
 
     @Published var enableStyleLearning: Bool {
         didSet { defaults.set(enableStyleLearning, forKey: Keys.enableStyleLearning) }
+    }
+    
+    /// Lista de idiomas favoritos para ciclagem rápida
+    @Published var favoriteLanguages: [SpeechLanguage] {
+        didSet {
+            let rawValues = favoriteLanguages.map { $0.rawValue }
+            defaults.set(rawValues, forKey: Keys.favoriteLanguages)
+        }
+    }
+    
+    /// Atalho para ciclar entre idiomas favoritos
+    @Published var cycleLanguageShortcut: String {
+        didSet {
+            defaults.set(cycleLanguageShortcut, forKey: Keys.cycleLanguageShortcut)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
     }
 
     @Published var shortcutRecordKey: String {
@@ -116,6 +137,15 @@ class SettingsManager: ObservableObject {
         self.outputLanguage = SpeechLanguage(rawValue: savedLanguage) ?? .english
 
         self.enableStyleLearning = defaults.object(forKey: Keys.enableStyleLearning) as? Bool ?? true
+        
+        // Load favorite languages (default: English, Portuguese, Spanish)
+        if let savedFavorites = defaults.stringArray(forKey: Keys.favoriteLanguages) {
+            self.favoriteLanguages = savedFavorites.compactMap { SpeechLanguage(rawValue: $0) }
+        } else {
+            self.favoriteLanguages = [.english, .portuguese, .spanish]
+        }
+        
+        self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌃⌥L"
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
@@ -129,6 +159,19 @@ class SettingsManager: ObservableObject {
     func completeOnboarding() {
         onboardingCompleted = true
     }
+    
+    /// Cicla para o próximo idioma favorito
+    func cycleToNextLanguage() {
+        guard !favoriteLanguages.isEmpty else { return }
+        
+        if let currentIndex = favoriteLanguages.firstIndex(of: outputLanguage) {
+            let nextIndex = (currentIndex + 1) % favoriteLanguages.count
+            outputLanguage = favoriteLanguages[nextIndex]
+        } else {
+            // Se o idioma atual não está nos favoritos, vai para o primeiro
+            outputLanguage = favoriteLanguages[0]
+        }
+    }
 }
 
 // MARK: - Notifications
@@ -138,4 +181,5 @@ extension Notification.Name {
     static let recordingCancelled = Notification.Name("recordingCancelled")
     static let showWizardAfterActivation = Notification.Name("showWizardAfterActivation")
     static let shortcutChanged = Notification.Name("shortcutChanged")
+    static let languageChanged = Notification.Name("languageChanged")
 }
