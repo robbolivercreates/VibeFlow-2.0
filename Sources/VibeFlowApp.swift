@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var statusItem: NSStatusItem?
     var window: NSWindow?
     var settingsWindow: NSWindow?
+    var mainAppWindow: NSWindow?  // New main window with sidebar navigation
     var historyWindow: NSWindow?
     var snippetsWindow: NSWindow?
     var wizardWindow: NSWindow?
@@ -238,13 +239,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         menu.addItem(NSMenuItem.separator())
-        
-        // Novos itens
-        menu.addItem(NSMenuItem(title: "Histórico", action: #selector(showHistory), keyEquivalent: "y"))
-        menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(showAnalytics), keyEquivalent: ""))
+
+        // Main Window (VibeFlow Central)
+        let mainWindowItem = NSMenuItem(title: "Abrir VibeFlow", action: #selector(showMainWindow), keyEquivalent: "")
+        mainWindowItem.target = self
+        menu.addItem(mainWindowItem)
+
         menu.addItem(NSMenuItem.separator())
-        
+
+        // Quick access items
+        menu.addItem(NSMenuItem(title: "Historico", action: #selector(showHistory), keyEquivalent: "y"))
+        menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
+        menu.addItem(NSMenuItem.separator())
+
         // Settings
         menu.addItem(NSMenuItem(title: L10n.settings, action: #selector(showSettings), keyEquivalent: ","))
         menu.addItem(NSMenuItem.separator())
@@ -294,33 +301,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Settings
     
     @objc func showSettings() {
-        if let existingWindow = settingsWindow, existingWindow.isVisible {
+        showMainWindow()
+    }
+
+    @objc func showMainWindow() {
+        if let existingWindow = mainAppWindow, existingWindow.isVisible {
             existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        
+
         // Close existing window if present
-        settingsWindow?.close()
-        
-        let settingsView = ModernSettingsView()
-        let hostingView = NSHostingView(rootView: settingsView)
-        
-        settingsWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 550, height: 500),
-            styleMask: [.titled, .closable],
+        mainAppWindow?.close()
+
+        let mainView = MainWindowView()
+        let hostingView = NSHostingView(rootView: mainView)
+
+        mainAppWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        settingsWindow?.contentView = hostingView
-        settingsWindow?.title = "VibeFlow - Configurações"
-        settingsWindow?.center()
-        settingsWindow?.makeKeyAndOrderFront(nil)
+        mainAppWindow?.contentView = hostingView
+        mainAppWindow?.title = "VibeFlow"
+        mainAppWindow?.minSize = NSSize(width: 720, height: 520)
+        mainAppWindow?.center()
+        mainAppWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        
+
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
-            object: settingsWindow,
+            object: mainAppWindow,
             queue: .main
         ) { [weak self] _ in
             self?.viewModel?.reloadAPIKey()
@@ -615,6 +627,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(updateMenu),
             name: .languageChanged,
+            object: nil
+        )
+
+        // Observar pedido para mostrar historico (from HomeView)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showHistory),
+            name: NSNotification.Name("showHistory"),
             object: nil
         )
     }

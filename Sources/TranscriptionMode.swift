@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Modos de transcrição disponíveis
 enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
@@ -25,20 +26,31 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "wand.and.stars"
         }
     }
-    
+
+    /// Cor do modo
+    var color: Color {
+        switch self {
+        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)      // Blue
+        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)    // Green
+        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)    // Orange
+        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9) // Purple
+        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2) // Gold
+        }
+    }
+
     /// Descrição curta do modo
     var shortDescription: String {
         switch self {
         case .code:
-            return L10n.codeMode
+            return "Otimizado para codigo e termos tecnicos"
         case .text:
-            return L10n.textMode
+            return "Texto limpo e bem formatado"
         case .email:
-            return "Email"
+            return "Emails profissionais e estruturados"
         case .uxDesign:
-            return "UX"
+            return "Design de interfaces e fluxos de usuario"
         case .command:
-            return "Command"
+            return "Comandos de voz para transformar texto"
         }
     }
     
