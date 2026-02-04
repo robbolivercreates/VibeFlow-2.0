@@ -7,7 +7,6 @@ class VibeFlowViewModel: ObservableObject {
     @Published var statusText = L10n.ready
     @Published var error: String?
     @Published var selectedMode: TranscriptionMode = .code
-    @Published var translateToEnglish: Bool = false
     @Published var clarifyText: Bool = true
     @Published var needsAPIKey = false
     @Published var audioLevel: CGFloat = 0.0
@@ -27,10 +26,7 @@ class VibeFlowViewModel: ObservableObject {
     private func loadSettings() {
         // Usar SettingsManager
         selectedMode = settings.selectedMode
-        
-        // Carregar preferência de tradução
-        translateToEnglish = UserDefaults.standard.bool(forKey: "translateToEnglish")
-        
+
         // Carregar preferência de clareza (padrão: true)
         if UserDefaults.standard.object(forKey: "clarifyText") != nil {
             clarifyText = UserDefaults.standard.bool(forKey: "clarifyText")
@@ -75,7 +71,7 @@ class VibeFlowViewModel: ObservableObject {
         
         needsAPIKey = false
         error = nil
-        geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, translateToEnglish: translateToEnglish, clarifyText: clarifyText)
+        geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
         
         geminiService?.$isProcessing
             .assign(to: &$isProcessing)
@@ -89,7 +85,7 @@ class VibeFlowViewModel: ObservableObject {
         loadSettings()
         loadAPIKey()
         if let apiKey = getAPIKey() {
-            geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, translateToEnglish: translateToEnglish, clarifyText: clarifyText)
+            geminiService = GeminiService(apiKey: apiKey, mode: selectedMode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
             geminiService?.$isProcessing
                 .assign(to: &$isProcessing)
             geminiService?.$error
@@ -101,9 +97,9 @@ class VibeFlowViewModel: ObservableObject {
     func updateMode(_ mode: TranscriptionMode) {
         selectedMode = mode
         settings.selectedMode = mode
-        
+
         if let apiKey = getAPIKey() {
-            geminiService = GeminiService(apiKey: apiKey, mode: mode, translateToEnglish: translateToEnglish, clarifyText: clarifyText)
+            geminiService = GeminiService(apiKey: apiKey, mode: mode, outputLanguage: settings.outputLanguage, clarifyText: clarifyText)
             geminiService?.$isProcessing
                 .assign(to: &$isProcessing)
             geminiService?.$error

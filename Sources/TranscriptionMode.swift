@@ -72,7 +72,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     }
     
     /// Prompt do sistema para o Gemini
-    func systemPrompt(translateToEnglish: Bool, clarifyText: Bool) -> String {
+    func systemPrompt(outputLanguage: SpeechLanguage, clarifyText: Bool) -> String {
         let basePrompt: String
         
         // Common speech cleanup rules applied to all modes
@@ -211,17 +211,16 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             """
         }
         
-        // Adicionar tradução
-        if translateToEnglish {
-            finalPrompt += """
-            
-            
-            IMPORTANTE - TRADUÇÃO:
-            O usuário pode falar em português, mas você DEVE retornar o resultado em INGLÊS.
-            Traduza todo o conteúdo para inglês de forma natural e profissional.
+        // Adicionar idioma de saída
+        finalPrompt += """
+
+
+            OUTPUT LANGUAGE (CRITICAL):
+            You MUST output the result in \(outputLanguage.fullName).
+            The user may speak in any language, but your response MUST be in \(outputLanguage.fullName).
+            Translate naturally and professionally if the input is in a different language.
             """
-        }
-        
+
         return finalPrompt
     }
 }

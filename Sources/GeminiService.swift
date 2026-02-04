@@ -7,9 +7,9 @@ class GeminiService: ObservableObject {
     
     private let model: GenerativeModel
     
-    /// Inicializa o serviço com a API key, modo, tradução e clareza
-    init(apiKey: String, mode: TranscriptionMode, translateToEnglish: Bool, clarifyText: Bool) {
-        let systemPrompt = mode.systemPrompt(translateToEnglish: translateToEnglish, clarifyText: clarifyText)
+    /// Inicializa o serviço com a API key, modo, idioma de saída e clareza
+    init(apiKey: String, mode: TranscriptionMode, outputLanguage: SpeechLanguage, clarifyText: Bool) {
+        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText)
         
         // Usar temperatura dinâmica por modo
         let temperature = mode.temperature

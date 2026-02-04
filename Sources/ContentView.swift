@@ -60,7 +60,8 @@ struct RecordingInterface: View {
 // MARK: - Recording Info View (mostra modo e idioma durante gravação)
 struct RecordingInfoView: View {
     @ObservedObject var viewModel: VibeFlowViewModel
-    
+    private let settings = SettingsManager.shared
+
     var body: some View {
         HStack(spacing: 8) {
             // Badge do modo
@@ -75,24 +76,22 @@ struct RecordingInfoView: View {
             .padding(.vertical, 2)
             .background(modeColor)
             .cornerRadius(4)
-            
-            // Indicador de idioma (se tradução ativada)
-            if viewModel.translateToEnglish {
-                HStack(spacing: 2) {
-                    Image(systemName: "globe")
-                        .font(.system(size: 7))
-                    Text("EN")
-                        .font(.system(size: 8, weight: .bold))
-                }
-                .foregroundColor(.blue)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background(Color.blue.opacity(0.15))
-                .cornerRadius(4)
+
+            // Indicador de idioma de saída
+            HStack(spacing: 2) {
+                Text(settings.outputLanguage.flag)
+                    .font(.system(size: 8))
+                Text(settings.outputLanguage.rawValue.uppercased())
+                    .font(.system(size: 8, weight: .bold))
             }
-            
+            .foregroundColor(.blue)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(Color.blue.opacity(0.15))
+            .cornerRadius(4)
+
             Spacer()
-            
+
             // Timer de gravação
             RecordingTimer()
         }

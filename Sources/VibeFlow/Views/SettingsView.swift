@@ -65,12 +65,25 @@ struct SettingsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                
+
                 Text("O modo determina como o Gemini processa seu áudio.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            
+
+            Section("Idioma de saida") {
+                Picker("Idioma", selection: $settings.outputLanguage) {
+                    ForEach(SpeechLanguage.allCases) { language in
+                        Text(language.displayWithFlag).tag(language)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Text("O texto transcrito sera gerado neste idioma, independente do idioma falado.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Comportamento") {
                 Toggle("Colar automaticamente", isOn: $settings.enableAutoPaste)
                 Toggle("Fechar janela após colar", isOn: $settings.enableAutoClose)

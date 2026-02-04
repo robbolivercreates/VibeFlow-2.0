@@ -21,6 +21,7 @@ class SettingsManager: ObservableObject {
         static let licenseKey = "license_key"
         static let isLicensed = "is_licensed"
         static let hasSeenLicensePrompt = "has_seen_license_prompt"
+        static let outputLanguage = "output_language"
     }
     
     // MARK: - Published Properties
@@ -66,7 +67,11 @@ class SettingsManager: ObservableObject {
     @Published var hasSeenLicensePrompt: Bool {
         didSet { defaults.set(hasSeenLicensePrompt, forKey: Keys.hasSeenLicensePrompt) }
     }
-    
+
+    @Published var outputLanguage: SpeechLanguage {
+        didSet { defaults.set(outputLanguage.rawValue, forKey: Keys.outputLanguage) }
+    }
+
     @Published var shortcutRecordKey: String {
         didSet { 
             defaults.set(shortcutRecordKey, forKey: Keys.shortcutRecord)
@@ -101,6 +106,10 @@ class SettingsManager: ObservableObject {
         self.licenseKey = defaults.string(forKey: Keys.licenseKey) ?? ""
         self.isLicensed = defaults.bool(forKey: Keys.isLicensed)
         self.hasSeenLicensePrompt = defaults.bool(forKey: Keys.hasSeenLicensePrompt)
+
+        let savedLanguage = defaults.string(forKey: Keys.outputLanguage) ?? SpeechLanguage.english.rawValue
+        self.outputLanguage = SpeechLanguage(rawValue: savedLanguage) ?? .english
+
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
     }
