@@ -57,8 +57,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let contentView = ContentView()
             .environmentObject(viewModel)
         
+        // Window size: max expanded width (440) + padding, height for compact overlay
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 280, height: 100),
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 80),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -69,7 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window?.backgroundColor = .clear
         window?.isOpaque = false
-        window?.hasShadow = true
+        window?.hasShadow = false // Shadow is handled by SwiftUI
         window?.center()
         window?.orderOut(nil)
         

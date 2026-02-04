@@ -1,454 +1,463 @@
 import SwiftUI
 import Combine
 
-// MARK: - Main Content View
-struct ContentView: View {
-    @EnvironmentObject var viewModel: VibeFlowViewModel
-    
-    var body: some View {
-        RecordingInterface(viewModel: viewModel)
-            .frame(width: 320, height: 140)
-    }
-}
+// MARK: - Color Constants
+private enum VoiceColors {
+    static let accent = Color(red: 0.4, green: 0.4, blue: 1.0) // Indigo
+    static let accentGlow = Color(red: 0.4, green: 0.4, blue: 1.0).opacity(0.3)
+    static let processing = Color(red: 0.6, green: 0.4, blue: 1.0) // Purple
+    static let background = Color.black.opacity(0.75)
+    static let backgroundIdle = Color.black.opacity(0.6)
+    static let border = Color.white.opacity(0.1)
+    static let textPrimary = Color.white.opacity(0.9)
+    static let textSecondary = Color.white.opacity(0.5)
 
-// MARK: - Modern Recording Interface
-struct RecordingInterface: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
-    @State private var showLanguagePicker = false
-    
-    var body: some View {
-        ZStack {
-            // Background with material effect
-            RoundedRectangle(cornerRadius: 20)
-                .fill(.ultraThinMaterial)
-                .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 8)
-            
-            VStack(spacing: 0) {
-                // Top section: Recording info or Language selector
-                if viewModel.isRecording {
-                    RecordingInfoBar(viewModel: viewModel)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                } else {
-                    IdleTopBar(viewModel: viewModel)
-                        .transition(.opacity)
-                }
-                
-                Spacer()
-                
-                // Middle: Status and main action
-                HStack(spacing: 16) {
-                    // Mode indicator
-                    ModeBadge(mode: viewModel.selectedMode)
-                    
-                    Spacer()
-                    
-                    // Status
-                    StatusDisplay(viewModel: viewModel)
-                    
-                    Spacer()
-                    
-                    // Action button
-                    RecordButton(viewModel: viewModel)
-                }
-                .padding(.horizontal, 20)
-                
-                Spacer()
-                
-                // Bottom: Waveform
-                WaveformSection(viewModel: viewModel)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
-            }
-            .padding(.vertical, 12)
+    // Language colors (elegant, no emoji)
+    static func languageColor(for code: String) -> Color {
+        switch code.lowercased() {
+        case "pt": return Color(red: 0.0, green: 0.53, blue: 0.35) // Emerald
+        case "en": return Color(red: 0.15, green: 0.39, blue: 0.92) // Royal Blue
+        case "es": return Color(red: 0.92, green: 0.35, blue: 0.05) // Orange
+        case "fr": return Color(red: 0.23, green: 0.51, blue: 0.96) // French Blue
+        case "de": return Color(red: 0.79, green: 0.54, blue: 0.02) // Gold
+        case "it": return Color(red: 0.13, green: 0.55, blue: 0.13) // Italian Green
+        case "ja": return Color(red: 0.86, green: 0.15, blue: 0.15) // Red
+        case "ko": return Color(red: 0.0, green: 0.47, blue: 0.75) // Korean Blue
+        case "zh": return Color(red: 0.86, green: 0.08, blue: 0.24) // Chinese Red
+        case "ru": return Color(red: 0.0, green: 0.24, blue: 0.55) // Russian Blue
+        default: return Color(red: 0.4, green: 0.4, blue: 0.6) // Default purple-ish
+        }
+    }
+
+    // Mode colors
+    static func modeColor(for mode: TranscriptionMode) -> Color {
+        switch mode {
+        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
+        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)
+        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)
+        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9)
+        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2)
         }
     }
 }
 
-// MARK: - Idle Top Bar
-struct IdleTopBar: View {
+// MARK: - Main Content View
+struct ContentView: View {
+    @EnvironmentObject var viewModel: VibeFlowViewModel
+
+    var body: some View {
+        ModernVoiceOverlay(viewModel: viewModel)
+    }
+}
+
+// MARK: - Modern Voice Overlay
+struct ModernVoiceOverlay: View {
     @ObservedObject var viewModel: VibeFlowViewModel
     @StateObject private var settings = SettingsManager.shared
-    @State private var showLanguageSelector = false
-    
+
+    // Animation states
+    @State private var isExpanded = false
+    @State private var showContent = false
+    @State private var glowOpacity: CGFloat = 0
+
+    private var currentState: OverlayState {
+        if viewModel.isProcessing {
+            return .processing
+        } else if viewModel.isRecording {
+            return .listening
+        } else {
+            return .idle
+        }
+    }
+
     var body: some View {
-        HStack {
-            // Current language button
-            Button(action: { showLanguageSelector = true }) {
-                HStack(spacing: 4) {
-                    Text(settings.outputLanguage.flag)
-                        .font(.system(size: 14))
-                    Text(settings.outputLanguage.rawValue.uppercased())
-                        .font(.system(size: 10, weight: .medium))
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 8))
+        ZStack {
+            // Subtle glow behind (only when active)
+            if currentState == .listening {
+                Ellipse()
+                    .fill(VoiceColors.accentGlow)
+                    .frame(width: 350, height: 80)
+                    .blur(radius: 40)
+                    .opacity(glowOpacity)
+            }
+
+            // Main container
+            mainContainer
+        }
+        .onChange(of: viewModel.isRecording) { _, isRecording in
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                isExpanded = isRecording
+            }
+            withAnimation(.easeOut(duration: 0.3).delay(0.1)) {
+                showContent = isRecording
+            }
+            withAnimation(.easeInOut(duration: 0.5)) {
+                glowOpacity = isRecording ? 0.5 : 0
+            }
+        }
+        .onChange(of: viewModel.isProcessing) { _, isProcessing in
+            if isProcessing {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    isExpanded = false
                 }
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(Color.secondary.opacity(0.1))
+            }
+        }
+    }
+
+    private var mainContainer: some View {
+        HStack(spacing: 0) {
+            // Left: Microphone icon with waves
+            leftSection
+
+            // Divider (only when expanded)
+            if isExpanded && currentState == .listening {
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 1, height: 28)
+                    .padding(.horizontal, 8)
+                    .transition(.opacity.combined(with: .scale(scale: 0.5)))
+            }
+
+            // Center: Content (status, transcript)
+            centerSection
+
+            // Right: Language + Mode (only when listening)
+            if showContent && currentState == .listening {
+                rightSection
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+            }
+        }
+        .padding(.horizontal, isExpanded ? 20 : 16)
+        .padding(.vertical, 12)
+        .frame(
+            width: containerWidth,
+            height: containerHeight
+        )
+        .background(
+            ZStack {
+                // Glassmorphism background
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(isExpanded ? VoiceColors.background : VoiceColors.backgroundIdle)
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(VoiceColors.border, lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.4), radius: 24, x: 0, y: 8)
+        .animation(.spring(response: 0.45, dampingFraction: 0.78), value: isExpanded)
+        .animation(.spring(response: 0.45, dampingFraction: 0.78), value: currentState)
+    }
+
+    private var containerWidth: CGFloat {
+        switch currentState {
+        case .idle:
+            return 200
+        case .listening:
+            return 440
+        case .processing:
+            return 220
+        }
+    }
+
+    private var containerHeight: CGFloat {
+        return 56
+    }
+
+    // MARK: - Left Section (Mic + Waves)
+    private var leftSection: some View {
+        HStack(spacing: 10) {
+            // Microphone icon
+            ZStack {
+                // Glow circle when active
+                if currentState == .listening {
+                    Circle()
+                        .fill(VoiceColors.accent)
+                        .frame(width: 32, height: 32)
+                        .shadow(color: VoiceColors.accent.opacity(0.4), radius: 8)
+                }
+
+                Circle()
+                    .fill(currentState == .listening ? VoiceColors.accent : Color.clear)
+                    .frame(width: 28, height: 28)
+
+                Image(systemName: micIcon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(currentState == .listening ? .white : VoiceColors.textSecondary)
+            }
+
+            // Sound wave bars (only when listening)
+            if currentState == .listening {
+                SoundWaveView(audioLevel: viewModel.audioLevel)
+                    .transition(.opacity.combined(with: .scale(scale: 0.8, anchor: .leading)))
+            }
+        }
+    }
+
+    private var micIcon: String {
+        switch currentState {
+        case .processing:
+            return "sparkles"
+        default:
+            return "mic.fill"
+        }
+    }
+
+    // MARK: - Center Section (Status)
+    private var centerSection: some View {
+        Group {
+            switch currentState {
+            case .idle:
+                idleContent
+            case .listening:
+                listeningContent
+            case .processing:
+                processingContent
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var idleContent: some View {
+        HStack(spacing: 6) {
+            Text("Segure")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(VoiceColors.textSecondary)
+
+            // Keyboard shortcut badge
+            HStack(spacing: 2) {
+                Text("⌥")
+                Text("⌘")
+            }
+            .font(.system(size: 11, weight: .medium, design: .rounded))
+            .foregroundColor(VoiceColors.textPrimary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.white.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    private var listeningContent: some View {
+        Text("Ouvindo...")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(VoiceColors.textPrimary)
+            .transition(.opacity.combined(with: .move(edge: .bottom)))
+    }
+
+    private var processingContent: some View {
+        HStack(spacing: 8) {
+            // Spinning sparkle
+            Image(systemName: "sparkles")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(VoiceColors.processing)
+                .rotationEffect(.degrees(viewModel.isProcessing ? 360 : 0))
+                .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: viewModel.isProcessing)
+
+            Text("Processando...")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(VoiceColors.processing)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
+    // MARK: - Right Section (Language + Mode)
+    private var rightSection: some View {
+        HStack(spacing: 8) {
+            // Language indicator (elegant, no emoji)
+            LanguagePill(language: settings.outputLanguage)
+
+            // Mode indicator
+            ModePill(mode: viewModel.selectedMode)
+        }
+    }
+}
+
+// MARK: - Overlay State
+private enum OverlayState {
+    case idle
+    case listening
+    case processing
+}
+
+// MARK: - Sound Wave View
+struct SoundWaveView: View {
+    let audioLevel: CGFloat
+
+    private let barCount = 6
+
+    var body: some View {
+        HStack(spacing: 3) {
+            ForEach(0..<barCount, id: \.self) { index in
+                SoundWaveBar(
+                    index: index,
+                    audioLevel: audioLevel,
+                    totalBars: barCount
                 )
             }
-            .buttonStyle(.plain)
-            
-            Spacer()
-            
-            // Quick language switcher (only if multiple favorites)
-            if settings.favoriteLanguages.count > 1 {
-                HStack(spacing: 4) {
-                    ForEach(settings.favoriteLanguages.prefix(3)) { language in
+        }
+        .frame(width: 50, height: 20)
+    }
+}
+
+// MARK: - Sound Wave Bar
+struct SoundWaveBar: View {
+    let index: Int
+    let audioLevel: CGFloat
+    let totalBars: Int
+
+    @State private var animationPhase: CGFloat = 0
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 1.5)
+            .fill(VoiceColors.accent.opacity(0.8 + Double(audioLevel) * 0.2))
+            .frame(width: 3, height: barHeight)
+            .animation(
+                .easeInOut(duration: 0.15)
+                .delay(Double(index) * 0.05),
+                value: audioLevel
+            )
+    }
+
+    private var barHeight: CGFloat {
+        let minHeight: CGFloat = 4
+        let maxHeight: CGFloat = 18
+
+        // Create wave pattern based on index
+        let centerOffset = abs(CGFloat(index) - CGFloat(totalBars - 1) / 2)
+        let positionMultiplier = 1.0 - (centerOffset / CGFloat(totalBars) * 0.5)
+
+        // Apply audio level with some variation per bar
+        let variation = sin(Double(index) * 1.2) * 0.3 + 0.7
+        let effectiveLevel = max(audioLevel, 0.1) * CGFloat(variation) * positionMultiplier
+
+        let height = minHeight + (maxHeight - minHeight) * effectiveLevel
+        return min(max(height, minHeight), maxHeight)
+    }
+}
+
+// MARK: - Language Pill (Elegant, No Emoji)
+struct LanguagePill: View {
+    let language: SpeechLanguage
+
+    private var languageCode: String {
+        language.rawValue.uppercased()
+    }
+
+    private var accentColor: Color {
+        VoiceColors.languageColor(for: language.rawValue)
+    }
+
+    var body: some View {
+        Text(languageCode)
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundColor(accentColor)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(accentColor.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(accentColor.opacity(0.3), lineWidth: 1)
+                    )
+            )
+    }
+}
+
+// MARK: - Mode Pill
+struct ModePill: View {
+    let mode: TranscriptionMode
+
+    private var modeColor: Color {
+        VoiceColors.modeColor(for: mode)
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: mode.icon)
+                .font(.system(size: 9, weight: .semibold))
+
+            Text(mode.shortDescription)
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(modeColor)
+                .shadow(color: modeColor.opacity(0.4), radius: 4, y: 2)
+        )
+    }
+}
+
+// MARK: - Language Selector (Sheet)
+struct LanguageSelectorView: View {
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var settings = SettingsManager.shared
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Selecionar Idioma")
+                .font(.headline)
+
+            ScrollView {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 8) {
+                    ForEach(SpeechLanguage.allCases) { language in
                         Button(action: {
                             settings.outputLanguage = language
+                            dismiss()
                         }) {
-                            Text(language.flag)
-                                .font(.system(size: 12))
-                                .opacity(settings.outputLanguage == language ? 1.0 : 0.4)
+                            HStack(spacing: 6) {
+                                Text(language.rawValue.uppercased())
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                Text(language.displayName)
+                                    .font(.system(size: 11))
+                                    .lineLimit(1)
+                            }
+                            .foregroundColor(settings.outputLanguage == language ? .white : .primary)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(settings.outputLanguage == language
+                                          ? VoiceColors.languageColor(for: language.rawValue)
+                                          : Color.secondary.opacity(0.1))
+                            )
                         }
                         .buttonStyle(.plain)
                     }
                 }
+                .padding()
             }
-        }
-        .padding(.horizontal, 16)
-        .padding(.top, 4)
-        .sheet(isPresented: $showLanguageSelector) {
-            LanguageSelectorView()
-        }
-    }
-}
 
-// MARK: - Recording Info Bar
-struct RecordingInfoBar: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
-    @StateObject private var settings = SettingsManager.shared
-    
-    var body: some View {
-        HStack(spacing: 12) {
-            // Mode badge
-            HStack(spacing: 4) {
-                Image(systemName: viewModel.selectedMode.icon)
-                    .font(.system(size: 10))
-                Text(viewModel.selectedMode.shortDescription)
-                    .font(.system(size: 10, weight: .medium))
+            Button("Fechar") {
+                dismiss()
             }
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(modeColor)
-            .cornerRadius(6)
-            
-            // Language indicator
-            HStack(spacing: 2) {
-                Text(settings.outputLanguage.flag)
-                    .font(.system(size: 10))
-                Text(settings.outputLanguage.rawValue.uppercased())
-                    .font(.system(size: 9, weight: .bold))
-            }
-            .foregroundColor(.blue)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(Color.blue.opacity(0.15))
-            .cornerRadius(4)
-            
-            Spacer()
-            
-            // Recording timer
-            RecordingTimer()
+            .buttonStyle(.borderedProminent)
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 6)
-    }
-    
-    private var modeColor: Color {
-        switch viewModel.selectedMode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
-        case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)
-        case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.9, green: 0.3, blue: 0.5)
-        }
-    }
-}
-
-// MARK: - Recording Timer
-struct RecordingTimer: View {
-    @State private var startTime = Date()
-    @State private var elapsed: TimeInterval = 0
-    let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
-    
-    var body: some View {
-        HStack(spacing: 4) {
-            // Recording indicator dot
-            RecordingPulseDot()
-            
-            // Time display
-            Text(formattedTime)
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
-                .foregroundColor(.primary)
-                .frame(minWidth: 45, alignment: .trailing)
-        }
-    }
-    
-    private var formattedTime: String {
-        let seconds = Int(elapsed)
-        let tenths = Int((elapsed - Double(seconds)) * 10)
-        return String(format: "%d.%d", seconds, tenths)
-    }
-}
-
-// MARK: - Recording Pulse Dot
-struct RecordingPulseDot: View {
-    @State private var isPulsing = false
-    
-    var body: some View {
-        Circle()
-            .fill(Color.red)
-            .frame(width: 6, height: 6)
-            .overlay(
-                Circle()
-                    .fill(Color.red.opacity(0.4))
-                    .scaleEffect(isPulsing ? 2.5 : 1.0)
-                    .opacity(isPulsing ? 0 : 0.6)
-            )
-            .animation(.easeOut(duration: 0.8).repeatForever(autoreverses: false), value: isPulsing)
-            .onAppear { isPulsing = true }
-    }
-}
-
-// MARK: - Mode Badge
-struct ModeBadge: View {
-    let mode: TranscriptionMode
-    
-    var body: some View {
-        Menu {
-            ForEach(TranscriptionMode.allCases, id: \.self) { m in
-                Button(action: {
-                    SettingsManager.shared.selectedMode = m
-                    NotificationCenter.default.post(name: .modeChanged, object: m)
-                }) {
-                    Label(m.localizedName, systemImage: m.icon)
-                }
-            }
-        } label: {
-            HStack(spacing: 3) {
-                Circle()
-                    .fill(modeColor)
-                    .frame(width: 6, height: 6)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8))
-            }
-            .foregroundStyle(.secondary)
-            .padding(6)
-            .background(
-                Circle()
-                    .fill(Color.secondary.opacity(0.1))
-            )
-        }
-        .menuStyle(.borderlessButton)
-    }
-    
-    private var modeColor: Color {
-        switch mode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
-        case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)
-        case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.9, green: 0.3, blue: 0.5)
-        }
-    }
-}
-
-// MARK: - Status Display
-struct StatusDisplay: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
-    
-    var body: some View {
-        Group {
-            if viewModel.isProcessing {
-                ProcessingStatus()
-            } else if viewModel.isRecording {
-                RecordingStatus()
-            } else if viewModel.needsAPIKey {
-                Text("API Key necessária")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.orange)
-            } else if viewModel.error != nil {
-                Text("Erro")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.red)
-            } else {
-                Text("Segure ⌥⌘")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.secondary.opacity(0.7))
-            }
-        }
-    }
-}
-
-// MARK: - Recording Status
-struct RecordingStatus: View {
-    var body: some View {
-        HStack(spacing: 6) {
-            Text("Gravando...")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.primary)
-        }
-    }
-}
-
-// MARK: - Processing Status
-struct ProcessingStatus: View {
-    var body: some View {
-        HStack(spacing: 6) {
-            ProgressView()
-                .scaleEffect(0.7)
-                .tint(.orange)
-            
-            Text("Processando")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.orange)
-        }
-    }
-}
-
-// MARK: - Record Button
-struct RecordButton: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
-    
-    var body: some View {
-        Button(action: {
-            viewModel.toggleRecording()
-        }) {
-            ZStack {
-                // Outer glow when recording
-                if viewModel.isRecording {
-                    Circle()
-                        .fill(Color.red.opacity(0.2))
-                        .frame(width: 44, height: 44)
-                        .scaleEffect(1.2)
-                }
-                
-                // Main button
-                Circle()
-                    .fill(buttonBackground)
-                    .frame(width: 38, height: 38)
-                    .shadow(color: buttonShadowColor.opacity(0.3), radius: 8, x: 0, y: 3)
-                
-                // Icon
-                Image(systemName: buttonIcon)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.white)
-            }
-        }
-        .buttonStyle(PlainButtonStyle())
-        .disabled(viewModel.isProcessing || viewModel.needsAPIKey)
-        .animation(.easeInOut(duration: 0.2), value: viewModel.isRecording)
-    }
-    
-    private var buttonBackground: Color {
-        if viewModel.isProcessing {
-            return Color.orange
-        } else if viewModel.isRecording {
-            return Color.red
-        } else {
-            return Color.green
-        }
-    }
-    
-    private var buttonShadowColor: Color {
-        if viewModel.isProcessing {
-            return .orange
-        } else if viewModel.isRecording {
-            return .red
-        } else {
-            return .green
-        }
-    }
-    
-    private var buttonIcon: String {
-        if viewModel.isProcessing {
-            return "ellipsis"
-        } else if viewModel.isRecording {
-            return "stop.fill"
-        } else {
-            return "mic.fill"
-        }
-    }
-}
-
-// MARK: - Waveform Section
-struct WaveformSection: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
-    
-    var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<20, id: \.self) { i in
-                WaveformBar(
-                    index: i,
-                    level: viewModel.isRecording ? viewModel.audioLevel : 0.02,
-                    isRecording: viewModel.isRecording
-                )
-            }
-        }
-        .frame(height: 28)
-    }
-}
-
-// MARK: - Waveform Bar
-struct WaveformBar: View {
-    let index: Int
-    let level: CGFloat
-    let isRecording: Bool
-    @State private var randomOffset: CGFloat = 0
-    
-    var body: some View {
-        RoundedRectangle(cornerRadius: 2)
-            .fill(barColor)
-            .frame(width: 3, height: barHeight)
-            .animation(.easeOut(duration: 0.05), value: level)
-            .onAppear {
-                randomOffset = CGFloat.random(in: 0...1)
-            }
-    }
-    
-    private var barHeight: CGFloat {
-        let centerIndex = 9.5
-        let distanceFromCenter = abs(CGFloat(index) - centerIndex)
-        let positionFactor = max(0, 1.0 - (distanceFromCenter / 10.0))
-        
-        let baseHeight: CGFloat = 3
-        let maxHeight: CGFloat = 26
-        
-        let effectiveLevel = max(level, 0.01)
-        
-        // Add some wave variation based on index
-        let wavePhase = Double(index) * 0.5 + Double(randomOffset) * 2
-        let wave = sin(wavePhase + Double(effectiveLevel) * 6) * 0.5 + 0.7
-        
-        let height = baseHeight + (maxHeight - baseHeight) * effectiveLevel * CGFloat(wave) * positionFactor
-        
-        return min(max(height, baseHeight), maxHeight)
-    }
-    
-    private var barColor: Color {
-        if !isRecording {
-            return Color.secondary.opacity(0.15)
-        }
-        
-        let intensity = min(max(level, 0), 1)
-        return Color(
-            red: 0.3 + (intensity * 0.4),
-            green: 0.6 - (intensity * 0.2),
-            blue: 1.0 - (intensity * 0.3)
-        )
-        .opacity(0.4 + (intensity * 0.6))
+        .padding()
+        .frame(width: 400, height: 350)
     }
 }
 
 #Preview {
-    ContentView()
-        .environmentObject(VibeFlowViewModel())
-        .padding()
-        .background(Color.gray.opacity(0.2))
+    ZStack {
+        Color.black.opacity(0.8)
+            .ignoresSafeArea()
+
+        ContentView()
+            .environmentObject(VibeFlowViewModel())
+    }
 }
