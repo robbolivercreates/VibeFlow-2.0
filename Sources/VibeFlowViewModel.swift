@@ -10,12 +10,15 @@ class VibeFlowViewModel: ObservableObject {
     @Published var clarifyText: Bool = true
     @Published var needsAPIKey = false
     @Published var audioLevel: CGFloat = 0.0
-    
+
     private let settings = SettingsManager.shared
     private let snippets = SnippetsManager.shared
     private let audioRecorder = AudioRecorder()
     private var geminiService: GeminiService?
     private var cancellables = Set<AnyCancellable>()
+
+    // Command mode: stores selected text before recording
+    private var commandModeSelectedText: String?
     
     init() {
         loadSettings()
@@ -124,6 +127,19 @@ class VibeFlowViewModel: ObservableObject {
     private func startRecording() {
         error = nil
         statusText = L10n.listening
+
+        // In command mode, capture selected text before recording
+        if selectedMode == .command {
+            commandModeSelectedText = ClipboardHelper.getSelectedText()
+            if commandModeSelectedText != nil {
+                print("[VibeFlow] Command mode: captured selected text (\(commandModeSelectedText!.count) chars)")
+            } else {
+                print("[VibeFlow] Command mode: no text selected, will transcribe as normal")
+            }
+        } else {
+            commandModeSelectedText = nil
+        }
+
         audioRecorder.startRecording()
     }
     
@@ -157,48 +173,63 @@ class VibeFlowViewModel: ObservableObject {
         Task {
             do {
                 guard let service = geminiService else {
-                await MainActor.run {
-                    error = L10n.configureAPIKey
-                    statusText = L10n.error
-                    needsAPIKey = true
-                }
+                    await MainActor.run {
+                        error = L10n.configureAPIKey
+                        statusText = L10n.error
+                        needsAPIKey = true
+                    }
                     return
                 }
-                
-                let transcribedText = try await service.transcribeAudio(audioData: audioData)
-                
+
+                // Use appropriate transcription method
+                let transcribedText: String
+                if self.selectedMode == .command, let selectedText = self.commandModeSelectedText {
+                    // Command mode with selected text
+                    transcribedText = try await service.transcribeWithSelectedText(
+                        audioData: audioData,
+                        selectedText: selectedText
+                    )
+                } else {
+                    // Normal transcription
+                    transcribedText = try await service.transcribeAudio(audioData: audioData)
+                }
+
                 await MainActor.run {
+                    // Clear command mode text
+                    self.commandModeSelectedText = nil
+
                     if transcribedText.isEmpty {
                         error = L10n.noText
                         statusText = L10n.error
                     } else {
                         // Expandir snippets
                         let finalText = self.snippets.expand(transcribedText)
-                        
+
                         // Copiar e colar
                         ClipboardHelper.copyAndPaste(finalText)
                         statusText = L10n.pasted
-                        
+
                         // Registrar analytics
                         AnalyticsManager.shared.recordTranscription(characters: finalText.count)
-                        
+
                         // Notificar AppDelegate sobre transcrição completa
                         NotificationCenter.default.post(
                             name: .transcriptionComplete,
                             object: nil,
                             userInfo: ["text": finalText, "mode": self.selectedMode]
                         )
-                        
+
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             self.statusText = L10n.ready
                         }
                     }
                 }
             } catch {
-            await MainActor.run {
-                self.error = "\(L10n.error): \(error.localizedDescription)"
-                self.statusText = L10n.error
-            }
+                await MainActor.run {
+                    self.commandModeSelectedText = nil
+                    self.error = "\(L10n.error): \(error.localizedDescription)"
+                    self.statusText = L10n.error
+                }
             }
         }
     }

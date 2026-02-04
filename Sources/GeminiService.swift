@@ -32,27 +32,62 @@ class GeminiService: ObservableObject {
             isProcessing = true
             error = nil
         }
-        
+
         defer {
             Task { @MainActor in
                 isProcessing = false
             }
         }
-        
+
         // Criar prompt para transcrição
         let prompt = "Transcreva e processe o áudio a seguir conforme suas instruções:"
-        
+
         // Enviar áudio para o Gemini
         let response = try await model.generateContent(
             prompt,
             ModelContent.Part.data(mimetype: "audio/m4a", audioData)
         )
-        
+
         guard let text = response.text else {
             throw GeminiError.noResponse
         }
-        
+
         // Limpar resposta (remover markdown residual)
+        return cleanMarkdown(text)
+    }
+
+    /// Transcreve áudio com texto selecionado para Command Mode
+    func transcribeWithSelectedText(audioData: Data, selectedText: String) async throws -> String {
+        await MainActor.run {
+            isProcessing = true
+            error = nil
+        }
+
+        defer {
+            Task { @MainActor in
+                isProcessing = false
+            }
+        }
+
+        // Criar prompt com texto selecionado
+        let prompt = """
+        [SELECTED TEXT]
+        \(selectedText)
+        [END SELECTED TEXT]
+
+        Listen to the voice command and transform the selected text accordingly:
+        """
+
+        // Enviar áudio + texto para o Gemini
+        let response = try await model.generateContent(
+            prompt,
+            ModelContent.Part.data(mimetype: "audio/m4a", audioData)
+        )
+
+        guard let text = response.text else {
+            throw GeminiError.noResponse
+        }
+
         return cleanMarkdown(text)
     }
     

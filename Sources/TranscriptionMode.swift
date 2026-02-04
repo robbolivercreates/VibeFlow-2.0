@@ -6,7 +6,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     case text = "Texto"
     case email = "Email"
     case uxDesign = "UX Design"
-    
+    case command = "Command"
+
     var id: String { rawValue }
     
     /// Ícone SF Symbol para o modo
@@ -20,6 +21,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "envelope.fill"
         case .uxDesign:
             return "paintbrush.pointed"
+        case .command:
+            return "wand.and.stars"
         }
     }
     
@@ -34,6 +37,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "Email"
         case .uxDesign:
             return "UX"
+        case .command:
+            return "Command"
         }
     }
     
@@ -48,6 +53,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             return "Email"
         case .uxDesign:
             return L10n.uxMode
+        case .command:
+            return "Command"
         }
     }
     
@@ -58,9 +65,10 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .text:     return 0.3
         case .email:    return 0.2
         case .uxDesign: return 0.5
+        case .command:  return 0.3
         }
     }
-    
+
     /// Tokens máximos por modo
     var maxOutputTokens: Int {
         switch self {
@@ -68,6 +76,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .text:     return 2048
         case .email:    return 2048
         case .uxDesign: return 2048
+        case .command:  return 4096
         }
     }
     
@@ -192,8 +201,39 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             6. Retorne texto formatado pronto para documentação
             7. Se for descrição de fluxo, organize em passos numerados
             """
+
+        case .command:
+            basePrompt = """
+            You are a text transformation assistant. The user will provide:
+            1. Selected text (marked as [SELECTED TEXT])
+            2. A voice command describing how to transform it
+
+            \(speechCleanupRules)
+
+            COMMON COMMANDS AND RESPONSES:
+            - "make it professional" / "mais profissional" → Rewrite in formal business tone
+            - "make it friendly" / "mais informal" → Rewrite in casual, friendly tone
+            - "summarize" / "resumir" → Create concise summary
+            - "expand" / "expandir" → Add more detail and context
+            - "fix grammar" / "corrigir" → Fix grammar and spelling only
+            - "simplify" / "simplificar" → Use simpler words and shorter sentences
+            - "make it shorter" / "encurtar" → Reduce length while keeping meaning
+            - "make it longer" / "alongar" → Expand with more detail
+            - "add bullet points" / "adicionar tópicos" → Format as bullet list
+            - "translate to X" / "traduzir para X" → Translate to specified language
+            - "rewrite" / "reescrever" → Completely rewrite maintaining meaning
+            - "make it persuasive" / "mais persuasivo" → Add persuasive elements
+
+            STRICT RULES:
+            1. Return ONLY the transformed text
+            2. NEVER include explanations, introductions, or commentary
+            3. NEVER say "Here is", "Sure", "Okay" or similar
+            4. Preserve the original meaning unless translation is requested
+            5. If no selected text is provided, just transcribe the voice command as text
+            6. Match the format of the original (code stays code, prose stays prose)
+            """
         }
-        
+
         var finalPrompt = basePrompt
         
         // Adicionar instruções de clareza

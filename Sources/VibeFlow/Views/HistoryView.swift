@@ -260,6 +260,8 @@ struct HistoryItemRow: View {
             return .orange
         case .uxDesign:
             return .purple
+        case .command:
+            return .yellow
         }
     }
     

@@ -28,6 +28,67 @@ class ClipboardHelper {
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
     }
+
+    /// Lê texto do clipboard
+    static func readFromClipboard() -> String? {
+        return NSPasteboard.general.string(forType: .string)
+    }
+
+    /// Simula Cmd+C para copiar texto selecionado
+    private static func simulateCopy() {
+        guard let source = CGEventSource(stateID: .combinedSessionState) else {
+            return
+        }
+
+        // Key code para 'C' é 8
+        let cKeyCode: CGKeyCode = 0x08
+
+        guard let keyDown = CGEvent(keyboardEventSource: source, virtualKey: cKeyCode, keyDown: true) else {
+            return
+        }
+        keyDown.flags = .maskCommand
+
+        guard let keyUp = CGEvent(keyboardEventSource: source, virtualKey: cKeyCode, keyDown: false) else {
+            return
+        }
+        keyUp.flags = .maskCommand
+
+        keyDown.post(tap: .cgAnnotatedSessionEventTap)
+        keyUp.post(tap: .cgAnnotatedSessionEventTap)
+    }
+
+    /// Obtém o texto selecionado no app ativo usando Cmd+C
+    static func getSelectedText() -> String? {
+        guard checkAccessibilityPermission() else {
+            print("⚠️ Sem permissão de Acessibilidade para obter texto selecionado")
+            return nil
+        }
+
+        // Salvar clipboard atual
+        let previousClipboard = readFromClipboard()
+
+        // Limpar clipboard
+        NSPasteboard.general.clearContents()
+
+        // Simular Cmd+C
+        simulateCopy()
+
+        // Esperar um pouco para o sistema processar
+        usleep(100000) // 100ms
+
+        // Ler o texto copiado
+        let selectedText = readFromClipboard()
+
+        // Restaurar clipboard anterior se não conseguiu copiar nada
+        if selectedText == nil || selectedText?.isEmpty == true {
+            if let previous = previousClipboard {
+                copyToClipboard(previous)
+            }
+            return nil
+        }
+
+        return selectedText
+    }
     
     /// Simula Cmd+V usando CGEvent
     private static func simulatePaste() {

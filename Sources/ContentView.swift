@@ -105,6 +105,7 @@ struct RecordingInfoView: View {
         case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
         case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)  // Laranja
         case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
+        case .command: return Color(red: 1.0, green: 0.8, blue: 0.0)  // Gold/Yellow
         }
     }
 }
