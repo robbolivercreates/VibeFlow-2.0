@@ -762,12 +762,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let userInfo = notification.userInfo,
               let text = userInfo["text"] as? String,
               let mode = userInfo["mode"] as? TranscriptionMode else { return }
-        
+
         // Som de sucesso
         sounds.playSuccess()
-        
+
         // Salvar no histórico
         history.add(text: text, mode: mode)
+
+        // Fechar janela automaticamente se habilitado
+        if settings.enableAutoClose {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.window?.orderOut(nil)
+            }
+        }
     }
     
     deinit {
