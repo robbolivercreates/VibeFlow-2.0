@@ -5,6 +5,8 @@ import Combine
 private enum VoiceColors {
     static let accent = Color(red: 0.4, green: 0.4, blue: 1.0) // Indigo
     static let accentGlow = Color(red: 0.4, green: 0.4, blue: 1.0).opacity(0.3)
+    static let speechActive = Color(red: 0.95, green: 0.25, blue: 0.25) // Red for active speech
+    static let speechActiveGlow = Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.3)
     static let processing = Color(red: 0.6, green: 0.4, blue: 1.0) // Purple
     static let background = Color.black.opacity(0.75)
     static let backgroundIdle = Color.black.opacity(0.6)
@@ -63,6 +65,7 @@ struct ModernVoiceOverlay: View {
     @State private var isExpanded = false
     @State private var showContent = false
     @State private var glowOpacity: CGFloat = 0
+    @State private var micPulse = false
 
     private var currentState: OverlayState {
         if viewModel.isProcessing {
@@ -74,15 +77,21 @@ struct ModernVoiceOverlay: View {
         }
     }
 
+    /// Whether the audio level indicates active speech (for visual feedback)
+    private var isSpeechActive: Bool {
+        currentState == .listening && viewModel.audioLevel > 0.05
+    }
+
     var body: some View {
         ZStack {
             // Subtle glow behind (only when active)
             if currentState == .listening {
                 Ellipse()
-                    .fill(VoiceColors.accentGlow)
+                    .fill(isSpeechActive ? VoiceColors.speechActiveGlow : VoiceColors.accentGlow)
                     .frame(width: 350, height: 80)
                     .blur(radius: 40)
                     .opacity(glowOpacity)
+                    .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
             }
 
             // Main container
@@ -97,6 +106,9 @@ struct ModernVoiceOverlay: View {
             }
             withAnimation(.easeInOut(duration: 0.5)) {
                 glowOpacity = isRecording ? 0.5 : 0
+            }
+            if !isRecording {
+                micPulse = false
             }
         }
         .onChange(of: viewModel.isProcessing) { isProcessing in
@@ -183,18 +195,36 @@ struct ModernVoiceOverlay: View {
                 // Glow circle when active
                 if currentState == .listening {
                     Circle()
-                        .fill(VoiceColors.accent)
+                        .fill(isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent)
                         .frame(width: 32, height: 32)
-                        .shadow(color: VoiceColors.accent.opacity(0.4), radius: 8)
+                        .shadow(color: (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent).opacity(0.4), radius: 8)
+                        .opacity(micPulse ? 0.6 : 1.0)
                 }
 
                 Circle()
-                    .fill(currentState == .listening ? VoiceColors.accent : Color.clear)
+                    .fill(currentState == .listening
+                          ? (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent)
+                          : Color.clear)
                     .frame(width: 28, height: 28)
+                    .opacity(micPulse ? 0.7 : 1.0)
 
                 Image(systemName: micIcon)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(currentState == .listening ? .white : VoiceColors.textSecondary)
+            }
+            .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
+            .onChange(of: isSpeechActive) { active in
+                if active {
+                    // Start pulsing when speech detected
+                    withAnimation(.easeInOut(duration: 0.4).repeatForever(autoreverses: true)) {
+                        micPulse = true
+                    }
+                } else {
+                    // Stop pulsing when quiet
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        micPulse = false
+                    }
+                }
             }
 
             // Sound wave bars (only when listening)
@@ -303,12 +333,20 @@ struct SoundWaveView: View {
 
     private let barCount = 6
 
+    /// Audio level threshold for visual speech detection feedback
+    private let speechVisualThreshold: CGFloat = 0.05
+
+    private var isSpeechActive: Bool {
+        audioLevel > speechVisualThreshold
+    }
+
     var body: some View {
         HStack(spacing: 3) {
             ForEach(0..<barCount, id: \.self) { index in
                 SoundWaveBar(
                     index: index,
                     audioLevel: audioLevel,
+                    isSpeechActive: isSpeechActive,
                     totalBars: barCount
                 )
             }
@@ -321,19 +359,23 @@ struct SoundWaveView: View {
 struct SoundWaveBar: View {
     let index: Int
     let audioLevel: CGFloat
+    let isSpeechActive: Bool
     let totalBars: Int
 
-    @State private var animationPhase: CGFloat = 0
+    private var barColor: Color {
+        isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent
+    }
 
     var body: some View {
         RoundedRectangle(cornerRadius: 1.5)
-            .fill(VoiceColors.accent.opacity(0.8 + Double(audioLevel) * 0.2))
+            .fill(barColor.opacity(0.8 + Double(audioLevel) * 0.2))
             .frame(width: 3, height: barHeight)
             .animation(
                 .easeInOut(duration: 0.15)
                 .delay(Double(index) * 0.05),
                 value: audioLevel
             )
+            .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
     }
 
     private var barHeight: CGFloat {
