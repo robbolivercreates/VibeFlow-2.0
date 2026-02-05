@@ -22,12 +22,12 @@ class AudioRecorder: NSObject, ObservableObject {
     @Published var availableDevices: [AudioInputDevice] = []
     @Published var selectedDeviceId: String?
 
-    // Detecção de fala - MAIS PERMISSIVA
+    // Speech detection
     private var speechDetected = false
     private var maxAudioLevel: CGFloat = 0.0
     private var recordingStartTime: Date?
-    private let minimumRecordingDuration: TimeInterval = 0.3  // Reduzido para 300ms
-    private let speechThreshold: CGFloat = 0.05  // Reduzido para detectar mais fácil
+    private let minimumRecordingDuration: TimeInterval = 0.5  // Minimum 500ms to filter accidental taps
+    private let speechThreshold: CGFloat = 0.02  // Low threshold to accommodate quiet speakers
 
     private var audioRecorder: AVAudioRecorder?
     private var recordingURL: URL?
@@ -252,7 +252,7 @@ class AudioRecorder: NSObject, ObservableObject {
         let level = pow(10, db / 20)
         let normalizedLevel = CGFloat(min(max(level, 0), 1))
         
-        // Detectar se houve fala (threshold mais baixo)
+        // Detect if audio level exceeds speech threshold
         if normalizedLevel > speechThreshold {
             speechDetected = true
         }
@@ -286,16 +286,23 @@ class AudioRecorder: NSObject, ObservableObject {
         return try? Data(contentsOf: url)
     }
     
-    /// Verifica se a gravação é válida - MAIS PERMISSIVA
+    /// Validates that the recording contains actual speech
     func isRecordingValid() -> Bool {
         let duration = recordingDuration
-        
-        // Sempre válido se gravou por pelo menos 300ms
-        // Não exige mais detecção de fala (muitos usuários falam baixo)
-        let isValid = duration >= minimumRecordingDuration
-        
+
+        // Must meet minimum duration (filters accidental taps)
+        guard duration >= minimumRecordingDuration else {
+            print("[AudioRecorder] Recording too short: \(String(format: "%.2f", duration))s < \(minimumRecordingDuration)s")
+            return false
+        }
+
+        // Must have detected audio above speech threshold
+        // The threshold (0.02) is very low - typical silence is ~0.005-0.01,
+        // so even quiet speech or whispering will exceed it
+        let isValid = speechDetected
+
         print("[AudioRecorder] Duration: \(String(format: "%.2f", duration))s, Speech: \(speechDetected), Max: \(String(format: "%.3f", maxAudioLevel)), Valid: \(isValid)")
-        
+
         return isValid
     }
 }
