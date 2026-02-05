@@ -26,6 +26,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var globalKeyMonitor: Any?
     var localKeyMonitor: Any?
 
+    // CGEvent tap for reliable global keyboard shortcut detection
+    var globalKeyTap: CFMachPort?
+
     // Language notification window (retained to prevent memory issues)
     var languageNotificationWindow: NSWindow?
     var lastLanguageCycleTime: Date = .distantPast
@@ -459,30 +462,103 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Global Shortcuts
     
     var localKeyDownMonitor: Any?
-    
+
     func setupGlobalShortcuts() {
-        // Cmd+Shift+V - Toggle window (global)
-        globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleGlobalKeyEvent(event)
-        }
-        
-        // Local key monitor (works when app is active)
-        localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleGlobalKeyEvent(event)
-            return event
-        }
-        
-        // Hold-to-Talk: Option + Command
+        // Global key event tap for keyboard shortcuts (CGEvent tap is more reliable
+        // than NSEvent.addGlobalMonitorForEvents for .keyDown in accessory apps)
+        setupGlobalKeyTap()
+
+        // Hold-to-Talk: Option + Command (flagsChanged monitors)
         NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             guard let self = self else { return }
             self.handleFlagsChanged(event)
         }
-        
-        // Monitor local também
+
+        // Local flagsChanged monitor (when app is active)
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             guard let self = self else { return event }
             self.handleFlagsChanged(event)
             return event
+        }
+    }
+
+    /// Sets up a CGEvent tap for global keyboard shortcut detection.
+    /// CGEvent taps work at a lower level than NSEvent monitors and reliably
+    /// detect key presses even when the app is a background accessory app.
+    private func setupGlobalKeyTap() {
+        let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: eventMask,
+            callback: { (proxy, type, event, refcon) -> Unmanaged<CGEvent>? in
+                guard let refcon = refcon else { return Unmanaged.passUnretained(event) }
+                let appDelegate = Unmanaged<AppDelegate>.fromOpaque(refcon).takeUnretainedValue()
+
+                if type == .keyDown {
+                    let keyCode = UInt16(event.getIntegerValueField(.keyboardEventKeycode))
+                    let flags = event.flags
+                    appDelegate.handleCGKeyEvent(keyCode: keyCode, flags: flags)
+                }
+
+                // Re-enable tap if macOS disables it (e.g., callback took too long)
+                if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+                    if let tap = appDelegate.globalKeyTap {
+                        CGEvent.tapEnable(tap: tap, enable: true)
+                    }
+                }
+
+                return Unmanaged.passUnretained(event)
+            },
+            userInfo: refcon
+        ) else {
+            print("[VibeFlow] CGEvent tap failed - falling back to NSEvent monitors")
+            // Fallback: use NSEvent monitors (less reliable but better than nothing)
+            globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                self?.handleGlobalKeyEvent(event)
+            }
+            localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                self?.handleGlobalKeyEvent(event)
+                return event
+            }
+            return
+        }
+
+        self.globalKeyTap = tap
+        let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
+        CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+        print("[VibeFlow] Global key event tap installed successfully")
+    }
+
+    /// Handle key events from the CGEvent tap (works globally)
+    func handleCGKeyEvent(keyCode: UInt16, flags: CGEventFlags) {
+        let keyChar = keyCodeToChar(keyCode)
+
+        // Convert CGEventFlags to NSEvent.ModifierFlags for matchesShortcut
+        var modifiers = NSEvent.ModifierFlags()
+        if flags.contains(.maskControl) { modifiers.insert(.control) }
+        if flags.contains(.maskAlternate) { modifiers.insert(.option) }
+        if flags.contains(.maskShift) { modifiers.insert(.shift) }
+        if flags.contains(.maskCommand) { modifiers.insert(.command) }
+
+        // Toggle window shortcut (default: ⌘⇧V)
+        if matchesShortcut(settings.shortcutToggleKey, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.toggleWindow()
+            }
+            return
+        }
+
+        // Language cycle shortcut (default: ⌥⇧L)
+        if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.cycleLanguage()
+            }
+            return
         }
     }
     
@@ -782,6 +858,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     deinit {
+        if let tap = globalKeyTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+        }
         if let monitor = globalKeyMonitor {
             NSEvent.removeMonitor(monitor)
         }
