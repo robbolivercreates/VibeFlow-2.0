@@ -29,10 +29,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // CGEvent tap for reliable global keyboard shortcut detection
     var globalKeyTap: CFMachPort?
 
-    // Language notification window (retained to prevent memory issues)
+    // Notification windows (retained to prevent memory issues)
     var languageNotificationWindow: NSWindow?
+    var modeNotificationWindow: NSWindow?
     var lastLanguageCycleTime: Date = .distantPast
+    var lastModeCycleTime: Date = .distantPast
     let languageCycleDebounceInterval: TimeInterval = 0.3 // 300ms debounce
+    let modeCycleDebounceInterval: TimeInterval = 0.3
     
     // Managers
     let settings = SettingsManager.shared
@@ -164,6 +167,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             modesMenu.addItem(item)
         }
+        modesMenu.addItem(NSMenuItem.separator())
+        let cycleModeItem = NSMenuItem(
+            title: "Próximo (⌥⇧M)",
+            action: #selector(cycleMode),
+            keyEquivalent: ""
+        )
+        cycleModeItem.target = self
+        modesMenu.addItem(cycleModeItem)
         let modesItem = NSMenuItem(title: L10n.defaultMode, action: nil, keyEquivalent: "")
         modesItem.submenu = modesMenu
         menu.addItem(modesItem)
@@ -560,6 +571,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+
+        // Mode cycle shortcut (default: ⌥⇧M)
+        if matchesShortcut(settings.cycleModeShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.cycleMode()
+            }
+            return
+        }
     }
     
     func handleGlobalKeyEvent(_ event: NSEvent) {
@@ -586,6 +605,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { [weak self] in
                 print("[VibeFlow] Language shortcut detected!")
                 self?.cycleLanguage()
+            }
+            return
+        }
+
+        // Mode cycle shortcut (default: ⌥⇧M)
+        if matchesShortcut(settings.cycleModeShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.cycleMode()
             }
             return
         }
@@ -699,7 +726,74 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.languageNotificationWindow = nil
         }
     }
-    
+
+    @objc func cycleMode() {
+        // Debounce rapid key presses
+        let now = Date()
+        guard now.timeIntervalSince(lastModeCycleTime) >= modeCycleDebounceInterval else {
+            return
+        }
+        lastModeCycleTime = now
+
+        let previousMode = settings.selectedMode
+        settings.cycleToNextMode()
+        let newMode = settings.selectedMode
+
+        // Update ViewModel
+        viewModel?.updateMode(newMode)
+
+        // Play feedback sound
+        sounds.playSuccess()
+
+        // Show notification
+        showModeNotification(mode: newMode)
+
+        // Update menu to reflect change
+        updateMenu()
+
+        print("[VibeFlow] Mode changed: \(previousMode.localizedName) → \(newMode.localizedName)")
+    }
+
+    func showModeNotification(mode: TranscriptionMode) {
+        // Close existing notification window if present
+        modeNotificationWindow?.orderOut(nil)
+        modeNotificationWindow = nil
+
+        let notificationWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 60),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+
+        let contentView = ModeNotificationView(mode: mode)
+        notificationWindow.contentView = NSHostingView(rootView: contentView)
+        notificationWindow.level = .floating
+        notificationWindow.backgroundColor = .clear
+        notificationWindow.isOpaque = false
+        notificationWindow.hasShadow = true
+        notificationWindow.isReleasedWhenClosed = false
+
+        // Position near the main window or centered
+        if let window = window, window.isVisible {
+            let windowFrame = window.frame
+            let x = windowFrame.midX - 100
+            let y = windowFrame.maxY + 20
+            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            notificationWindow.center()
+        }
+
+        self.modeNotificationWindow = notificationWindow
+        notificationWindow.makeKeyAndOrderFront(nil)
+
+        // Auto-close after 1.5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.modeNotificationWindow?.orderOut(nil)
+            self?.modeNotificationWindow = nil
+        }
+    }
+
     func handleFlagsChanged(_ event: NSEvent) {
         // Parse the record shortcut to get required modifiers
         let recordShortcut = settings.shortcutRecordKey

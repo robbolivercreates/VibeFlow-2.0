@@ -166,61 +166,68 @@ struct ModeCard2: View {
         VStack(alignment: .leading, spacing: 0) {
             // Main row
             HStack(spacing: 14) {
-                // Icon
-                ZStack {
-                    Circle()
-                        .fill(mode.color.opacity(isSelected ? 0.2 : 0.1))
-                        .frame(width: 40, height: 40)
+                // Tappable area for selecting mode
+                HStack(spacing: 14) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(mode.color.opacity(isSelected ? 0.2 : 0.1))
+                            .frame(width: 40, height: 40)
 
-                    Image(systemName: mode.icon)
-                        .font(.system(size: 16))
-                        .foregroundStyle(mode.color)
-                }
+                        Image(systemName: mode.icon)
+                            .font(.system(size: 16))
+                            .foregroundStyle(mode.color)
+                    }
 
-                // Info
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 8) {
-                        Text(mode.localizedName)
-                            .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
-                            .foregroundStyle(isSelected ? mode.color : .primary)
+                    // Info
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(mode.localizedName)
+                                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                                .foregroundStyle(isSelected ? mode.color : .primary)
 
-                        if isSelected {
-                            Text("ATIVO")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(mode.color)
-                                .cornerRadius(4)
+                            if isSelected {
+                                Text("ATIVO")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(mode.color)
+                                    .cornerRadius(4)
+                            }
+                        }
+
+                        Text(mode.shortDescription)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+
+                    // Usage count
+                    if usageCount > 0 {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("\(usageCount)")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+                            Text("usos")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.secondary)
                         }
                     }
-
-                    Text(mode.shortDescription)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
                 }
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onSelect)
 
-                Spacer()
-
-                // Usage count
-                if usageCount > 0 {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("\(usageCount)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.secondary)
-                        Text("usos")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                // Expand button
+                // Expand button (separate from select area)
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderless)
             }
             .padding(14)
 
@@ -272,8 +279,6 @@ struct ModeCard2: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(isSelected ? mode.color.opacity(0.25) : Color(nsColor: .separatorColor), lineWidth: 1)
         )
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onSelect)
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering

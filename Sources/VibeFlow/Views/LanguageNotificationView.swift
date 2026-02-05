@@ -30,6 +30,37 @@ struct LanguageNotificationView: View {
     }
 }
 
+/// View flutuante para mostrar mudança de modo
+struct ModeNotificationView: View {
+    let mode: TranscriptionMode
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.ultraThinMaterial)
+                .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+
+            HStack(spacing: 8) {
+                Image(systemName: mode.icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(mode.color)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mode.localizedName)
+                        .font(.system(size: 13, weight: .semibold))
+
+                    Text("Modo de transcrição")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        .frame(width: 200, height: 60)
+    }
+}
+
 #Preview {
     LanguageNotificationView(language: .portuguese)
         .padding()

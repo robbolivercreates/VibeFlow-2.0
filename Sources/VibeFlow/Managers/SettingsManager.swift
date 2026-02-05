@@ -24,6 +24,7 @@ class SettingsManager: ObservableObject {
         static let outputLanguage = "output_language"
         static let favoriteLanguages = "favorite_languages"
         static let cycleLanguageShortcut = "cycle_language_shortcut"
+        static let cycleModeShortcut = "cycle_mode_shortcut"
         static let enableStyleLearning = "enable_style_learning"
     }
     
@@ -100,6 +101,14 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    /// Atalho para ciclar entre modos de transcrição
+    @Published var cycleModeShortcut: String {
+        didSet {
+            defaults.set(cycleModeShortcut, forKey: Keys.cycleModeShortcut)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
+    }
+
     @Published var shortcutRecordKey: String {
         didSet { 
             defaults.set(shortcutRecordKey, forKey: Keys.shortcutRecord)
@@ -151,6 +160,7 @@ class SettingsManager: ObservableObject {
         }
         
         self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌥⇧L"
+        self.cycleModeShortcut = defaults.string(forKey: Keys.cycleModeShortcut) ?? "⌥⇧M"
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
@@ -202,6 +212,16 @@ class SettingsManager: ObservableObject {
             outputLanguage = favoriteLanguages[currentFavoriteIndex]
             print("[SettingsManager] Forced next: \(outputLanguage.displayName)")
         }
+    }
+
+    /// Cycles to the next transcription mode
+    func cycleToNextMode() {
+        let allModes = TranscriptionMode.allCases
+        guard let currentIndex = allModes.firstIndex(of: selectedMode) else { return }
+        let nextIndex = (currentIndex + 1) % allModes.count
+        let nextMode = allModes[nextIndex]
+        print("[SettingsManager] Mode changed: \(selectedMode.localizedName) → \(nextMode.localizedName)")
+        selectedMode = nextMode
     }
 
     /// Reset favorite index when favorites change
