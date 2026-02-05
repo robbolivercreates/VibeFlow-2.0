@@ -175,7 +175,7 @@ struct SettingsDetailView: View {
                 ) {
                     ShortcutEditor(
                         shortcut: $settings.cycleLanguageShortcut,
-                        placeholder: "⌃⌥L"
+                        placeholder: "⌥⇧L"
                     )
                 }
 
@@ -295,7 +295,7 @@ struct SettingsDetailView: View {
                     Button("Resetar") {
                         settings.shortcutRecordKey = "⌥⌘"
                         settings.shortcutToggleKey = "⌘⇧V"
-                        settings.cycleLanguageShortcut = "⌃⌥L"
+                        settings.cycleLanguageShortcut = "⌥⇧L"
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -422,7 +422,7 @@ struct ShortcutBadge: View {
     }
 }
 
-// MARK: - Shortcut Editor
+// MARK: - Shortcut Editor (NSEvent-based, works on macOS 13+)
 
 struct ShortcutEditor: View {
     @Binding var shortcut: String
@@ -430,14 +430,18 @@ struct ShortcutEditor: View {
 
     @State private var isEditing = false
     @State private var tempShortcut = ""
+    @State private var eventMonitor: Any?
 
     var body: some View {
         Button(action: {
-            isEditing = true
-            tempShortcut = ""
+            if isEditing {
+                stopEditing()
+            } else {
+                startEditing()
+            }
         }) {
             HStack(spacing: 6) {
-                Text(isEditing ? (tempShortcut.isEmpty ? "..." : tempShortcut) : shortcut)
+                Text(isEditing ? (tempShortcut.isEmpty ? "Pressione..." : tempShortcut) : shortcut)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundStyle(isEditing ? .orange : .purple)
 
@@ -445,6 +449,10 @@ struct ShortcutEditor: View {
                     Image(systemName: "pencil")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
+                } else {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.orange)
                 }
             }
             .padding(.horizontal, 10)
@@ -457,117 +465,82 @@ struct ShortcutEditor: View {
             )
         }
         .buttonStyle(.plain)
-        .background(
-            ShortcutCaptureView(isActive: $isEditing, shortcut: $shortcut, tempShortcut: $tempShortcut)
-                .frame(width: 0, height: 0)
-        )
-        .onAppear {
-            tempShortcut = shortcut
-        }
-    }
-}
-
-// MARK: - Shortcut Capture View (NSViewRepresentable for macOS 13 compatibility)
-
-struct ShortcutCaptureView: NSViewRepresentable {
-    @Binding var isActive: Bool
-    @Binding var shortcut: String
-    @Binding var tempShortcut: String
-
-    func makeNSView(context: Context) -> ShortcutCaptureNSView {
-        let view = ShortcutCaptureNSView()
-        view.delegate = context.coordinator
-        return view
-    }
-
-    func updateNSView(_ nsView: ShortcutCaptureNSView, context: Context) {
-        nsView.isActive = isActive
-        if isActive {
-            nsView.window?.makeFirstResponder(nsView)
+        .onDisappear {
+            stopEditing()
         }
     }
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
+    private func startEditing() {
+        isEditing = true
+        tempShortcut = ""
 
-    class Coordinator: NSObject {
-        let parent: ShortcutCaptureView
-
-        init(_ parent: ShortcutCaptureView) {
-            self.parent = parent
-        }
-
-        func handleKeyEvent(_ event: NSEvent) -> Bool {
-            guard parent.isActive else { return false }
+        // Listen for key events using NSEvent (works on macOS 13+)
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
             var parts: [String] = []
 
-            // Build modifier string
-            if event.modifierFlags.contains(.control) {
-                parts.append("⌃")
-            }
-            if event.modifierFlags.contains(.option) {
-                parts.append("⌥")
-            }
-            if event.modifierFlags.contains(.shift) {
-                parts.append("⇧")
-            }
-            if event.modifierFlags.contains(.command) {
-                parts.append("⌘")
+            if modifiers.contains(.control) { parts.append("⌃") }
+            if modifiers.contains(.option) { parts.append("⌥") }
+            if modifiers.contains(.shift) { parts.append("⇧") }
+            if modifiers.contains(.command) { parts.append("⌘") }
+
+            // Escape to cancel
+            if event.keyCode == 53 {
+                DispatchQueue.main.async {
+                    stopEditing()
+                }
+                return nil
             }
 
-            // Add key character if it's not just modifiers
-            if let characters = event.charactersIgnoringModifiers?.uppercased(),
-               !characters.isEmpty && characters != " " {
-                // Filter out pure modifier keys
-                let key = characters
-                if !key.isEmpty && key != "\t" && key != "\r" && key != "\n" {
-                    parts.append(key)
-                }
+            // Get key character from keyCode
+            let keyChar = keyCodeToDisplayChar(event.keyCode)
+
+            if !keyChar.isEmpty {
+                parts.append(keyChar)
             }
 
             let newShortcut = parts.joined()
 
-            if !newShortcut.isEmpty && parts.count >= 2 {
-                // Valid shortcut (at least one modifier + one key)
-                parent.shortcut = newShortcut
-                parent.isActive = false
-                return true
+            if parts.count >= 2 && !keyChar.isEmpty {
+                // Valid: at least one modifier + one key letter
+                DispatchQueue.main.async {
+                    shortcut = newShortcut
+                    stopEditing()
+                }
+                return nil // consume the event
             } else if !parts.isEmpty {
-                // Show partial shortcut while typing
-                parent.tempShortcut = newShortcut
-                return true
+                DispatchQueue.main.async {
+                    tempShortcut = newShortcut
+                }
+                return nil
             }
 
-            return true
+            return nil
         }
     }
-}
 
-// MARK: - Shortcut Capture NSView
-
-class ShortcutCaptureNSView: NSView {
-    var isActive: Bool = false
-    weak var delegate: ShortcutCaptureView.Coordinator?
-
-    override var acceptsFirstResponder: Bool { true }
-
-    override func keyDown(with event: NSEvent) {
-        if isActive, let delegate = delegate {
-            if delegate.handleKeyEvent(event) {
-                return
-            }
+    private func stopEditing() {
+        isEditing = false
+        tempShortcut = ""
+        if let monitor = eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            eventMonitor = nil
         }
-        super.keyDown(with: event)
     }
 
-    override func flagsChanged(with event: NSEvent) {
-        // Track modifier key changes
-        if isActive, let delegate = delegate {
-            _ = delegate.handleKeyEvent(event)
-        }
-        super.flagsChanged(with: event)
+    /// Map key codes to display characters
+    private func keyCodeToDisplayChar(_ keyCode: UInt16) -> String {
+        let keyMap: [UInt16: String] = [
+            0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
+            8: "C", 9: "V", 10: "B", 11: "Q", 12: "Q", 13: "W", 14: "E", 15: "R",
+            16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
+            24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0", 30: "]", 31: "O",
+            32: "U", 33: "[", 34: "I", 35: "P", 37: "L", 38: "J", 40: "K",
+            45: "N", 46: "M",
+            36: "↩", 48: "⇥", 49: "Space", 50: "`", 51: "⌫"
+        ]
+        return keyMap[keyCode] ?? ""
     }
 }
 

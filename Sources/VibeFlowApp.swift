@@ -194,7 +194,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             langMenu.addItem(NSMenuItem.separator())
             let cycleItem = NSMenuItem(
-                title: "Próximo (⌃⌥L)",
+                title: "Próximo (⌥⇧L)",
                 action: #selector(cycleLanguage),
                 keyEquivalent: ""
             )
@@ -206,7 +206,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(langItem)
         } else {
             let cycleItem = NSMenuItem(
-                title: "Mudar Idioma (⌃⌥L)",
+                title: "Mudar Idioma (⌥⇧L)",
                 action: #selector(cycleLanguage),
                 keyEquivalent: ""
             )
@@ -461,14 +461,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func handleGlobalKeyEvent(_ event: NSEvent) {
-        let modifiers = event.modifierFlags
+        // Strip device-dependent bits for reliable matching
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let keyCode = event.keyCode
 
-        // Get key character
+        // Get key character from keyCode (layout-independent)
         let keyChar = keyCodeToChar(keyCode)
 
-        // Debug logging (uncomment to debug)
-        // print("[KeyEvent] modifiers: \(modifiers.rawValue), keyCode: \(keyCode), char: \(keyChar)")
+        // Debug logging
+        print("[KeyEvent] keyCode: \(keyCode), char: '\(keyChar)', modifiers: ctrl=\(modifiers.contains(.control)) opt=\(modifiers.contains(.option)) shift=\(modifiers.contains(.shift)) cmd=\(modifiers.contains(.command))")
 
         // Toggle window shortcut (default: ⌘⇧V)
         if matchesShortcut(settings.shortcutToggleKey, modifiers: modifiers, keyChar: keyChar) {
@@ -478,30 +479,31 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Language cycle shortcut (default: ⌃⌥L)
+        // Language cycle shortcut (default: ⌥⇧L)
         if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
-                print("[VibeFlow] Language shortcut detected")
+                print("[VibeFlow] Language shortcut detected!")
                 self?.cycleLanguage()
             }
             return
         }
     }
 
-    /// Convert key code to character
+    /// Convert key code to character (macOS virtual key codes, layout-independent)
     private func keyCodeToChar(_ keyCode: UInt16) -> String {
         let keyMap: [UInt16: String] = [
             0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
             8: "C", 9: "V", 10: "B", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
             16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
             24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0", 30: "]", 31: "O",
-            32: "U", 33: "[", 34: "I", 35: "P", 37: "L", 38: "J", 39: "'", 40: "K",
-            41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M", 47: "."
+            32: "U", 33: "[", 34: "I", 35: "P", 36: "RETURN", 37: "L", 38: "J",
+            39: "'", 40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N", 46: "M",
+            47: ".", 48: "TAB", 49: "SPACE", 50: "`", 51: "DELETE"
         ]
         return keyMap[keyCode] ?? ""
     }
 
-    /// Check if event matches shortcut string
+    /// Check if event matches shortcut string like "⌥⇧L" or "⌘⇧V"
     private func matchesShortcut(_ shortcut: String, modifiers: NSEvent.ModifierFlags, keyChar: String) -> Bool {
         // Parse expected modifiers from shortcut string
         let expectControl = shortcut.contains("⌃")
@@ -509,7 +511,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let expectShift = shortcut.contains("⇧")
         let expectCommand = shortcut.contains("⌘")
 
-        // Check modifiers match
+        // Check modifiers match (using already-masked flags)
         let hasControl = modifiers.contains(.control)
         let hasOption = modifiers.contains(.option)
         let hasShift = modifiers.contains(.shift)
@@ -522,11 +524,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return false
         }
 
-        // Extract key from shortcut (last character that's not a modifier)
-        let modifierChars = Set(["⌃", "⌥", "⇧", "⌘"])
-        let expectedKey = shortcut.filter { !modifierChars.contains(String($0)) }.uppercased()
+        // Extract key letter from shortcut (everything that's not a modifier symbol)
+        let modifierChars: Set<Character> = ["⌃", "⌥", "⇧", "⌘"]
+        let expectedKey = String(shortcut.filter { !modifierChars.contains($0) }).uppercased()
 
-        return keyChar.uppercased() == expectedKey
+        return !expectedKey.isEmpty && keyChar.uppercased() == expectedKey
     }
     
     @objc func cycleLanguage() {
@@ -604,11 +606,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let requireShift = recordShortcut.contains("⇧")
         let requireCommand = recordShortcut.contains("⌘")
 
-        // Check if required modifiers are pressed
-        let hasControl = event.modifierFlags.contains(.control)
-        let hasOption = event.modifierFlags.contains(.option)
-        let hasShift = event.modifierFlags.contains(.shift)
-        let hasCommand = event.modifierFlags.contains(.command)
+        // Check if required modifiers are pressed (mask device-dependent bits)
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let hasControl = flags.contains(.control)
+        let hasOption = flags.contains(.option)
+        let hasShift = flags.contains(.shift)
+        let hasCommand = flags.contains(.command)
 
         let shortcutPressed = (requireControl == hasControl) &&
                               (requireOption == hasOption) &&

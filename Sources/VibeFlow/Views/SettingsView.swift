@@ -97,14 +97,14 @@ struct SettingsView: View {
                             .cornerRadius(4)
                     }
                     
-                    Text("Pressione ⌃⌥L (Control+Option+L) enquanto segura ⌥⌘ para alternar entre idiomas favoritos")
+                    Text("Pressione ⌥⇧L (Option+Shift+L) para alternar entre idiomas favoritos")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             
             Section("Idiomas Favoritos") {
-                Text("Marque pelo menos 2 idiomas abaixo para poder alternar entre eles com o atalho ⌃⌥L")
+                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌥⇧L")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 

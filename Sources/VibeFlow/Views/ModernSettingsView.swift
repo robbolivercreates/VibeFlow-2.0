@@ -560,7 +560,7 @@ struct ShortcutsSettingsSection: View {
                     
                     SettingsShortcutRow(
                         action: "Mudar Idioma",
-                        shortcut: "⌃⌥L",
+                        shortcut: "⌥⇧L",
                         description: "Cicla entre os idiomas favoritos"
                     )
                     

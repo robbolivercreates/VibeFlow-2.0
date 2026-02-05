@@ -617,7 +617,7 @@ struct SetupWizardView: View {
                 // Cycle shortcut demo
                 VStack(spacing: 12) {
                     HStack(spacing: 12) {
-                        Text("⌃⌥L")
+                        Text("⌥⇧L")
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
                             .foregroundStyle(.purple)
                             .padding(.horizontal, 12)
@@ -742,7 +742,7 @@ struct SetupWizardView: View {
 
                 VStack(spacing: 12) {
                     QuickRefRow(keys: "⌥⌘", action: "Segure para gravar", description: "Solte para transcrever e colar")
-                    QuickRefRow(keys: "⌃⌥L", action: "Alternar idioma", description: "Cicla entre favoritos")
+                    QuickRefRow(keys: "⌥⇧L", action: "Alternar idioma", description: "Cicla entre favoritos")
                     QuickRefRow(keys: "⌘⇧V", action: "Mostrar/ocultar", description: "Abre a janela do VibeFlow")
                 }
             }
