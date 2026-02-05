@@ -92,10 +92,7 @@ struct ModesView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(settings.selectedMode.color.opacity(0.3), lineWidth: 1)
-                )
+                    .stroke(settings.selectedMode.color.opacity(0.3), lineWidth: 1)
             )
         }
     }

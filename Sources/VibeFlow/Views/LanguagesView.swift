@@ -97,10 +97,7 @@ struct LanguagesView: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.purple.opacity(0.3), lineWidth: 1)
-                )
+                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
             )
         }
     }
@@ -254,10 +251,7 @@ struct FavoriteLanguageChip: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
-            )
+                .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

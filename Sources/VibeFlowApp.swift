@@ -321,87 +321,113 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func showMainWindow() {
-        if let existingWindow = mainAppWindow, existingWindow.isVisible {
+        // If window exists, just show it
+        if let existingWindow = mainAppWindow {
             existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
 
-        // Close existing window if present
-        mainAppWindow?.close()
-
+        // Create new window
         let mainView = MainWindowView()
         let hostingView = NSHostingView(rootView: mainView)
 
-        mainAppWindow = NSWindow(
+        let newWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
             styleMask: [.titled, .closable, .resizable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        mainAppWindow?.contentView = hostingView
-        mainAppWindow?.title = "VibeFlow"
-        mainAppWindow?.minSize = NSSize(width: 720, height: 520)
-        mainAppWindow?.center()
-        mainAppWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        newWindow.contentView = hostingView
+        newWindow.title = "VibeFlow"
+        newWindow.minSize = NSSize(width: 720, height: 520)
+        newWindow.isReleasedWhenClosed = false
+        newWindow.center()
+        mainAppWindow = newWindow
 
+        // Observe close to clean up reference (prevents crash and reappear)
         NotificationCenter.default.addObserver(
             forName: NSWindow.willCloseNotification,
-            object: mainAppWindow,
+            object: newWindow,
             queue: .main
-        ) { [weak self] _ in
+        ) { [weak self] notification in
             self?.viewModel?.reloadAPIKey()
+            self?.mainAppWindow = nil
         }
+
+        newWindow.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     // MARK: - History
     
     @objc func showHistory() {
-        if let existingWindow = historyWindow, existingWindow.isVisible {
+        if let existingWindow = historyWindow {
             existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        
+
         let historyView = HistoryView()
         let hostingView = NSHostingView(rootView: historyView)
-        
-        historyWindow = NSWindow(
+
+        let newWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 500),
             styleMask: [.titled, .closable, .resizable],
             backing: .buffered,
             defer: false
         )
-        historyWindow?.contentView = hostingView
-        historyWindow?.title = "VibeFlow - Histórico"
-        historyWindow?.center()
-        historyWindow?.makeKeyAndOrderFront(nil)
+        newWindow.contentView = hostingView
+        newWindow.title = "VibeFlow - Histórico"
+        newWindow.isReleasedWhenClosed = false
+        newWindow.center()
+        historyWindow = newWindow
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: newWindow,
+            queue: .main
+        ) { [weak self] _ in
+            self?.historyWindow = nil
+        }
+
+        newWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
-    
+
     // MARK: - Snippets
-    
+
     @objc func showSnippets() {
-        if let existingWindow = snippetsWindow, existingWindow.isVisible {
+        if let existingWindow = snippetsWindow {
             existingWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
-        
+
         let snippetsView = SnippetsView()
         let hostingView = NSHostingView(rootView: snippetsView)
-        
-        snippetsWindow = NSWindow(
+
+        let newWindow = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 450, height: 450),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false
         )
-        snippetsWindow?.contentView = hostingView
-        snippetsWindow?.title = "VibeFlow - Snippets"
-        snippetsWindow?.center()
-        snippetsWindow?.makeKeyAndOrderFront(nil)
+        newWindow.contentView = hostingView
+        newWindow.title = "VibeFlow - Snippets"
+        newWindow.isReleasedWhenClosed = false
+        newWindow.center()
+        snippetsWindow = newWindow
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: newWindow,
+            queue: .main
+        ) { [weak self] _ in
+            self?.snippetsWindow = nil
+        }
+
+        newWindow.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
     
@@ -493,7 +519,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func keyCodeToChar(_ keyCode: UInt16) -> String {
         let keyMap: [UInt16: String] = [
             0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X",
-            8: "C", 9: "V", 10: "B", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
+            8: "C", 9: "V", 11: "B", 12: "Q", 13: "W", 14: "E", 15: "R",
             16: "Y", 17: "T", 18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5",
             24: "=", 25: "9", 26: "7", 27: "-", 28: "8", 29: "0", 30: "]", 31: "O",
             32: "U", 33: "[", 34: "I", 35: "P", 36: "RETURN", 37: "L", 38: "J",

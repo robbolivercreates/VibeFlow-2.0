@@ -253,10 +253,7 @@ struct StatCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(color.opacity(0.2), lineWidth: 1)
-            )
+                .stroke(color.opacity(0.2), lineWidth: 1)
         )
     }
 }

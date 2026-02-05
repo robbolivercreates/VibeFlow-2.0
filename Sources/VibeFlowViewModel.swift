@@ -125,7 +125,10 @@ class VibeFlowViewModel: ObservableObject {
     private func stopRecording() {
         // Verificar se detectou fala antes de parar
         let hasSpeech = audioRecorder.isRecordingValid()
-        
+
+        // Save recording duration BEFORE stopping (stopRecording clears the start time)
+        let recordingDuration = audioRecorder.recordingDuration
+
         guard let _ = audioRecorder.stopRecording(),
               let audioData = audioRecorder.getRecordingData() else {
             error = L10n.recordingError
@@ -205,8 +208,12 @@ class VibeFlowViewModel: ObservableObject {
                         ClipboardHelper.copyAndPaste(finalText)
                         self.statusText = L10n.pasted
 
-                        // Registrar analytics
-                        AnalyticsManager.shared.recordTranscription(characters: finalText.count)
+                        // Registrar analytics (with mode and recording duration)
+                        AnalyticsManager.shared.recordTranscription(
+                            characters: finalText.count,
+                            mode: currentMode,
+                            recordingDuration: recordingDuration
+                        )
 
                         // Learn from successful transcription for style personalization
                         WritingStyleManager.shared.learnFromTranscription(finalText, mode: currentMode)

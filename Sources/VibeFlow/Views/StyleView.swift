@@ -88,10 +88,7 @@ struct StyleView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
-            )
+                .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 
@@ -338,10 +335,7 @@ struct StyleModeCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
-            )
+                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
         )
     }
 
