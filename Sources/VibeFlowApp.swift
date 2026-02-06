@@ -150,7 +150,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         
         // Título
-        let titleItem = NSMenuItem(title: "VibeFlow 2.1", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: "VibeFlow \(AppVersion.current)", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
         menu.addItem(NSMenuItem.separator())

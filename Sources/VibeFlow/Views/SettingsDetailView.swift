@@ -333,7 +333,7 @@ struct SettingsDetailView: View {
                     title: "Versao",
                     subtitle: "VibeFlow para macOS"
                 ) {
-                    Text("2.1.0")
+                    Text(AppVersion.current)
                         .font(.system(size: 13, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
