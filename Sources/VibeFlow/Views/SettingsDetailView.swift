@@ -194,6 +194,30 @@ struct SettingsDetailView: View {
                 Divider().padding(.leading, 44)
 
                 SettingsRow(
+                    title: "Alternar modo",
+                    subtitle: "Cicla entre modos de transcrição"
+                ) {
+                    ShortcutEditor(
+                        shortcut: $settings.cycleModeShortcut,
+                        placeholder: "⌥⇧M"
+                    )
+                }
+
+                Divider().padding(.leading, 44)
+
+                SettingsRow(
+                    title: "Colar última",
+                    subtitle: "Cola a última transcrição do histórico"
+                ) {
+                    ShortcutEditor(
+                        shortcut: $settings.pasteLastShortcut,
+                        placeholder: "⌥⇧V"
+                    )
+                }
+
+                Divider().padding(.leading, 44)
+
+                SettingsRow(
                     title: "Configuracoes",
                     subtitle: "Abre esta janela"
                 ) {
@@ -296,6 +320,8 @@ struct SettingsDetailView: View {
                         settings.shortcutRecordKey = "⌥⌘"
                         settings.shortcutToggleKey = "⌘⇧V"
                         settings.cycleLanguageShortcut = "⌥⇧L"
+                        settings.cycleModeShortcut = "⌥⇧M"
+                        settings.pasteLastShortcut = "⌥⇧V"
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
