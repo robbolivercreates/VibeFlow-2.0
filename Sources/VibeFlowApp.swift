@@ -32,10 +32,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // Notification windows (retained to prevent memory issues)
     var languageNotificationWindow: NSWindow?
     var modeNotificationWindow: NSWindow?
+    var pasteLastNotificationWindow: NSWindow?
     var lastLanguageCycleTime: Date = .distantPast
     var lastModeCycleTime: Date = .distantPast
+    var lastPasteLastTime: Date = .distantPast
     let languageCycleDebounceInterval: TimeInterval = 0.3 // 300ms debounce
     let modeCycleDebounceInterval: TimeInterval = 0.3
+    let pasteLastDebounceInterval: TimeInterval = 0.5
     
     // Managers
     let settings = SettingsManager.shared
@@ -273,6 +276,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Quick access items
         menu.addItem(NSMenuItem(title: "Historico", action: #selector(showHistory), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
+        let pasteLastItem = NSMenuItem(
+            title: "Colar Última Transcrição (⌥⇧V)",
+            action: #selector(pasteLastTranscription),
+            keyEquivalent: ""
+        )
+        pasteLastItem.target = self
+        menu.addItem(pasteLastItem)
         menu.addItem(NSMenuItem.separator())
 
         // Settings
@@ -579,8 +589,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+
+        // Paste last transcription shortcut (default: ⌥⇧V)
+        if matchesShortcut(settings.pasteLastShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.pasteLastTranscription()
+            }
+            return
+        }
     }
-    
+
     func handleGlobalKeyEvent(_ event: NSEvent) {
         // Strip device-dependent bits for reliable matching
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -613,6 +631,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if matchesShortcut(settings.cycleModeShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.cycleMode()
+            }
+            return
+        }
+
+        // Paste last transcription shortcut (default: ⌥⇧V)
+        if matchesShortcut(settings.pasteLastShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.pasteLastTranscription()
             }
             return
         }
@@ -791,6 +817,105 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.modeNotificationWindow?.orderOut(nil)
             self?.modeNotificationWindow = nil
+        }
+    }
+
+    @objc func pasteLastTranscription() {
+        // Debounce rapid key presses
+        let now = Date()
+        guard now.timeIntervalSince(lastPasteLastTime) >= pasteLastDebounceInterval else {
+            print("[VibeFlow] Paste last debounced")
+            return
+        }
+        lastPasteLastTime = now
+
+        // Get and paste the last item
+        if let item = history.pasteLastItem() {
+            // Play feedback sound
+            sounds.playSuccess()
+
+            // Show notification
+            showPasteLastNotification(text: item.text, mode: item.mode)
+
+            print("[VibeFlow] Pasted last transcription: \(item.text.prefix(30))...")
+        } else {
+            // No history - show empty notification
+            sounds.playError()
+            showNoHistoryNotification()
+
+            print("[VibeFlow] No history to paste")
+        }
+    }
+
+    func showPasteLastNotification(text: String, mode: TranscriptionMode) {
+        // Close existing notification window if present
+        pasteLastNotificationWindow?.orderOut(nil)
+        pasteLastNotificationWindow = nil
+
+        let notificationWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 60),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+
+        let contentView = PasteLastNotificationView(text: text, mode: mode)
+        notificationWindow.contentView = NSHostingView(rootView: contentView)
+        notificationWindow.level = .floating
+        notificationWindow.backgroundColor = .clear
+        notificationWindow.isOpaque = false
+        notificationWindow.hasShadow = true
+        notificationWindow.isReleasedWhenClosed = false
+
+        // Position near the main window or centered
+        if let window = window, window.isVisible {
+            let windowFrame = window.frame
+            let x = windowFrame.midX - 120
+            let y = windowFrame.maxY + 20
+            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
+        } else {
+            notificationWindow.center()
+        }
+
+        self.pasteLastNotificationWindow = notificationWindow
+        notificationWindow.makeKeyAndOrderFront(nil)
+
+        // Auto-close after 1.5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.pasteLastNotificationWindow?.orderOut(nil)
+            self?.pasteLastNotificationWindow = nil
+        }
+    }
+
+    func showNoHistoryNotification() {
+        // Close existing notification window if present
+        pasteLastNotificationWindow?.orderOut(nil)
+        pasteLastNotificationWindow = nil
+
+        let notificationWindow = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 60),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+
+        let contentView = NoHistoryNotificationView()
+        notificationWindow.contentView = NSHostingView(rootView: contentView)
+        notificationWindow.level = .floating
+        notificationWindow.backgroundColor = .clear
+        notificationWindow.isOpaque = false
+        notificationWindow.hasShadow = true
+        notificationWindow.isReleasedWhenClosed = false
+
+        notificationWindow.center()
+
+        self.pasteLastNotificationWindow = notificationWindow
+        notificationWindow.makeKeyAndOrderFront(nil)
+
+        // Auto-close after 1.5 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.pasteLastNotificationWindow?.orderOut(nil)
+            self?.pasteLastNotificationWindow = nil
         }
     }
 

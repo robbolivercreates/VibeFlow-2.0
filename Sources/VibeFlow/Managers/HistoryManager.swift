@@ -86,6 +86,26 @@ class HistoryManager: ObservableObject {
         pasteboard.clearContents()
         pasteboard.setString(item.text, forType: .string)
     }
+
+    /// Retorna o último item do histórico (mais recente)
+    var lastItem: HistoryItem? {
+        items.first
+    }
+
+    /// Copia e cola o último item do histórico
+    /// - Returns: O item colado, ou nil se o histórico estiver vazio
+    @discardableResult
+    func pasteLastItem() -> HistoryItem? {
+        guard let item = lastItem else {
+            print("[HistoryManager] No items in history to paste")
+            return nil
+        }
+
+        // Use ClipboardHelper to copy and paste (preserves original clipboard)
+        ClipboardHelper.copyAndPaste(item.text)
+        print("[HistoryManager] Pasted last item: \(item.text.prefix(30))...")
+        return item
+    }
     
     // MARK: - Persistence
     

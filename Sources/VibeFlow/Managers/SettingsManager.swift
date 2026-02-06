@@ -25,6 +25,7 @@ class SettingsManager: ObservableObject {
         static let favoriteLanguages = "favorite_languages"
         static let cycleLanguageShortcut = "cycle_language_shortcut"
         static let cycleModeShortcut = "cycle_mode_shortcut"
+        static let pasteLastShortcut = "paste_last_shortcut"
         static let enableStyleLearning = "enable_style_learning"
     }
     
@@ -109,6 +110,14 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    /// Atalho para colar última transcrição do histórico
+    @Published var pasteLastShortcut: String {
+        didSet {
+            defaults.set(pasteLastShortcut, forKey: Keys.pasteLastShortcut)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
+    }
+
     @Published var shortcutRecordKey: String {
         didSet { 
             defaults.set(shortcutRecordKey, forKey: Keys.shortcutRecord)
@@ -161,6 +170,7 @@ class SettingsManager: ObservableObject {
         
         self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌥⇧L"
         self.cycleModeShortcut = defaults.string(forKey: Keys.cycleModeShortcut) ?? "⌥⇧M"
+        self.pasteLastShortcut = defaults.string(forKey: Keys.pasteLastShortcut) ?? "⌥⇧V"
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
