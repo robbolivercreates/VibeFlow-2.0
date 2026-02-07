@@ -276,6 +276,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Quick access items
         menu.addItem(NSMenuItem(title: "Historico", action: #selector(showHistory), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(showAnalytics), keyEquivalent: ""))
         let pasteLastItem = NSMenuItem(
             title: "Colar Última Transcrição (⌥⇧V)",
             action: #selector(pasteLastTranscription),
