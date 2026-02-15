@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import IOKit
 
 /// Clean settings view with row-based design (inspired by modern macOS apps)
 struct SettingsDetailView: View {
@@ -7,6 +8,7 @@ struct SettingsDetailView: View {
     @State private var showingResetConfirmation = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
+    @State private var inputMonitoringPermission = false
 
     var body: some View {
         ScrollView {
@@ -50,6 +52,7 @@ struct SettingsDetailView: View {
         microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio)
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        inputMonitoringPermission = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
     }
 
     // MARK: - Header
@@ -175,7 +178,7 @@ struct SettingsDetailView: View {
                 ) {
                     ShortcutEditor(
                         shortcut: $settings.cycleLanguageShortcut,
-                        placeholder: "⌥⇧L"
+                        placeholder: "⌃⇧L"
                     )
                 }
 
@@ -199,7 +202,7 @@ struct SettingsDetailView: View {
                 ) {
                     ShortcutEditor(
                         shortcut: $settings.cycleModeShortcut,
-                        placeholder: "⌥⇧M"
+                        placeholder: "⌃⇧M"
                     )
                 }
 
@@ -211,7 +214,7 @@ struct SettingsDetailView: View {
                 ) {
                     ShortcutEditor(
                         shortcut: $settings.pasteLastShortcut,
-                        placeholder: "⌥⇧V"
+                        placeholder: "⌃⇧V"
                     )
                 }
 
@@ -275,6 +278,21 @@ struct SettingsDetailView: View {
                         }
                     )
                 }
+
+                Divider().padding(.leading, 44)
+
+                SettingsRow(
+                    title: "Input Monitoring",
+                    subtitle: inputMonitoringPermission ? "Permitido" : "Necessario para atalhos globais"
+                ) {
+                    PermissionBadge(
+                        isGranted: inputMonitoringPermission,
+                        onRequest: {
+                            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
+                            NSWorkspace.shared.open(url)
+                        }
+                    )
+                }
             }
         }
     }
@@ -319,9 +337,9 @@ struct SettingsDetailView: View {
                     Button("Resetar") {
                         settings.shortcutRecordKey = "⌥⌘"
                         settings.shortcutToggleKey = "⌘⇧V"
-                        settings.cycleLanguageShortcut = "⌥⇧L"
-                        settings.cycleModeShortcut = "⌥⇧M"
-                        settings.pasteLastShortcut = "⌥⇧V"
+                        settings.cycleLanguageShortcut = "⌃⇧L"
+                        settings.cycleModeShortcut = "⌃⇧M"
+                        settings.pasteLastShortcut = "⌃⇧V"
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)

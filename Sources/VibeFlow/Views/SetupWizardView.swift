@@ -47,6 +47,7 @@ struct SetupWizardView: View {
     // Permissions
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
+    @State private var inputMonitoringPermission = false
     @State private var permissionTimer: Timer?
 
     // Test Recording
@@ -340,29 +341,56 @@ struct SetupWizardView: View {
                 Text("Permissoes Necessarias")
                     .font(.system(size: 18, weight: .semibold))
 
-                Text("O VibeFlow precisa dessas permissoes para funcionar corretamente:")
+                Text("O VibeFlow precisa de 3 permissoes para funcionar. Cada uma tem um papel importante:")
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
             }
 
             // Permissions list
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
+                // 1. Microfone
                 PermissionCard(
                     icon: "mic.fill",
-                    title: "Microfone",
+                    title: "🎤 Microfone",
                     description: "Para capturar sua voz e transcrever para texto",
                     isGranted: microphonePermission == .authorized,
                     buttonText: "Permitir Microfone",
+                    helpSteps: [
+                        "Clique em \"Permitir Microfone\" acima",
+                        "Na janela do macOS, clique em \"OK\" para autorizar"
+                    ],
                     action: requestMicrophonePermission
                 )
 
+                // 2. Acessibilidade
                 PermissionCard(
                     icon: "accessibility",
-                    title: "Acessibilidade",
-                    description: "Para colar o texto automaticamente no app ativo (simula Cmd+V)",
+                    title: "♿ Acessibilidade",
+                    description: "Para colar o texto automaticamente (simula Cmd+V)",
                     isGranted: accessibilityPermission,
                     buttonText: "Abrir Preferencias",
+                    helpSteps: [
+                        "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
+                        "Arraste o icone do VibeFlow do Finder para a lista de permissoes",
+                        "Ative o toggle (chave) ao lado de \"VibeFlow\"",
+                        "Volte aqui — sera detectado automaticamente"
+                    ],
                     action: openAccessibilitySettings
+                )
+
+                // 3. Input Monitoring
+                PermissionCard(
+                    icon: "keyboard",
+                    title: "⌨️ Monitoramento de Teclado",
+                    description: "Para atalhos globais funcionarem em segundo plano",
+                    isGranted: inputMonitoringPermission,
+                    buttonText: "Abrir Preferencias",
+                    helpSteps: [
+                        "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
+                        "Arraste o icone do VibeFlow do Finder para a lista de permissoes",
+                        "Ative o toggle (chave) ao lado de \"VibeFlow\""
+                    ],
+                    action: openInputMonitoringSettings
                 )
             }
 
@@ -371,7 +399,7 @@ struct SetupWizardView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("Todas as permissoes concedidas!")
+                    Text("Todas as permissoes concedidas! Tudo pronto.")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.green)
                 }
@@ -380,10 +408,11 @@ struct SetupWizardView: View {
                 .background(Color.green.opacity(0.1))
                 .cornerRadius(10)
             } else {
+                let grantedCount = [microphonePermission == .authorized, accessibilityPermission, inputMonitoringPermission].filter { $0 }.count
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("Conceda todas as permissoes para continuar")
+                    Text("\(grantedCount) de 3 permissoes concedidas")
                         .font(.system(size: 14))
                         .foregroundStyle(.orange)
                 }
@@ -393,33 +422,17 @@ struct SetupWizardView: View {
                 .cornerRadius(10)
             }
 
-            // Help text for accessibility
-            if !accessibilityPermission {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Para habilitar Acessibilidade:")
-                        .font(.system(size: 13, weight: .medium))
-
-                    Text("1. Clique em 'Abrir Preferencias'\n2. Clique no cadeado para desbloquear\n3. Marque a caixa ao lado de 'VibeFlow'\n4. Volte aqui - a permissao sera detectada automaticamente")
-                        .font(.system(size: 12))
+            // General note
+            if !allPermissionsGranted {
+                HStack(spacing: 8) {
+                    Image(systemName: "lock.shield.fill")
+                        .foregroundStyle(.blue)
+                    Text("Suas permissoes sao gerenciadas pelo macOS e podem ser revogadas a qualquer momento em Ajustes do Sistema.")
+                        .font(.system(size: 11))
                         .foregroundStyle(.secondary)
-                    
-                    // Botões de ação
-                    HStack(spacing: 12) {
-                        Button("Verificar Novamente") {
-                            checkPermissions()
-                        }
-                        .buttonStyle(.bordered)
-                        
-                        Button("Pular (sem colar automatico)") {
-                            accessibilityPermission = true // Forçar como concedida
-                        }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(.secondary)
-                    }
-                    .padding(.top, 8)
                 }
-                .padding()
-                .background(Color(nsColor: .controlBackgroundColor))
+                .padding(12)
+                .background(Color.blue.opacity(0.05))
                 .cornerRadius(8)
             }
         }
@@ -617,7 +630,7 @@ struct SetupWizardView: View {
                 // Cycle shortcut demo
                 VStack(spacing: 12) {
                     HStack(spacing: 12) {
-                        Text("⌥⇧L")
+                        Text("⌃⇧L")
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
                             .foregroundStyle(.purple)
                             .padding(.horizontal, 12)
@@ -742,7 +755,7 @@ struct SetupWizardView: View {
 
                 VStack(spacing: 12) {
                     QuickRefRow(keys: "⌥⌘", action: "Segure para gravar", description: "Solte para transcrever e colar")
-                    QuickRefRow(keys: "⌥⇧L", action: "Alternar idioma", description: "Cicla entre favoritos")
+                    QuickRefRow(keys: "⌃⇧L", action: "Alternar idioma", description: "Cicla entre favoritos")
                     QuickRefRow(keys: "⌘⇧V", action: "Mostrar/ocultar", description: "Abre a janela do VibeFlow")
                 }
             }
@@ -794,7 +807,7 @@ struct SetupWizardView: View {
     }
 
     private var allPermissionsGranted: Bool {
-        microphonePermission == .authorized && accessibilityPermission
+        microphonePermission == .authorized && accessibilityPermission && inputMonitoringPermission
     }
 
     private func goBack() {
@@ -870,12 +883,32 @@ struct SetupWizardView: View {
         microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio)
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        // Check input monitoring by testing if CGEvent.tapCreate works
+        // This is the most reliable proxy for Input Monitoring permission
+        let testMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        if let testTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: testMask,
+            callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
+            userInfo: nil
+        ) {
+            inputMonitoringPermission = true
+            // Clean up test tap immediately
+            CFMachPortInvalidate(testTap)
+        } else {
+            inputMonitoringPermission = false
+        }
     }
 
     private func startPermissionChecking() {
         checkPermissions()
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            checkPermissions()
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
+            DispatchQueue.main.async {
+                self.checkPermissions()
+            }
         }
     }
 
@@ -888,8 +921,53 @@ struct SetupWizardView: View {
     }
 
     private func openAccessibilitySettings() {
+        // Open System Preferences at Accessibility
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
+        
+        // Also reveal VibeFlow.app in Finder so user can drag it
+        revealVibeFlowInFinder()
+    }
+
+    private func openInputMonitoringSettings() {
+        // Open System Preferences at Input Monitoring
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
+        NSWorkspace.shared.open(url)
+        
+        // Also reveal VibeFlow.app in Finder so user can drag it
+        revealVibeFlowInFinder()
+    }
+    
+    private func revealVibeFlowInFinder() {
+        let appPath = "/Applications/VibeFlow.app"
+        let appURL = URL(fileURLWithPath: appPath)
+        if FileManager.default.fileExists(atPath: appPath) {
+            NSWorkspace.shared.activateFileViewerSelecting([appURL])
+        }
+    }
+
+    // Reusable help card for permission instructions
+    private func permissionHelpCard(title: String, steps: String, note: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 13, weight: .medium))
+
+            Text(steps)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .foregroundStyle(.orange)
+                Text(note)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.orange.opacity(0.8))
+            }
+            .padding(.top, 4)
+        }
+        .padding()
+        .background(Color(nsColor: .controlBackgroundColor))
+        .cornerRadius(8)
     }
 
     private func listenForShortcutTest() {
@@ -1019,41 +1097,81 @@ struct PermissionCard: View {
     let description: String
     let isGranted: Bool
     let buttonText: String
+    let helpSteps: [String]
     let action: () -> Void
 
+    init(icon: String, title: String, description: String, isGranted: Bool, buttonText: String, helpSteps: [String] = [], action: @escaping () -> Void) {
+        self.icon = icon
+        self.title = title
+        self.description = description
+        self.isGranted = isGranted
+        self.buttonText = buttonText
+        self.helpSteps = helpSteps
+        self.action = action
+    }
+
     var body: some View {
-        HStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(isGranted ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
-                    .frame(width: 50, height: 50)
+        VStack(alignment: .leading, spacing: 0) {
+            // Main row
+            HStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(isGranted ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                        .frame(width: 44, height: 44)
 
-                Image(systemName: isGranted ? "checkmark" : icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(isGranted ? .green : .orange)
+                    Image(systemName: isGranted ? "checkmark" : icon)
+                        .font(.system(size: 18))
+                        .foregroundStyle(isGranted ? .green : .orange)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 14, weight: .medium))
+                    Text(description)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                if isGranted {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24))
+                        .foregroundStyle(.green)
+                } else {
+                    Button(buttonText, action: action)
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+                }
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.system(size: 15, weight: .medium))
-                Text(description)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-            }
+            // Inline instructions when not granted
+            if !isGranted && !helpSteps.isEmpty {
+                Divider()
+                    .padding(.vertical, 8)
 
-            Spacer()
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Como fazer:")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.orange)
 
-            if isGranted {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.green)
-            } else {
-                Button(buttonText, action: action)
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    ForEach(Array(helpSteps.enumerated()), id: \.offset) { index, step in
+                        HStack(alignment: .top, spacing: 6) {
+                            Text("\(index + 1).")
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.orange.opacity(0.8))
+                                .frame(width: 16, alignment: .trailing)
+                            Text(step)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(.leading, 60) // align with text, past the icon
             }
         }
-        .padding()
+        .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(isGranted ? Color.green.opacity(0.05) : Color(nsColor: .controlBackgroundColor))

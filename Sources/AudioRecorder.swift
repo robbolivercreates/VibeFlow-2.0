@@ -195,15 +195,24 @@ class AudioRecorder: NSObject, ObservableObject {
         recordingStartTime = nil
         audioLevel = 0.0
         
-        // Solicitar permissão de microfone (macOS)
-        AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
-            DispatchQueue.main.async {
-                if granted {
-                    self?.performRecording()
-                } else {
-                    self?.recordingError = "Permissão de microfone negada"
+        // Check microphone permission status (don't prompt — wizard handles it)
+        let status = AVCaptureDevice.authorizationStatus(for: .audio)
+        switch status {
+        case .authorized:
+            self.performRecording()
+        case .notDetermined:
+            // First time — request access
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self?.performRecording()
+                    } else {
+                        self?.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
+                    }
                 }
             }
+        default:
+            self.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
         }
     }
     

@@ -18,8 +18,8 @@
 	<string>2.2.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>LSUIElement</key>
-	<true/>
+	<!-- NOTE: LSUIElement removed — it causes NSStatusItem to be positioned off-screen.
+	     Dock icon is hidden programmatically via NSApp.setActivationPolicy(.accessory) instead. -->
 	<key>NSAppleEventsUsageDescription</key>
 	<string>Vibe Flow precisa simular teclas para colar código automaticamente no editor ativo.</string>
 	<key>NSHighResolutionCapable</key>

@@ -168,9 +168,9 @@ class SettingsManager: ObservableObject {
             self.favoriteLanguages = [.english, .portuguese, .spanish]
         }
         
-        self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌥⇧L"
-        self.cycleModeShortcut = defaults.string(forKey: Keys.cycleModeShortcut) ?? "⌥⇧M"
-        self.pasteLastShortcut = defaults.string(forKey: Keys.pasteLastShortcut) ?? "⌥⇧V"
+        self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌃⇧L"
+        self.cycleModeShortcut = defaults.string(forKey: Keys.cycleModeShortcut) ?? "⌃⇧M"
+        self.pasteLastShortcut = defaults.string(forKey: Keys.pasteLastShortcut) ?? "⌃⇧V"
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"

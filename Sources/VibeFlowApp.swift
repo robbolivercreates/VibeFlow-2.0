@@ -2,19 +2,12 @@ import SwiftUI
 import AppKit
 import Combine
 
-@main
-struct VibeFlowApp: App {
-    @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    
-    var body: some Scene {
-        Settings {
-            EmptyView()
-        }
-    }
-}
+// Entry point is main.swift — using AppKit lifecycle directly
+// (SwiftUI @main lifecycle was causing NSStatusItem to not appear)
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    var statusItem: NSStatusItem?
+    static var shared: AppDelegate?
+    static var statusItem: NSStatusItem?
     var window: NSWindow?
     var settingsWindow: NSWindow?
     var mainAppWindow: NSWindow?  // New main window with sidebar navigation
@@ -25,9 +18,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var isHoldToTalkActive = false
     var globalKeyMonitor: Any?
     var localKeyMonitor: Any?
+    var localKeyDownMonitor: Any?
 
     // CGEvent tap for reliable global keyboard shortcut detection
     var globalKeyTap: CFMachPort?
+    var accessibilityRetryTimer: Timer?
 
     // Notification windows (retained to prevent memory issues)
     var languageNotificationWindow: NSWindow?
@@ -47,22 +42,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let snippets = SnippetsManager.shared
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Esconder dock icon
-        NSApp.setActivationPolicy(.accessory)
+        AppDelegate.shared = self
         
-        // Criar menu bar item
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem?.button {
-            button.image = AppIconGenerator.createMenuBarIcon()
+        // Create status item in .regular policy (ONLY mode where it works).
+        // .accessory mode and LSUIElement both move status items off-screen on this system.
+        AppDelegate.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        if let button = AppDelegate.statusItem?.button {
+            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VibeFlow") {
+                let config = NSImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+                button.image = sfImage.withSymbolConfiguration(config) ?? sfImage
+            } else {
+                button.image = AppIconGenerator.createMenuBarIcon()
+            }
             button.action = #selector(toggleWindow)
             button.target = self
         }
+        
+        // Hide dock icon by making it transparent (workaround for .accessory breaking status items)
+        let transparentIcon = NSImage(size: NSSize(width: 128, height: 128))
+        transparentIcon.lockFocus()
+        NSColor.clear.set()
+        NSRect(x: 0, y: 0, width: 128, height: 128).fill()
+        transparentIcon.unlockFocus()
+        NSApp.applicationIconImage = transparentIcon
+        // Hide the dock tile badge/label
+        NSApp.dockTile.showsApplicationBadge = false
         
         // Criar view model
         let viewModel = VibeFlowViewModel()
         self.viewModel = viewModel
         
-        // Update menu after viewModel is created (so microphone list shows)
+        // Update menu after viewModel is created
         updateMenu()
         
         // Criar janela flutuante
@@ -94,8 +104,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupObservers()
         
         // Mostrar wizard ou ativação se necessário
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
             self?.checkFirstLaunch()
+        }
+    }
+    
+    /// Creates and configures the menu bar status item
+    private func createStatusBarItem() {
+        let diag = "/tmp/vibeflow_diag.txt"
+        var log = "[\(Date())] createStatusBarItem called\n"
+        
+        AppDelegate.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        log += "statusItem created: \(AppDelegate.statusItem != nil)\n"
+        
+        if let button = AppDelegate.statusItem?.button {
+            // Use SF Symbol instead of custom drawing to test visibility
+            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VibeFlow") {
+                let config = NSImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+                let configured = sfImage.withSymbolConfiguration(config) ?? sfImage
+                button.image = configured
+                log += "SF Symbol set, image size: \(configured.size)\n"
+            } else {
+                // Fallback: use title text if SF Symbol not available
+                button.title = "🎵"
+                log += "SF Symbol unavailable, using emoji title\n"
+            }
+            button.action = #selector(toggleWindow)
+            button.target = self
+            log += "button configured\n"
+        } else {
+            log += "ERROR: button is nil\n"
+        }
+        
+        // Assign the menu
+        updateMenu()
+        
+        log += "menu assigned: \(AppDelegate.statusItem?.menu != nil)\n"
+        log += "button visible: \(AppDelegate.statusItem?.button?.window != nil)\n"
+        log += "isVisible: \(AppDelegate.statusItem?.isVisible ?? false)\n"
+        log += "button window frame: \(AppDelegate.statusItem?.button?.window?.frame ?? .zero)\n"
+        try? log.write(toFile: diag, atomically: true, encoding: .utf8)
+        
+        // Safety check: verify status item is still alive after 3 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            var check = "\n[\(Date())] 3s check:\n"
+            check += "statusItem still exists: \(AppDelegate.statusItem != nil)\n"
+            check += "button exists: \(AppDelegate.statusItem?.button != nil)\n"
+            check += "button window: \(AppDelegate.statusItem?.button?.window != nil)\n"
+            check += "button window frame: \(AppDelegate.statusItem?.button?.window?.frame ?? .zero)\n"
+            check += "isVisible: \(AppDelegate.statusItem?.isVisible ?? false)\n"
+            check += "delegate alive: \(AppDelegate.shared != nil)\n"
+            check += "button title: \(AppDelegate.statusItem?.button?.title ?? "nil")\n"
+            check += "button image: \(AppDelegate.statusItem?.button?.image?.size ?? .zero)\n"
+            if let existing = try? String(contentsOfFile: diag, encoding: .utf8) {
+                try? (existing + check).write(toFile: diag, atomically: true, encoding: .utf8)
+            }
         }
     }
     
@@ -128,8 +191,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             backing: .buffered,
             defer: false
         )
+        wizardWindow?.isReleasedWhenClosed = false
         wizardWindow?.contentView = hostingView
         wizardWindow?.title = "Configurar VibeFlow"
+        wizardWindow?.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         wizardWindow?.center()
         wizardWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -172,7 +237,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         modesMenu.addItem(NSMenuItem.separator())
         let cycleModeItem = NSMenuItem(
-            title: "Próximo (⌥⇧M)",
+            title: "Próximo (⌃⇧M)",
             action: #selector(cycleMode),
             keyEquivalent: ""
         )
@@ -211,7 +276,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             langMenu.addItem(NSMenuItem.separator())
             let cycleItem = NSMenuItem(
-                title: "Próximo (⌥⇧L)",
+                title: "Próximo (⌃⇧L)",
                 action: #selector(cycleLanguage),
                 keyEquivalent: ""
             )
@@ -223,7 +288,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             menu.addItem(langItem)
         } else {
             let cycleItem = NSMenuItem(
-                title: "Mudar Idioma (⌥⇧L)",
+                title: "Mudar Idioma (⌃⇧L)",
                 action: #selector(cycleLanguage),
                 keyEquivalent: ""
             )
@@ -278,7 +343,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(showAnalytics), keyEquivalent: ""))
         let pasteLastItem = NSMenuItem(
-            title: "Colar Última Transcrição (⌥⇧V)",
+            title: "Colar Última Transcrição (⌃⇧V)",
             action: #selector(pasteLastTranscription),
             keyEquivalent: ""
         )
@@ -291,7 +356,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.quit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
-        statusItem?.menu = menu
+        AppDelegate.statusItem?.menu = menu
     }
     
     @objc func selectMode(_ sender: NSMenuItem) {
@@ -483,9 +548,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Global Shortcuts
     
-    var localKeyDownMonitor: Any?
-
+    
     func setupGlobalShortcuts() {
+        // Check Accessibility permissions and prompt if needed
+        checkAccessibilityPermission()
+
         // Global key event tap for keyboard shortcuts (CGEvent tap is more reliable
         // than NSEvent.addGlobalMonitorForEvents for .keyDown in accessory apps)
         setupGlobalKeyTap()
@@ -502,12 +569,68 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.handleFlagsChanged(event)
             return event
         }
+
+        // Local keyDown monitor (shortcuts work when VibeFlow window is active)
+        localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            self?.handleGlobalKeyEvent(event)
+            return event
+        }
+    }
+
+    /// Checks if Accessibility permission is granted and prompts user if not.
+    /// Also starts a retry timer to recreate CGEvent tap once permission is granted.
+    private func checkAccessibilityPermission() {
+        var diag = "[VibeFlow \(Date())] checkAccessibilityPermission\n"
+        
+        let trusted = AXIsProcessTrusted()
+        diag += "  AXIsProcessTrusted = \(trusted)\n"
+        
+        if !trusted {
+            // Don't prompt user here — let the Setup Wizard guide them
+            diag += "  Accessibility not granted (wizard will guide user)\n"
+            
+            // Start periodic retry — once permission is granted, recreate the tap
+            accessibilityRetryTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] timer in
+                if AXIsProcessTrusted() {
+                    let msg = "[VibeFlow \(Date())] Accessibility permission granted via retry! Setting up tap...\n"
+                    self?.appendDiag(msg)
+                    timer.invalidate()
+                    self?.accessibilityRetryTimer = nil
+                    self?.setupGlobalKeyTap()
+                }
+            }
+        }
+        
+        appendDiag(diag)
+    }
+    
+    /// Append diagnostic message to /tmp/vf_shortcuts.txt
+    private func appendDiag(_ message: String) {
+        let path = "/tmp/vf_shortcuts.txt"
+        if let handle = FileHandle(forWritingAtPath: path) {
+            handle.seekToEndOfFile()
+            handle.write(message.data(using: .utf8)!)
+            handle.closeFile()
+        } else {
+            try? message.write(toFile: path, atomically: true, encoding: .utf8)
+        }
     }
 
     /// Sets up a CGEvent tap for global keyboard shortcut detection.
     /// CGEvent taps work at a lower level than NSEvent monitors and reliably
     /// detect key presses even when the app is a background accessory app.
-    private func setupGlobalKeyTap() {
+    func setupGlobalKeyTap() {
+        var diag = "[VibeFlow \(Date())] setupGlobalKeyTap\n"
+        diag += "  AXIsProcessTrusted = \(AXIsProcessTrusted())\n"
+        
+        // If we already have a working tap, skip
+        if let existingTap = globalKeyTap {
+            let enabled = CGEvent.tapIsEnabled(tap: existingTap)
+            diag += "  Already have CGEvent tap, enabled=\(enabled), skipping\n"
+            appendDiag(diag)
+            return
+        }
+        
         let eventMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
 
         let refcon = Unmanaged.passUnretained(self).toOpaque()
@@ -530,6 +653,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
                     if let tap = appDelegate.globalKeyTap {
                         CGEvent.tapEnable(tap: tap, enable: true)
+                        appDelegate.appendDiag("[VibeFlow \(Date())] Re-enabled tap after system disabled it\n")
                     }
                 }
 
@@ -537,23 +661,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             },
             userInfo: refcon
         ) else {
-            print("[VibeFlow] CGEvent tap failed - falling back to NSEvent monitors")
-            // Fallback: use NSEvent monitors (less reliable but better than nothing)
-            globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                self?.handleGlobalKeyEvent(event)
-            }
-            localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                self?.handleGlobalKeyEvent(event)
-                return event
+            diag += "  ❌ CGEvent.tapCreate FAILED\n"
+            diag += "  Falling back to NSEvent global keyDown monitor\n"
+            appendDiag(diag)
+            
+            // Fallback: use NSEvent global monitor
+            if globalKeyMonitor == nil {
+                globalKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                    self?.handleGlobalKeyEvent(event)
+                }
             }
             return
         }
+
+        // Remove fallback global monitor if tap succeeded (avoid duplicate handling)
+        if let monitor = globalKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalKeyMonitor = nil
+        }
+
+        // Stop retry timer if it's running
+        accessibilityRetryTimer?.invalidate()
+        accessibilityRetryTimer = nil
 
         self.globalKeyTap = tap
         let runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
         CFRunLoopAddSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
         CGEvent.tapEnable(tap: tap, enable: true)
-        print("[VibeFlow] Global key event tap installed successfully")
+        
+        diag += "  ✅ CGEvent tap CREATED and ENABLED successfully!\n"
+        diag += "  Tap is enabled: \(CGEvent.tapIsEnabled(tap: tap))\n"
+        appendDiag(diag)
     }
 
     /// Handle key events from the CGEvent tap (works globally)
@@ -575,7 +713,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Language cycle shortcut (default: ⌥⇧L)
+        // Language cycle shortcut (default: ⌃⇧L)
         if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.cycleLanguage()
@@ -583,7 +721,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Mode cycle shortcut (default: ⌥⇧M)
+        // Mode cycle shortcut (default: ⌃⇧M)
         if matchesShortcut(settings.cycleModeShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.cycleMode()
@@ -591,7 +729,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Paste last transcription shortcut (default: ⌥⇧V)
+        // Paste last transcription shortcut (default: ⌃⇧V)
         if matchesShortcut(settings.pasteLastShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.pasteLastTranscription()
@@ -619,7 +757,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Language cycle shortcut (default: ⌥⇧L)
+        // Language cycle shortcut (default: ⌃⇧L)
         if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 print("[VibeFlow] Language shortcut detected!")
@@ -628,7 +766,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Mode cycle shortcut (default: ⌥⇧M)
+        // Mode cycle shortcut (default: ⌃⇧M)
         if matchesShortcut(settings.cycleModeShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.cycleMode()
@@ -636,7 +774,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Paste last transcription shortcut (default: ⌥⇧V)
+        // Paste last transcription shortcut (default: ⌃⇧V)
         if matchesShortcut(settings.pasteLastShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.pasteLastTranscription()
@@ -659,7 +797,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return keyMap[keyCode] ?? ""
     }
 
-    /// Check if event matches shortcut string like "⌥⇧L" or "⌘⇧V"
+    /// Check if event matches shortcut string like "⌃⇧L" or "⌘⇧V"
     private func matchesShortcut(_ shortcut: String, modifiers: NSEvent.ModifierFlags, keyChar: String) -> Bool {
         // Parse expected modifiers from shortcut string
         let expectControl = shortcut.contains("⌃")
@@ -717,40 +855,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         languageNotificationWindow?.orderOut(nil)
         languageNotificationWindow = nil
 
-        // Create notification window (retained as property)
-        let notificationWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 180, height: 60),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+        let contentView = LanguageNotificationView(language: language)
+        let notificationWindow = createHUDWindow(
+            contentView: contentView,
+            width: 260,
+            height: 64
         )
 
-        let contentView = LanguageNotificationView(language: language)
-        notificationWindow.contentView = NSHostingView(rootView: contentView)
-        notificationWindow.level = .floating
-        notificationWindow.backgroundColor = .clear
-        notificationWindow.isOpaque = false
-        notificationWindow.hasShadow = true
-        notificationWindow.isReleasedWhenClosed = false
-
-        // Position near the main window or centered
-        if let window = window, window.isVisible {
-            let windowFrame = window.frame
-            let x = windowFrame.midX - 90
-            let y = windowFrame.maxY + 20
-            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
-        } else {
-            notificationWindow.center()
-        }
-
-        // Retain the window
         self.languageNotificationWindow = notificationWindow
-        notificationWindow.makeKeyAndOrderFront(nil)
+        notificationWindow.orderFrontRegardless()
 
-        // Auto-close after 1.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.languageNotificationWindow?.orderOut(nil)
-            self?.languageNotificationWindow = nil
+        // Auto-close with fade-out after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.fadeOutAndClose(window: self?.languageNotificationWindow) {
+                self?.languageNotificationWindow = nil
+            }
         }
     }
 
@@ -786,38 +905,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         modeNotificationWindow?.orderOut(nil)
         modeNotificationWindow = nil
 
-        let notificationWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 60),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+        let contentView = ModeNotificationView(mode: mode)
+        let notificationWindow = createHUDWindow(
+            contentView: contentView,
+            width: 240,
+            height: 64
         )
 
-        let contentView = ModeNotificationView(mode: mode)
-        notificationWindow.contentView = NSHostingView(rootView: contentView)
-        notificationWindow.level = .floating
-        notificationWindow.backgroundColor = .clear
-        notificationWindow.isOpaque = false
-        notificationWindow.hasShadow = true
-        notificationWindow.isReleasedWhenClosed = false
-
-        // Position near the main window or centered
-        if let window = window, window.isVisible {
-            let windowFrame = window.frame
-            let x = windowFrame.midX - 100
-            let y = windowFrame.maxY + 20
-            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
-        } else {
-            notificationWindow.center()
-        }
-
         self.modeNotificationWindow = notificationWindow
-        notificationWindow.makeKeyAndOrderFront(nil)
+        notificationWindow.orderFrontRegardless()
 
-        // Auto-close after 1.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.modeNotificationWindow?.orderOut(nil)
-            self?.modeNotificationWindow = nil
+        // Auto-close with fade-out after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.fadeOutAndClose(window: self?.modeNotificationWindow) {
+                self?.modeNotificationWindow = nil
+            }
         }
     }
 
@@ -853,38 +955,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pasteLastNotificationWindow?.orderOut(nil)
         pasteLastNotificationWindow = nil
 
-        let notificationWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 240, height: 60),
-            styleMask: [.borderless],
-            backing: .buffered,
-            defer: false
+        let contentView = PasteLastNotificationView(text: text, mode: mode)
+        let notificationWindow = createHUDWindow(
+            contentView: contentView,
+            width: 280,
+            height: 64
         )
 
-        let contentView = PasteLastNotificationView(text: text, mode: mode)
-        notificationWindow.contentView = NSHostingView(rootView: contentView)
-        notificationWindow.level = .floating
-        notificationWindow.backgroundColor = .clear
-        notificationWindow.isOpaque = false
-        notificationWindow.hasShadow = true
-        notificationWindow.isReleasedWhenClosed = false
-
-        // Position near the main window or centered
-        if let window = window, window.isVisible {
-            let windowFrame = window.frame
-            let x = windowFrame.midX - 120
-            let y = windowFrame.maxY + 20
-            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
-        } else {
-            notificationWindow.center()
-        }
-
         self.pasteLastNotificationWindow = notificationWindow
-        notificationWindow.makeKeyAndOrderFront(nil)
+        notificationWindow.orderFrontRegardless()
 
-        // Auto-close after 1.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.pasteLastNotificationWindow?.orderOut(nil)
-            self?.pasteLastNotificationWindow = nil
+        // Auto-close with fade-out after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.fadeOutAndClose(window: self?.pasteLastNotificationWindow) {
+                self?.pasteLastNotificationWindow = nil
+            }
         }
     }
 
@@ -893,31 +978,71 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         pasteLastNotificationWindow?.orderOut(nil)
         pasteLastNotificationWindow = nil
 
+        let contentView = NoHistoryNotificationView()
+        let notificationWindow = createHUDWindow(
+            contentView: contentView,
+            width: 260,
+            height: 64
+        )
+
+        self.pasteLastNotificationWindow = notificationWindow
+        notificationWindow.orderFrontRegardless()
+
+        // Auto-close with fade-out after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            self?.fadeOutAndClose(window: self?.pasteLastNotificationWindow) {
+                self?.pasteLastNotificationWindow = nil
+            }
+        }
+    }
+
+    // MARK: - HUD Window Helpers
+
+    /// Creates a floating HUD notification window, positioned at top-center of screen
+    private func createHUDWindow<Content: View>(contentView: Content, width: CGFloat, height: CGFloat) -> NSWindow {
         let notificationWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 200, height: 60),
+            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
 
-        let contentView = NoHistoryNotificationView()
         notificationWindow.contentView = NSHostingView(rootView: contentView)
-        notificationWindow.level = .floating
+        notificationWindow.level = .screenSaver  // Above everything
         notificationWindow.backgroundColor = .clear
         notificationWindow.isOpaque = false
-        notificationWindow.hasShadow = true
+        notificationWindow.hasShadow = false  // Shadow handled by SwiftUI
         notificationWindow.isReleasedWhenClosed = false
+        notificationWindow.ignoresMouseEvents = true  // Click-through
+        notificationWindow.collectionBehavior = [.canJoinAllSpaces, .stationary]
 
-        notificationWindow.center()
-
-        self.pasteLastNotificationWindow = notificationWindow
-        notificationWindow.makeKeyAndOrderFront(nil)
-
-        // Auto-close after 1.5 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.pasteLastNotificationWindow?.orderOut(nil)
-            self?.pasteLastNotificationWindow = nil
+        // Position at top center of screen (30px below menu bar)
+        if let screen = NSScreen.main {
+            let screenFrame = screen.visibleFrame
+            let x = screenFrame.midX - width / 2
+            let y = screenFrame.maxY - height - 30
+            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
         }
+
+        return notificationWindow
+    }
+
+    /// Fade out a window then close it
+    private func fadeOutAndClose(window: NSWindow?, completion: @escaping () -> Void) {
+        guard let window = window else {
+            completion()
+            return
+        }
+
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            window.animator().alphaValue = 0
+        }, completionHandler: {
+            window.orderOut(nil)
+            window.alphaValue = 1  // Reset alpha for reuse
+            completion()
+        })
     }
 
     func handleFlagsChanged(_ event: NSEvent) {

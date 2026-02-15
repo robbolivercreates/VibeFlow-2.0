@@ -9,6 +9,7 @@ struct ModernSettingsView: View {
     @State private var showingWizard = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
+    @State private var inputMonitoringPermission = false
     @State private var selectedTab: SettingsTab = .general
     
     enum SettingsTab: String, CaseIterable {
@@ -52,7 +53,8 @@ struct ModernSettingsView: View {
                     case .permissions:
                         PermissionsSettingsSection(
                             microphonePermission: $microphonePermission,
-                            accessibilityPermission: $accessibilityPermission
+                            accessibilityPermission: $accessibilityPermission,
+                            inputMonitoringPermission: $inputMonitoringPermission
                         )
                     }
                 }
@@ -141,6 +143,22 @@ struct ModernSettingsView: View {
         
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        // Check input monitoring via CGEvent tap probe
+        let testMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        if let testTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: testMask,
+            callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
+            userInfo: nil
+        ) {
+            inputMonitoringPermission = true
+            CFMachPortInvalidate(testTap)
+        } else {
+            inputMonitoringPermission = false
+        }
     }
 }
 
@@ -282,7 +300,7 @@ struct LanguageSettingsSection: View {
                         
                         HStack(spacing: 2) {
                             ShortcutKey(text: "⌃")
-                            ShortcutKey(text: "⌥")
+                            ShortcutKey(text: "⇧")
                             ShortcutKey(text: "L")
                         }
                     }
@@ -560,7 +578,7 @@ struct ShortcutsSettingsSection: View {
                     
                     SettingsShortcutRow(
                         action: "Mudar Idioma",
-                        shortcut: "⌥⇧L",
+                        shortcut: "⌃⇧L",
                         description: "Cicla entre os idiomas favoritos"
                     )
                     
@@ -585,16 +603,20 @@ struct ShortcutsSettingsSection: View {
 struct PermissionsSettingsSection: View {
     @Binding var microphonePermission: AVAuthorizationStatus
     @Binding var accessibilityPermission: Bool
+    @Binding var inputMonitoringPermission: Bool
+    @State private var cgEventTapActive = false
+    @State private var isCheckingDiagnostics = false
     
     var body: some View {
         VStack(spacing: 20) {
+            // Permissions Card
             SettingsCard(title: "Permissões do Sistema", icon: "lock.shield") {
                 VStack(spacing: 16) {
                     // Microfone
                     SettingsPermissionRow(
                         icon: "microphone.fill",
                         title: "Microfone",
-                        description: "Necessário para capturar sua voz",
+                        description: "Para gravar sua voz",
                         isGranted: microphonePermission == .authorized,
                         action: requestMicrophone
                     )
@@ -603,25 +625,89 @@ struct PermissionsSettingsSection: View {
                     SettingsPermissionRow(
                         icon: "accessibility",
                         title: "Acessibilidade",
-                        description: "Necessário para colar texto automaticamente",
+                        description: "Para colar texto automaticamente",
                         isGranted: accessibilityPermission,
                         action: openAccessibilitySettings
+                    )
+                    
+                    // Input Monitoring
+                    SettingsPermissionRow(
+                        icon: "keyboard",
+                        title: "Monitoramento de Teclado",
+                        description: "Para atalhos globais (⌃⇧L, ⌃⇧M, ⌃⇧V)",
+                        isGranted: inputMonitoringPermission,
+                        action: openInputMonitoringSettings
                     )
                 }
             }
             
-            // Dica
-            HStack(spacing: 8) {
-                Image(systemName: "info.circle.fill")
-                    .foregroundStyle(.blue)
-                Text("As permissões são necessárias para o VibeFlow funcionar corretamente.")
+            // Diagnostics Card
+            SettingsCard(title: "Diagnóstico", icon: "stethoscope") {
+                VStack(spacing: 12) {
+                    DiagnosticRow(
+                        title: "Microfone",
+                        status: microphonePermission == .authorized,
+                        detail: microphonePermission == .authorized ? "Funcionando" : "Sem permissão"
+                    )
+                    
+                    DiagnosticRow(
+                        title: "Acessibilidade",
+                        status: accessibilityPermission,
+                        detail: accessibilityPermission ? "Funcionando" : "Sem permissão"
+                    )
+                    
+                    DiagnosticRow(
+                        title: "Input Monitoring",
+                        status: inputMonitoringPermission,
+                        detail: inputMonitoringPermission ? "Funcionando" : "Sem permissão"
+                    )
+                    
+                    DiagnosticRow(
+                        title: "CGEvent Tap (Atalhos Globais)",
+                        status: cgEventTapActive,
+                        detail: cgEventTapActive ? "Ativo e capturando teclas" : "Inativo — atalhos não funcionarão em segundo plano"
+                    )
+                    
+                    Divider()
+                    
+                    Button(action: recheckAll) {
+                        HStack(spacing: 6) {
+                            if isCheckingDiagnostics {
+                                ProgressView()
+                                    .scaleEffect(0.7)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                            Text("Verificar Tudo")
+                        }
+                        .font(.system(size: 13, weight: .medium))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(isCheckingDiagnostics)
+                }
+            }
+            
+            // Tip
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .foregroundStyle(.yellow)
+                    Text("Dica: Se os atalhos pararem de funcionar")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                
+                Text("Quando o VibeFlow é atualizado, o macOS pode revogar as permissões. Nesse caso, vá em Ajustes do Sistema → Privacidade e remova/re-adicione o VibeFlow nas seções de Acessibilidade e Monitoramento de Teclado.")
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
-                Spacer()
             }
             .padding(12)
-            .background(Color.blue.opacity(0.1))
+            .background(Color.yellow.opacity(0.08))
             .cornerRadius(8)
+        }
+        .onAppear {
+            checkCGEventTap()
         }
     }
     
@@ -636,6 +722,84 @@ struct PermissionsSettingsSection: View {
     private func openAccessibilitySettings() {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
+    }
+    
+    private func openInputMonitoringSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
+        NSWorkspace.shared.open(url)
+    }
+    
+    private func checkCGEventTap() {
+        // Check if the AppDelegate has an active CGEvent tap
+        if let appDelegate = NSApp.delegate as? AppDelegate,
+           let tap = appDelegate.globalKeyTap {
+            cgEventTapActive = CGEvent.tapIsEnabled(tap: tap)
+        } else {
+            cgEventTapActive = false
+        }
+    }
+    
+    private func recheckAll() {
+        isCheckingDiagnostics = true
+        
+        // Refresh permissions
+        microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio)
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        // Re-probe input monitoring
+        let testMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
+        if let testTap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .listenOnly,
+            eventsOfInterest: testMask,
+            callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
+            userInfo: nil
+        ) {
+            inputMonitoringPermission = true
+            CFMachPortInvalidate(testTap)
+        } else {
+            inputMonitoringPermission = false
+        }
+        
+        // Retry global key tap if permissions are now granted
+        if inputMonitoringPermission && accessibilityPermission {
+            if let appDelegate = NSApp.delegate as? AppDelegate {
+                appDelegate.setupGlobalKeyTap()
+            }
+        }
+        
+        // Check tap after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            checkCGEventTap()
+            isCheckingDiagnostics = false
+        }
+    }
+}
+
+// MARK: - Diagnostic Row
+struct DiagnosticRow: View {
+    let title: String
+    let status: Bool
+    let detail: String
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: status ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(status ? .green : .red)
+            
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 12, weight: .medium))
+                Text(detail)
+                    .font(.system(size: 10))
+                    .foregroundStyle(status ? Color.secondary : Color.red.opacity(0.7))
+            }
+            
+            Spacer()
+        }
     }
 }
 

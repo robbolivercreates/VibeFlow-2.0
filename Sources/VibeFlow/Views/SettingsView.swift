@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import IOKit
 
 /// View de configurações do VibeFlow
 struct SettingsView: View {
@@ -9,6 +10,7 @@ struct SettingsView: View {
     @State private var showingWizard = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
+    @State private var inputMonitoringPermission = false
     
     var body: some View {
         TabView {
@@ -52,6 +54,9 @@ struct SettingsView: View {
         // Verificar acessibilidade
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+        
+        // Verificar Input Monitoring (via IOHIDRequestAccess)
+        inputMonitoringPermission = IOHIDRequestAccess(kIOHIDRequestTypeListenEvent)
     }
     
     // MARK: - Tabs
@@ -97,14 +102,14 @@ struct SettingsView: View {
                             .cornerRadius(4)
                     }
                     
-                    Text("Pressione ⌥⇧L (Option+Shift+L) para alternar entre idiomas favoritos")
+                    Text("Pressione ⌃⇧L (Control+Shift+L) para alternar entre idiomas favoritos")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             
             Section("Idiomas Favoritos") {
-                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌥⇧L")
+                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌃⇧L")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
@@ -297,10 +302,40 @@ struct SettingsView: View {
                             .foregroundStyle(.green)
                     }
                 }
+                
+                // Input Monitoring
+                HStack {
+                    Image(systemName: "keyboard")
+                        .foregroundStyle(inputMonitoringPermission ? .green : .orange)
+                        .frame(width: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Input Monitoring")
+                            .font(.body)
+                        
+                        Text(inputMonitoringPermission ? "Permitido" : "Necessário para atalhos globais")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    if !inputMonitoringPermission {
+                        Button("Permitir") {
+                            let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
+                            NSWorkspace.shared.open(url)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    } else {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    }
+                }
             }
             
             Section {
-                Text("O VibeFlow precisa de permissão de Acessibilidade para simular o comando ⌘V (colar) automaticamente.")
+                Text("O VibeFlow precisa de Acessibilidade para colar automaticamente (⌘V) e Input Monitoring para detectar atalhos globais de teclado.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

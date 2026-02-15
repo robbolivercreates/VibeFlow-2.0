@@ -81,7 +81,7 @@ struct LanguagesView: View {
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
 
-                    Text("⌥⇧L")
+                    Text("⌃⇧L")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
                         .foregroundStyle(.purple)
                         .padding(.horizontal, 10)
@@ -118,7 +118,7 @@ struct LanguagesView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text("Use ⌥⇧L para alternar rapidamente entre seus idiomas favoritos.")
+            Text("Use ⌃⇧L para alternar rapidamente entre seus idiomas favoritos.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
