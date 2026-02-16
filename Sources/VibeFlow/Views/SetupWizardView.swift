@@ -3,31 +3,34 @@ import AVFoundation
 
 // MARK: - Wizard Steps
 enum WizardStep: Int, CaseIterable {
-    case welcome = 0
-    case apiKey = 1
-    case permissions = 2
-    case testRecording = 3
-    case languages = 4
-    case ready = 5
+    case language = 0
+    case welcome = 1
+    case apiKey = 2
+    case permissions = 3
+    case testRecording = 4
+    case languages = 5
+    case ready = 6
 
     var title: String {
         switch self {
+        case .language: return L10n.chooseLanguage
         case .welcome: return "Bem-vindo"
         case .apiKey: return "API Key"
-        case .permissions: return "Permissoes"
-        case .testRecording: return "Teste"
-        case .languages: return "Idiomas"
+        case .permissions: return L10n.requiredPermissions
+        case .testRecording: return L10n.testVibeFlow
+        case .languages: return L10n.languages
         case .ready: return "Pronto"
         }
     }
 
     var icon: String {
         switch self {
+        case .language: return "globe"
         case .welcome: return "waveform.circle.fill"
         case .apiKey: return "key.fill"
         case .permissions: return "lock.shield.fill"
         case .testRecording: return "mic.fill"
-        case .languages: return "globe"
+        case .languages: return "flag.fill"
         case .ready: return "checkmark.seal.fill"
         }
     }
@@ -140,11 +143,11 @@ struct SetupWizardView: View {
 
             HStack {
                 // Back button
-                if currentStep != .welcome {
+                if currentStep != .language {
                     Button(action: goBack) {
                         HStack(spacing: 6) {
                             Image(systemName: "chevron.left")
-                            Text("Voltar")
+                            Text(L10n.back)
                         }
                     }
                     .buttonStyle(.bordered)
@@ -162,7 +165,7 @@ struct SetupWizardView: View {
                 // Next/Finish button
                 Button(action: goNext) {
                     HStack(spacing: 6) {
-                        Text(currentStep == .ready ? "Comecar a Usar" : "Continuar")
+                        Text(currentStep == .ready ? L10n.startUsing : L10n.continueBtn)
                         if currentStep != .ready {
                             Image(systemName: "chevron.right")
                         }
@@ -182,6 +185,8 @@ struct SetupWizardView: View {
     @ViewBuilder
     private var stepContent: some View {
         switch currentStep {
+        case .language:
+            languageSelectionContent
         case .welcome:
             welcomeContent
         case .apiKey:
@@ -194,6 +199,66 @@ struct SetupWizardView: View {
             languagesContent
         case .ready:
             readyContent
+        }
+    }
+
+    // MARK: - Language Selection Step
+
+    private var languageSelectionContent: some View {
+        VStack(spacing: 32) {
+            // Header
+            VStack(spacing: 12) {
+                Image(systemName: "globe")
+                    .font(.system(size: 60))
+                    .foregroundStyle(.purple)
+                
+                Text(L10n.chooseLanguage)
+                    .font(.system(size: 28, weight: .bold))
+                
+                Text(L10n.interfaceLanguageDesc)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            // Language cards
+            VStack(spacing: 16) {
+                ForEach(AppLanguage.allCases) { language in
+                    Button(action: {
+                        UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
+                        // Force UI update
+                        objectWillChange.send()
+                    }) {
+                        HStack(spacing: 16) {
+                            Text(language.flag)
+                                .font(.system(size: 40))
+                            
+                            Text(language.displayName)
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundStyle(.primary)
+                            
+                            Spacer()
+                            
+                            if L10n.current == language {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 24))
+                                    .foregroundStyle(.purple)
+                            }
+                        }
+                        .padding(20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(L10n.current == language ? Color.purple.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(L10n.current == language ? Color.purple : Color.clear, lineWidth: 2)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 40)
         }
     }
 
@@ -791,6 +856,8 @@ struct SetupWizardView: View {
 
     private var canProceed: Bool {
         switch currentStep {
+        case .language:
+            return true
         case .welcome:
             return true
         case .apiKey:

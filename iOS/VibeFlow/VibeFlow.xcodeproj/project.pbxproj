@@ -1,0 +1,788 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		53D3C29A2F427DA8007AE4FD /* VibeFlowKeyboard.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 53D3C2932F427DA8007AE4FD /* VibeFlowKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		53D3C2A72F427FCC007AE4FD /* TranscriptionMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A62F427FCC007AE4FD /* TranscriptionMode.swift */; };
+		53D3C2A82F427FCC007AE4FD /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A22F427FCC007AE4FD /* AudioRecorder.swift */; };
+		53D3C2A92F427FCC007AE4FD /* SpeechLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A52F427FCC007AE4FD /* SpeechLanguage.swift */; };
+		53D3C2AA2F427FCC007AE4FD /* SharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A42F427FCC007AE4FD /* SharedSettings.swift */; };
+		53D3C2AB2F427FCC007AE4FD /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A32F427FCC007AE4FD /* GeminiService.swift */; };
+		53D3C2AC2F427FCC007AE4FD /* TranscriptionMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A62F427FCC007AE4FD /* TranscriptionMode.swift */; };
+		53D3C2AD2F427FCC007AE4FD /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A22F427FCC007AE4FD /* AudioRecorder.swift */; };
+		53D3C2AE2F427FCC007AE4FD /* SpeechLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A52F427FCC007AE4FD /* SpeechLanguage.swift */; };
+		53D3C2AF2F427FCC007AE4FD /* SharedSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A42F427FCC007AE4FD /* SharedSettings.swift */; };
+		53D3C2B02F427FCC007AE4FD /* GeminiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2A32F427FCC007AE4FD /* GeminiService.swift */; };
+		53D3C2B12F428000007AE4FD /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2B32F428000007AE4FD /* Localization.swift */; };
+		53D3C2B22F428000007AE4FD /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53D3C2B32F428000007AE4FD /* Localization.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		53D3C2732F427CE8007AE4FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53D3C25B2F427CE7007AE4FD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 53D3C2622F427CE7007AE4FD;
+			remoteInfo = VibeFlow;
+		};
+		53D3C27D2F427CE8007AE4FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53D3C25B2F427CE7007AE4FD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 53D3C2622F427CE7007AE4FD;
+			remoteInfo = VibeFlow;
+		};
+		53D3C2982F427DA8007AE4FD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53D3C25B2F427CE7007AE4FD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 53D3C2922F427DA8007AE4FD;
+			remoteInfo = VibeFlowKeyboard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		53D3C29F2F427DA8007AE4FD /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				53D3C29A2F427DA8007AE4FD /* VibeFlowKeyboard.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		53D3C2632F427CE7007AE4FD /* VibeFlow.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeFlow.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		53D3C2722F427CE8007AE4FD /* VibeFlowTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VibeFlowTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		53D3C27C2F427CE8007AE4FD /* VibeFlowUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VibeFlowUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		53D3C2932F427DA8007AE4FD /* VibeFlowKeyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VibeFlowKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		53D3C2A22F427FCC007AE4FD /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		53D3C2A32F427FCC007AE4FD /* GeminiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiService.swift; sourceTree = "<group>"; };
+		53D3C2A42F427FCC007AE4FD /* SharedSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedSettings.swift; sourceTree = "<group>"; };
+		53D3C2A52F427FCC007AE4FD /* SpeechLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechLanguage.swift; sourceTree = "<group>"; };
+		53D3C2A62F427FCC007AE4FD /* TranscriptionMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptionMode.swift; sourceTree = "<group>"; };
+		53D3C2B32F428000007AE4FD /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		53D3C29B2F427DA8007AE4FD /* Exceptions for "VibeFlowKeyboard" folder in "VibeFlowKeyboard" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 53D3C2922F427DA8007AE4FD /* VibeFlowKeyboard */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		53D3C2652F427CE7007AE4FD /* VibeFlow */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VibeFlow;
+			sourceTree = "<group>";
+		};
+		53D3C2752F427CE8007AE4FD /* VibeFlowTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VibeFlowTests;
+			sourceTree = "<group>";
+		};
+		53D3C27F2F427CE8007AE4FD /* VibeFlowUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = VibeFlowUITests;
+			sourceTree = "<group>";
+		};
+		53D3C2942F427DA8007AE4FD /* VibeFlowKeyboard */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				53D3C29B2F427DA8007AE4FD /* Exceptions for "VibeFlowKeyboard" folder in "VibeFlowKeyboard" target */,
+			);
+			path = VibeFlowKeyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		53D3C2602F427CE7007AE4FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C26F2F427CE8007AE4FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C2792F427CE8007AE4FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C2902F427DA8007AE4FD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		53D3C25A2F427CE7007AE4FD = {
+			isa = PBXGroup;
+			children = (
+				53D3C2A22F427FCC007AE4FD /* AudioRecorder.swift */,
+				53D3C2A32F427FCC007AE4FD /* GeminiService.swift */,
+				53D3C2B32F428000007AE4FD /* Localization.swift */,
+				53D3C2A42F427FCC007AE4FD /* SharedSettings.swift */,
+				53D3C2A52F427FCC007AE4FD /* SpeechLanguage.swift */,
+				53D3C2A62F427FCC007AE4FD /* TranscriptionMode.swift */,
+				53D3C2652F427CE7007AE4FD /* VibeFlow */,
+				53D3C2752F427CE8007AE4FD /* VibeFlowTests */,
+				53D3C27F2F427CE8007AE4FD /* VibeFlowUITests */,
+				53D3C2942F427DA8007AE4FD /* VibeFlowKeyboard */,
+				53D3C2642F427CE7007AE4FD /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		53D3C2642F427CE7007AE4FD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				53D3C2632F427CE7007AE4FD /* VibeFlow.app */,
+				53D3C2722F427CE8007AE4FD /* VibeFlowTests.xctest */,
+				53D3C27C2F427CE8007AE4FD /* VibeFlowUITests.xctest */,
+				53D3C2932F427DA8007AE4FD /* VibeFlowKeyboard.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		53D3C2622F427CE7007AE4FD /* VibeFlow */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53D3C2862F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlow" */;
+			buildPhases = (
+				53D3C25F2F427CE7007AE4FD /* Sources */,
+				53D3C2602F427CE7007AE4FD /* Frameworks */,
+				53D3C2612F427CE7007AE4FD /* Resources */,
+				53D3C29F2F427DA8007AE4FD /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				53D3C2992F427DA8007AE4FD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				53D3C2652F427CE7007AE4FD /* VibeFlow */,
+			);
+			name = VibeFlow;
+			packageProductDependencies = (
+			);
+			productName = VibeFlow;
+			productReference = 53D3C2632F427CE7007AE4FD /* VibeFlow.app */;
+			productType = "com.apple.product-type.application";
+		};
+		53D3C2712F427CE8007AE4FD /* VibeFlowTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53D3C2892F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowTests" */;
+			buildPhases = (
+				53D3C26E2F427CE8007AE4FD /* Sources */,
+				53D3C26F2F427CE8007AE4FD /* Frameworks */,
+				53D3C2702F427CE8007AE4FD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				53D3C2742F427CE8007AE4FD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				53D3C2752F427CE8007AE4FD /* VibeFlowTests */,
+			);
+			name = VibeFlowTests;
+			packageProductDependencies = (
+			);
+			productName = VibeFlowTests;
+			productReference = 53D3C2722F427CE8007AE4FD /* VibeFlowTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		53D3C27B2F427CE8007AE4FD /* VibeFlowUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53D3C28C2F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowUITests" */;
+			buildPhases = (
+				53D3C2782F427CE8007AE4FD /* Sources */,
+				53D3C2792F427CE8007AE4FD /* Frameworks */,
+				53D3C27A2F427CE8007AE4FD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				53D3C27E2F427CE8007AE4FD /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				53D3C27F2F427CE8007AE4FD /* VibeFlowUITests */,
+			);
+			name = VibeFlowUITests;
+			packageProductDependencies = (
+			);
+			productName = VibeFlowUITests;
+			productReference = 53D3C27C2F427CE8007AE4FD /* VibeFlowUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		53D3C2922F427DA8007AE4FD /* VibeFlowKeyboard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 53D3C29C2F427DA8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowKeyboard" */;
+			buildPhases = (
+				53D3C28F2F427DA8007AE4FD /* Sources */,
+				53D3C2902F427DA8007AE4FD /* Frameworks */,
+				53D3C2912F427DA8007AE4FD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				53D3C2942F427DA8007AE4FD /* VibeFlowKeyboard */,
+			);
+			name = VibeFlowKeyboard;
+			packageProductDependencies = (
+			);
+			productName = VibeFlowKeyboard;
+			productReference = 53D3C2932F427DA8007AE4FD /* VibeFlowKeyboard.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		53D3C25B2F427CE7007AE4FD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
+				TargetAttributes = {
+					53D3C2622F427CE7007AE4FD = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					53D3C2712F427CE8007AE4FD = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 53D3C2622F427CE7007AE4FD;
+					};
+					53D3C27B2F427CE8007AE4FD = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = 53D3C2622F427CE7007AE4FD;
+					};
+					53D3C2922F427DA8007AE4FD = {
+						CreatedOnToolsVersion = 26.2;
+					};
+				};
+			};
+			buildConfigurationList = 53D3C25E2F427CE7007AE4FD /* Build configuration list for PBXProject "VibeFlow" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 53D3C25A2F427CE7007AE4FD;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 53D3C2642F427CE7007AE4FD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				53D3C2622F427CE7007AE4FD /* VibeFlow */,
+				53D3C2712F427CE8007AE4FD /* VibeFlowTests */,
+				53D3C27B2F427CE8007AE4FD /* VibeFlowUITests */,
+				53D3C2922F427DA8007AE4FD /* VibeFlowKeyboard */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		53D3C2612F427CE7007AE4FD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C2702F427CE8007AE4FD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C27A2F427CE8007AE4FD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C2912F427DA8007AE4FD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		53D3C25F2F427CE7007AE4FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53D3C2AC2F427FCC007AE4FD /* TranscriptionMode.swift in Sources */,
+				53D3C2AD2F427FCC007AE4FD /* AudioRecorder.swift in Sources */,
+				53D3C2AE2F427FCC007AE4FD /* SpeechLanguage.swift in Sources */,
+				53D3C2AF2F427FCC007AE4FD /* SharedSettings.swift in Sources */,
+				53D3C2B02F427FCC007AE4FD /* GeminiService.swift in Sources */,
+				53D3C2B12F428000007AE4FD /* Localization.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C26E2F427CE8007AE4FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C2782F427CE8007AE4FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		53D3C28F2F427DA8007AE4FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53D3C2A72F427FCC007AE4FD /* TranscriptionMode.swift in Sources */,
+				53D3C2A82F427FCC007AE4FD /* AudioRecorder.swift in Sources */,
+				53D3C2A92F427FCC007AE4FD /* SpeechLanguage.swift in Sources */,
+				53D3C2AA2F427FCC007AE4FD /* SharedSettings.swift in Sources */,
+				53D3C2AB2F427FCC007AE4FD /* GeminiService.swift in Sources */,
+				53D3C2B22F428000007AE4FD /* Localization.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		53D3C2742F427CE8007AE4FD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 53D3C2622F427CE7007AE4FD /* VibeFlow */;
+			targetProxy = 53D3C2732F427CE8007AE4FD /* PBXContainerItemProxy */;
+		};
+		53D3C27E2F427CE8007AE4FD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 53D3C2622F427CE7007AE4FD /* VibeFlow */;
+			targetProxy = 53D3C27D2F427CE8007AE4FD /* PBXContainerItemProxy */;
+		};
+		53D3C2992F427DA8007AE4FD /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 53D3C2922F427DA8007AE4FD /* VibeFlowKeyboard */;
+			targetProxy = 53D3C2982F427DA8007AE4FD /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		53D3C2842F427CE8007AE4FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		53D3C2852F427CE8007AE4FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		53D3C2872F427CE8007AE4FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VibeFlow/VibeFlow.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		53D3C2882F427CE8007AE4FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = VibeFlow/VibeFlow.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlow;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		53D3C28A2F427CE8007AE4FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VibeFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VibeFlow";
+			};
+			name = Debug;
+		};
+		53D3C28B2F427CE8007AE4FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlowTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/VibeFlow.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VibeFlow";
+			};
+			name = Release;
+		};
+		53D3C28D2F427CE8007AE4FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = VibeFlow;
+			};
+			name = Debug;
+		};
+		53D3C28E2F427CE8007AE4FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlowUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = VibeFlow;
+			};
+			name = Release;
+		};
+		53D3C29D2F427DA8007AE4FD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VibeFlowKeyboard/VibeFlowKeyboard.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VibeFlowKeyboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VibeFlowKeyboard;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlow.VibeFlowKeyboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		53D3C29E2F427DA8007AE4FD /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = VibeFlowKeyboard/VibeFlowKeyboard.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Z72H43BA3X;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = VibeFlowKeyboard/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = VibeFlowKeyboard;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = robboliver.VibeFlow.VibeFlowKeyboard;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		53D3C25E2F427CE7007AE4FD /* Build configuration list for PBXProject "VibeFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53D3C2842F427CE8007AE4FD /* Debug */,
+				53D3C2852F427CE8007AE4FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53D3C2862F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlow" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53D3C2872F427CE8007AE4FD /* Debug */,
+				53D3C2882F427CE8007AE4FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53D3C2892F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53D3C28A2F427CE8007AE4FD /* Debug */,
+				53D3C28B2F427CE8007AE4FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53D3C28C2F427CE8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53D3C28D2F427CE8007AE4FD /* Debug */,
+				53D3C28E2F427CE8007AE4FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		53D3C29C2F427DA8007AE4FD /* Build configuration list for PBXNativeTarget "VibeFlowKeyboard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				53D3C29D2F427DA8007AE4FD /* Debug */,
+				53D3C29E2F427DA8007AE4FD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 53D3C25B2F427CE7007AE4FD /* Project object */;
+}
