@@ -70,6 +70,22 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         }
     }
     
+    /// Descrição detalhada do modo para exibir ao usuário
+    var detailedDescription: String {
+        switch self {
+        case .code:
+            return L10n.codeModeDetail
+        case .text:
+            return L10n.textModeDetail
+        case .email:
+            return L10n.emailModeDetail
+        case .uxDesign:
+            return L10n.uxModeDetail
+        case .command:
+            return L10n.commandModeDetail
+        }
+    }
+
     /// Temperatura ideal para cada modo
     var temperature: Float {
         switch self {

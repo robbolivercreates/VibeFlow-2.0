@@ -46,6 +46,8 @@ struct L10n {
     // MARK: - General
     static var ok: String { t("OK", "OK", "OK") }
     static var cancel: String { t("Cancel", "Cancelar", "Cancelar") }
+    static var clear: String { t("Clear", "Limpar", "Limpiar") }
+    static var about: String { t("About", "Sobre", "Acerca de") }
     static var save: String { t("Save", "Salvar", "Guardar") }
     static var saved: String { t("Saved!", "Salvo!", "¡Guardado!") }
     static var open: String { t("Open", "Abrir", "Abrir") }
@@ -122,6 +124,9 @@ struct L10n {
     static var inputMonitoringDesc: String { t("For global shortcuts to work in the background", "Para atalhos globais funcionarem em segundo plano", "Para que los atajos globales funcionen en segundo plano") }
     static var allPermissionsGranted: String { t("All permissions granted! All set.", "Todas as permissoes concedidas! Tudo pronto.", "¡Todos los permisos concedidos! Todo listo.") }
     static var permissionsSecurityNote: String { t("Your permissions are managed by macOS and can be revoked at any time in System Settings.", "Suas permissoes sao gerenciadas pelo macOS e podem ser revogadas a qualquer momento em Ajustes do Sistema.", "Tus permisos son gestionados por macOS y pueden ser revocados en cualquier momento en Ajustes del Sistema.") }
+    static func permissionsGranted(_ count: Int, _ total: Int) -> String {
+        t("\(count) of \(total) permissions granted", "\(count) de \(total) permissoes concedidas", "\(count) de \(total) permisos concedidos")
+    }
     
     // Wizard - Permission Help Steps
     static var helpOpenPrefs: String { t("Click \"Open Preferences\" — it will open Preferences and Finder", "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder", "Haz clic en \"Abrir Preferencias\" — abrirá Preferencias y Finder") }
@@ -132,6 +137,13 @@ struct L10n {
     static var testVibeFlow: String { t("Test VibeFlow", "Teste o VibeFlow", "Prueba VibeFlow") }
     static var testInstructions: String { t("Let's test if everything is working. Follow the instructions below:", "Vamos testar se tudo esta funcionando. Siga as instrucoes abaixo:", "Vamos a probar si todo funciona. Sigue las instrucciones:") }
     static var shortcutWorking: String { t("Shortcut working!", "Atalho funcionando!", "¡Atajo funcionando!") }
+    static var shortcutTipsBody: String {
+        t(
+            "• Make sure no other app is using the same shortcuts\n• If the shortcut doesn't work, restart VibeFlow\n• You can customize shortcuts in Settings > Shortcuts",
+            "• Certifique-se de que nenhum outro app esta usando os mesmos atalhos\n• Se o atalho nao funcionar, reinicie o VibeFlow\n• Voce pode customizar os atalhos em Configuracoes > Atalhos",
+            "• Asegúrate de que ninguna otra app use los mismos atajos\n• Si el atajo no funciona, reinicia VibeFlow\n• Puedes personalizar los atajos en Configuración > Atajos"
+        )
+    }
     static var testRecordingShortcut: String { t("Test the recording shortcut", "Teste o atalho de gravacao", "Prueba el atajo de grabación") }
     static var shortcutConfigured: String { t("The ⌥⌘ shortcut is configured correctly", "O atalho ⌥⌘ esta configurado corretamente", "El atajo ⌥⌘ está configurado correctamente") }
     static var holdOptionCommand: String { t("Hold ⌥⌘ (Option + Command) for 2 seconds", "Segure ⌥⌘ (Option + Command) por 2 segundos", "Mantén ⌥⌘ (Option + Command) por 2 segundos") }
@@ -184,6 +196,22 @@ struct L10n {
     static var configureVibeFlowPrefs: String { t("Configure VibeFlow according to your preferences.", "Configure o VibeFlow de acordo com suas preferencias.", "Configura VibeFlow según tus preferencias.") }
     static var clearAllDataWarning: String { t("This will clear all transcription history and style samples. This action cannot be undone.", "Isso ira limpar todo o historico de transcricoes e amostras de estilo. Esta acao nao pode ser desfeita.", "Esto borrará todo el historial de transcripciones y muestras de estilo. Esta acción no se puede deshacer.") }
     
+    // Settings - Tabs/Labels
+    static var general: String { t("General", "Geral", "General") }
+    static var api: String { t("API", "API", "API") }
+    static var advanced: String { t("Advanced", "Avançado", "Avanzado") }
+    static var behavior: String { t("Behavior", "Comportamento", "Comportamiento") }
+    static var personalization: String { t("Personalization", "Personalizacao", "Personalización") }
+    static var support: String { t("Support", "Suporte", "Soporte") }
+    static var data: String { t("Data", "Dados", "Datos") }
+    
+    // Settings - Behavior toggles
+    static var autoPasteToggle: String { t("Auto-paste automatically", "Colar automaticamente", "Pegar automáticamente") }
+    static var autoClose: String { t("Close window after pasting", "Fechar janela após colar", "Cerrar ventana tras pegar") }
+    static var saveHistory: String { t("Save history", "Salvar histórico", "Guardar historial") }
+    static var soundEffects: String { t("Sound effects", "Efeitos sonoros", "Efectos de sonido") }
+    static var clearHistory: String { t("Clear history", "Limpar histórico", "Limpiar historial") }
+    
     // Settings - Mode
     static var modeDescription: String { t("The mode determines how Gemini processes your audio.", "O modo determina como o Gemini processa seu áudio.", "El modo determina cómo Gemini procesa tu audio.") }
     static var outputLanguage: String { t("The transcribed text will be generated in this language, regardless of the language spoken.", "O texto transcrito sera gerado neste idioma, independente do idioma falado.", "El texto transcrito se generará en este idioma, independientemente del idioma hablado.") }
@@ -196,6 +224,10 @@ struct L10n {
     static func samplesSaved(_ count: Int) -> String { t("\(count) samples saved", "\(count) amostras salvas", "\(count) muestras guardadas") }
     
     // Settings - API
+    static var geminiAPI: String { t("Gemini API", "API Gemini", "API Gemini") }
+    static var outputLanguageDescription: String { t("Output Language", "Idioma de Saída", "Idioma de Salida") }
+    static var permissions: String { t("Permissions", "Permissões", "Permisos") }
+    static var shortcuts: String { t("Shortcuts", "Atalhos", "Atajos") }
     static var apiKeyStoredInKeychain: String { t("Your API key is stored locally in the macOS Keychain.", "Sua API key é armazenada localmente no Keychain do macOS.", "Tu API key se almacena localmente en el Keychain de macOS.") }
     static var getAPIKeyGoogleAI: String { t("Get API key at Google AI Studio", "Obter API key no Google AI Studio", "Obtener API key en Google AI Studio") }
     static var model: String { t("Model", "Modelo", "Modelo") }
@@ -208,6 +240,18 @@ struct L10n {
     static var accessibility: String { t("Accessibility", "Acessibilidade", "Accesibilidad") }
     static var inputMonitoring: String { t("Input Monitoring", "Input Monitoring", "Input Monitoring") }
     static var permissionsHint: String { t("VibeFlow needs Accessibility to auto-paste (⌘V) and Input Monitoring to detect global keyboard shortcuts.", "O VibeFlow precisa de Acessibilidade para colar automaticamente (⌘V) e Input Monitoring para detectar atalhos globais de teclado.", "VibeFlow necesita Accesibilidad para pegar automáticamente (⌘V) e Input Monitoring para detectar atajos globales de teclado.") }
+    static var request: String { t("Request", "Solicitar", "Solicitar") }
+    static var allow: String { t("Allow", "Permitir", "Permitir") }
+    static var allowed: String { t("Allowed", "Permitido", "Permitido") }
+    static var requiredForAutoPaste: String { t("Required for auto-paste", "Necessário para colar automaticamente", "Necesario para pegar automáticamente") }
+    static var requiredForShortcuts: String { t("Required for global shortcuts", "Necessário para atalhos globais", "Necesario para atajos globales") }
+    
+    // Permission status
+    static var statusNotDetermined: String { t("Not Determined", "Não solicitado", "No determinado") }
+    static var statusRestricted: String { t("Restricted", "Restrito", "Restringido") }
+    static var statusDenied: String { t("Denied", "Negado", "Denegado") }
+    static var statusAuthorized: String { t("Authorized", "Permitido", "Autorizado") }
+    static var statusUnknown: String { t("Unknown", "Desconhecido", "Desconocido") }
     
     // Settings - Shortcuts
     static var record: String { t("Record", "Gravar", "Grabar") }
@@ -232,6 +276,14 @@ struct L10n {
     static var clickStarToToggle: String { t("Click the star to add/remove favorites", "Clique na estrela para adicionar/remover favoritos", "Haz clic en la estrella para agregar/quitar favoritos") }
     
     // MARK: - Analytics View
+    static var words: String { t("Words", "Palavras", "Palabras") }
+    static var statistics: String { t("Statistics", "Estatísticas", "Estadísticas") }
+    static var summary: String { t("Summary", "Resumo", "Resumen") }
+    static var achievements: String { t("Achievements", "Conquistas", "Logros") }
+    static var timeSavedHeader: String { t("Time Saved", "Tempo Economizado", "Tiempo Ahorrado") }
+    static var recordedTimeHeader: String { t("Recorded Time", "Tempo Gravado", "Tiempo Grabado") }
+    static var timeSavedPerMonth: String { t("Time Saved per Month", "Tempo Economizado por Mês", "Tiempo Ahorrado por Mes") }
+    
     static func levelN(_ n: Int) -> String { t("Level \(n)", "Nível \(n)", "Nivel \(n)") }
     static var nextLevel: String { t("Next level", "Próximo nível", "Siguiente nivel") }
     static func transcriptionsToNext(_ n: Int) -> String { t("\(n) transcriptions", "\(n) transcrições", "\(n) transcripciones") }
@@ -310,6 +362,10 @@ struct L10n {
     // MARK: - Floating Preview
     static func characters(_ n: Int) -> String { t("\(n) characters", "\(n) caracteres", "\(n) caracteres") }
     
+    // MARK: - Launch at Login
+    static var launchAtLogin: String { t("Launch at login", "Abrir ao iniciar", "Abrir al iniciar") }
+    static var launchAtLoginDescription: String { t("Automatically start VibeFlow when you log in", "Inicia o VibeFlow automaticamente ao ligar o Mac", "Inicia VibeFlow automáticamente al encender el Mac") }
+
     // MARK: - Clarity features
     static var textClarity: String { t("Text Clarity", "Clareza do Texto", "Claridad del Texto") }
     static var clarifyAndOrganize: String { t("Clarify and organize text", "Clarear e organizar texto", "Aclarar y organizar texto") }
@@ -324,4 +380,90 @@ struct L10n {
     static var correctsGrammar: String { t("Corrects grammar and punctuation", "Corrige gramática e pontuação", "Corrige gramática y puntuación") }
     
     static var defaultModeDescription: String { t("Choose the mode used when starting a recording", "Escolha o modo que será usado ao iniciar uma gravação", "Elige el modo usado al iniciar una grabación") }
+
+    // MARK: - Mode Detailed Descriptions
+    static var codeModeDetail: String { t(
+        "Ideal for dictating code by voice. Say what you want to create — like \"a function that sorts an array\" — and get clean, ready-to-use code.\n\nWhen to use:\n• Writing functions, classes, or variables\n• Describing logic you want turned into code\n• Quick prototyping without typing\n\nTip: Mention the programming language for better results, e.g. \"in Python, a function that...\"",
+        "Ideal para ditar código por voz. Diga o que deseja criar — como \"uma função que ordena um array\" — e receba código limpo, pronto para usar.\n\nQuando usar:\n• Escrever funções, classes ou variáveis\n• Descrever lógica que você quer transformar em código\n• Prototipar rapidamente sem digitar\n\nDica: Mencione a linguagem para melhores resultados, ex: \"em Python, uma função que...\"",
+        "Ideal para dictar código por voz. Di lo que deseas crear — como \"una función que ordena un array\" — y obtén código limpio, listo para usar.\n\nCuándo usar:\n• Escribir funciones, clases o variables\n• Describir lógica que quieres convertir en código\n• Prototipar rápidamente sin teclear\n\nConsejo: Menciona el lenguaje para mejores resultados, ej: \"en Python, una función que...\""
+    ) }
+
+    static var textModeDetail: String { t(
+        "For everyday use. Speak naturally and get clean, well-formatted text — without the \"ums\", \"ahs\", and filler words.\n\nWhen to use:\n• Writing messages, notes, or documents\n• Capturing ideas quickly by voice\n• Any situation where you'd normally type text\n\nTip: Speak naturally — VibeFlow automatically removes hesitations and corrects grammar.",
+        "Para o dia a dia. Fale naturalmente e receba texto limpo e bem formatado — sem os \"éé\", \"tipo\", \"né\" e palavras de preenchimento.\n\nQuando usar:\n• Escrever mensagens, notas ou documentos\n• Capturar ideias rapidamente por voz\n• Qualquer situação em que você normalmente digitaria\n\nDica: Fale naturalmente — o VibeFlow remove hesitações e corrige a gramática automaticamente.",
+        "Para el día a día. Habla naturalmente y obtén texto limpio y bien formateado — sin los \"este\", \"o sea\", \"bueno\" y muletillas.\n\nCuándo usar:\n• Escribir mensajes, notas o documentos\n• Capturar ideas rápidamente por voz\n• Cualquier situación donde normalmente teclearías\n\nConsejo: Habla naturalmente — VibeFlow elimina vacilaciones y corrige la gramática automáticamente."
+    ) }
+
+    static var emailModeDetail: String { t(
+        "Transforms your speech into a well-structured, professional email. Just describe what you want to say and get a ready-to-send email.\n\nWhen to use:\n• Composing professional or formal emails\n• Quick replies that need good formatting\n• Writing messages with proper greeting and sign-off\n\nTip: Start by saying who the email is for and the subject, e.g. \"email to João about the meeting tomorrow\".",
+        "Transforma sua fala em um email profissional e bem estruturado. Basta descrever o que quer dizer e receba um email pronto para enviar.\n\nQuando usar:\n• Compor emails profissionais ou formais\n• Respostas rápidas que precisam de boa formatação\n• Escrever mensagens com saudação e despedida adequadas\n\nDica: Comece dizendo para quem é o email e o assunto, ex: \"email para o João sobre a reunião de amanhã\".",
+        "Transforma tu habla en un email profesional y bien estructurado. Solo describe lo que quieres decir y obtén un email listo para enviar.\n\nCuándo usar:\n• Componer emails profesionales o formales\n• Respuestas rápidas que necesitan buena estructura\n• Escribir mensajes con saludo y despedida adecuados\n\nConsejo: Empieza diciendo a quién va el email y el tema, ej: \"email para João sobre la reunión de mañana\"."
+    ) }
+
+    static var uxModeDetail: String { t(
+        "Designed for UX designers and product teams. Describe interfaces, user flows, or design specs and get well-organized documentation.\n\nWhen to use:\n• Describing screens, components, or interactions\n• Documenting user flows step by step\n• Writing design specs and requirements\n\nTip: Be specific about UI elements — say \"button\", \"modal\", \"card\", \"dropdown\" — for better structured output.",
+        "Feito para designers UX e equipes de produto. Descreva interfaces, fluxos de usuário ou especificações de design e receba documentação bem organizada.\n\nQuando usar:\n• Descrever telas, componentes ou interações\n• Documentar fluxos de usuário passo a passo\n• Escrever specs de design e requisitos\n\nDica: Seja específico com elementos de UI — diga \"botão\", \"modal\", \"card\", \"dropdown\" — para uma saída mais estruturada.",
+        "Diseñado para diseñadores UX y equipos de producto. Describe interfaces, flujos de usuario o specs de diseño y obtén documentación bien organizada.\n\nCuándo usar:\n• Describir pantallas, componentes o interacciones\n• Documentar flujos de usuario paso a paso\n• Escribir specs de diseño y requisitos\n\nConsejo: Sé específico con elementos de UI — di \"botón\", \"modal\", \"card\", \"dropdown\" — para una salida más estructurada."
+    ) }
+
+    static var commandModeDetail: String { t(
+        "A powerful mode that transforms selected text based on voice commands. Select text in any app, then use a voice command to modify it.\n\nWhen to use:\n• \"Make it professional\" — rewrites in formal tone\n• \"Summarize\" — creates a concise summary\n• \"Translate to English\" — translates the text\n• \"Fix grammar\" — corrects errors only\n• \"Add bullet points\" — formats as a list\n\nTip: First select text in any app, then activate VibeFlow and say the command.",
+        "Um modo poderoso que transforma texto selecionado com comandos de voz. Selecione texto em qualquer app e use um comando de voz para modificá-lo.\n\nQuando usar:\n• \"Mais profissional\" — reescreve em tom formal\n• \"Resumir\" — cria um resumo conciso\n• \"Traduzir para inglês\" — traduz o texto\n• \"Corrigir gramática\" — corrige apenas erros\n• \"Adicionar tópicos\" — formata como lista\n\nDica: Primeiro selecione o texto em qualquer app, depois ative o VibeFlow e diga o comando.",
+        "Un modo poderoso que transforma texto seleccionado con comandos de voz. Selecciona texto en cualquier app y usa un comando de voz para modificarlo.\n\nCuándo usar:\n• \"Más profesional\" — reescribe en tono formal\n• \"Resumir\" — crea un resumen conciso\n• \"Traducir al inglés\" — traduce el texto\n• \"Corregir gramática\" — corrige solo errores\n• \"Agregar viñetas\" — formatea como lista\n\nConsejo: Primero selecciona texto en cualquier app, luego activa VibeFlow y di el comando."
+    ) }
+    
+    // MARK: - ModernSettingsView
+    static var openWizardShort: String { t("Open Wizard", "Abrir Wizard", "Abrir Asistente") }
+    static var transcriptionMode: String { t("Transcription Mode", "Modo de Transcrição", "Modo de Transcripción") }
+    static var outputLanguageTitle: String { t("Output Language", "Idioma de Saída", "Idioma de Salida") }
+    static var favoriteLangsTitle: String { t("Favorite Languages", "Idiomas Favoritos", "Idiomas Favoritos") }
+    static var keyboardShortcuts: String { t("Keyboard Shortcuts", "Atalhos de Teclado", "Atajos de Teclado") }
+    static var systemPermissions: String { t("System Permissions", "Permissões do Sistema", "Permisos del Sistema") }
+    static var diagnostics: String { t("Diagnostics", "Diagnóstico", "Diagnóstico") }
+    
+    // ModernSettings - Behavior subtitles
+    static var autoPasteSub: String { t("Pastes text in the active app", "Cola o texto no app ativo", "Pega el texto en la app activa") }
+    static var autoCloseSub: String { t("Hides window automatically", "Esconde a janela automaticamente", "Oculta la ventana automáticamente") }
+    static var soundEffectsSub: String { t("Plays sounds when recording and processing", "Toca sons ao gravar e processar", "Reproduce sonidos al grabar y procesar") }
+    static var saveHistorySub: String { t("Keeps the last 50 transcriptions", "Mantém as últimas 50 transcrições", "Mantiene las últimas 50 transcripciones") }
+    
+    // ModernSettings - Shortcut descriptions
+    static var recordHold: String { t("Record (hold)", "Gravar (segure)", "Grabar (mantener)") }
+    static var holdToRecordRelease: String { t("Hold to record, release to process", "Segure para gravar, solte para processar", "Mantén para grabar, suelta para procesar") }
+    static var toggleVibeFlowWindow: String { t("Toggles the VibeFlow window", "Alterna a janela do VibeFlow", "Alterna la ventana de VibeFlow") }
+    static var changeLanguage: String { t("Change Language", "Mudar Idioma", "Cambiar Idioma") }
+    static var cyclesFavoriteLangs: String { t("Cycles between favorite languages", "Cicla entre os idiomas favoritos", "Cicla entre los idiomas favoritos") }
+    static var opensSettingsWindow: String { t("Opens this window", "Abre esta janela", "Abre esta ventana") }
+    static var showsTranscriptionHistory: String { t("Shows the transcription history", "Mostra o histórico de transcrições", "Muestra el historial de transcripciones") }
+    
+    // ModernSettings - Permissions
+    static var toRecordVoice: String { t("To record your voice", "Para gravar sua voz", "Para grabar tu voz") }
+    static var toAutoPasteText: String { t("To auto-paste text", "Para colar texto automaticamente", "Para pegar texto automáticamente") }
+    static var keyboardMonitoring: String { t("Keyboard Monitoring", "Monitoramento de Teclado", "Monitoreo de Teclado") }
+    static var forGlobalShortcuts: String { t("For global shortcuts (⌃⇧L, ⌃⇧M, ⌃⇧V)", "Para atalhos globais (⌃⇧L, ⌃⇧M, ⌃⇧V)", "Para atajos globales (⌃⇧L, ⌃⇧M, ⌃⇧V)") }
+    static var configure: String { t("Configure", "Configurar", "Configurar") }
+    static var required: String { t("Required", "Necessário", "Necesario") }
+    
+    // ModernSettings - Diagnostics
+    static var working: String { t("Working", "Funcionando", "Funcionando") }
+    static var noPermission: String { t("No permission", "Sem permissão", "Sin permiso") }
+    static var cgEventTapTitle: String { t("CGEvent Tap (Global Shortcuts)", "CGEvent Tap (Atalhos Globais)", "CGEvent Tap (Atajos Globales)") }
+    static var activeCapturing: String { t("Active and capturing keys", "Ativo e capturando teclas", "Activo y capturando teclas") }
+    static var inactiveShortcuts: String { t("Inactive — shortcuts won't work in background", "Inativo — atalhos não funcionarão em segundo plano", "Inactivo — atajos no funcionarán en segundo plano") }
+    
+    // ModernSettings - Mode descriptions
+    static var codeModeShort: String { t("Converts natural language to code", "Converte linguagem natural em código", "Convierte lenguaje natural en código") }
+    static var textModeShort: String { t("Clean text transcription", "Transcrição limpa de texto", "Transcripción limpia de texto") }
+    static var emailModeShort: String { t("Formats as professional email", "Formata como email profissional", "Formatea como email profesional") }
+    static var uxModeShort: String { t("For design documentation", "Para documentação de design", "Para documentación de diseño") }
+    static var commandModeShort: String { t("Transforms selected text", "Transforma texto selecionado", "Transforma texto seleccionado") }
+    
+    // ModernSettings - Search
+    static var searchLanguage: String { t("Search language...", "Buscar idioma...", "Buscar idioma...") }
+    
+    // Tabs
+    static var languageTab: String { t("Language", "Idioma", "Idioma") }
+    static var shortcutsTab: String { t("Shortcuts", "Atalhos", "Atajos") }
+    static var permissionsTab: String { t("Permissions", "Permissões", "Permisos") }
 }
+

@@ -60,6 +60,9 @@ struct SetupWizardView: View {
     @State private var testAudioLevel: CGFloat = 0
     @State private var testRecordingTimer: Timer?
     @State private var shortcutTestPassed = false
+    
+    // Language selection
+    @State private var selectedLanguage: AppLanguage = L10n.current
 
     // Languages
     @State private var languageCycleDemo = false
@@ -225,9 +228,8 @@ struct SetupWizardView: View {
             VStack(spacing: 16) {
                 ForEach(AppLanguage.allCases) { language in
                     Button(action: {
+                        selectedLanguage = language
                         UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
-                        // Force UI update
-                        objectWillChange.send()
                     }) {
                         HStack(spacing: 16) {
                             Text(language.flag)
@@ -239,7 +241,7 @@ struct SetupWizardView: View {
                             
                             Spacer()
                             
-                            if L10n.current == language {
+                            if selectedLanguage == language {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 24))
                                     .foregroundStyle(.purple)
@@ -248,11 +250,11 @@ struct SetupWizardView: View {
                         .padding(20)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(L10n.current == language ? Color.purple.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                .fill(selectedLanguage == language ? Color.purple.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(L10n.current == language ? Color.purple : Color.clear, lineWidth: 2)
+                                .strokeBorder(selectedLanguage == language ? Color.purple : Color.clear, lineWidth: 2)
                         )
                     }
                     .buttonStyle(.plain)
@@ -273,17 +275,17 @@ struct SetupWizardView: View {
             Text("VibeFlow")
                 .font(.system(size: 32, weight: .bold))
 
-            Text("Transforme sua voz em codigo e texto com inteligencia artificial")
+            Text(L10n.vibeFlowTagline)
                 .font(.system(size: 16))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             // Features grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                FeatureCard3(icon: "mic.fill", title: "Fale Naturalmente", description: "Use sua voz para escrever codigo, emails e textos")
-                FeatureCard3(icon: "bolt.fill", title: "Ultra Rapido", description: "Transcricao instantanea com Gemini 2.0 Flash")
-                FeatureCard3(icon: "keyboard", title: "Atalho Simples", description: "Segure ⌥⌘ para gravar, solte para transcrever")
-                FeatureCard3(icon: "doc.on.clipboard", title: "Cola Automatico", description: "O texto e colado direto no app ativo")
+                FeatureCard3(icon: "mic.fill", title: L10n.speakNaturally, description: L10n.speakNaturallyDesc)
+                FeatureCard3(icon: "bolt.fill", title: L10n.ultraFast, description: L10n.ultraFastDesc)
+                FeatureCard3(icon: "keyboard", title: L10n.simpleShortcut, description: L10n.simpleShortcutDesc)
+                FeatureCard3(icon: "doc.on.clipboard", title: L10n.autoPaste, description: L10n.autoPasteDesc)
             }
             .padding(.top, 16)
         }
@@ -295,7 +297,7 @@ struct SetupWizardView: View {
         VStack(alignment: .leading, spacing: 20) {
             // Instructions
             VStack(alignment: .leading, spacing: 8) {
-                Text("Configure sua API Key do Google Gemini")
+                Text(L10n.configureGeminiKey)
                     .font(.system(size: 18, weight: .semibold))
 
                 Text("O VibeFlow usa o Google Gemini para transcrever seu audio. Voce precisa de uma API key gratuita.")
@@ -309,7 +311,7 @@ struct SetupWizardView: View {
                     .font(.system(size: 13, weight: .medium))
 
                 HStack(spacing: 12) {
-                    TextField("Cole sua API key aqui (Cmd+V)", text: $apiKeyInput)
+                    TextField(L10n.pasteAPIKeyHere, text: $apiKeyInput)
                         .textFieldStyle(.roundedBorder)
                         .font(.system(size: 14, design: .monospaced))
                         .onChange(of: apiKeyInput) { newValue in
@@ -326,7 +328,7 @@ struct SetupWizardView: View {
                             } else {
                                 Image(systemName: "checkmark.circle")
                             }
-                            Text(isValidatingKey ? "Validando..." : "Validar")
+                            Text(isValidatingKey ? L10n.validating : L10n.validate)
                         }
                         .frame(width: 110)
                     }
@@ -360,7 +362,7 @@ struct SetupWizardView: View {
 
             // Get API Key link
             VStack(alignment: .leading, spacing: 12) {
-                Text("Como obter sua API Key gratuita:")
+                Text(L10n.howToGetAPIKey)
                     .font(.system(size: 14, weight: .medium))
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -373,7 +375,7 @@ struct SetupWizardView: View {
                 Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.up.right.square.fill")
-                        Text("Abrir Google AI Studio")
+                        Text(L10n.openGoogleAIStudio)
                     }
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.white)
@@ -390,7 +392,7 @@ struct SetupWizardView: View {
             HStack(spacing: 8) {
                 Image(systemName: "lock.fill")
                     .foregroundStyle(.secondary)
-                Text("Sua API key e armazenada localmente no seu Mac e nunca e compartilhada.")
+                Text(L10n.apiKeyStoredLocally)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -416,8 +418,8 @@ struct SetupWizardView: View {
                 // 1. Microfone
                 PermissionCard(
                     icon: "mic.fill",
-                    title: "🎤 Microfone",
-                    description: "Para capturar sua voz e transcrever para texto",
+                    title: "🎤 " + L10n.microphone,
+                    description: L10n.microphonePermDesc,
                     isGranted: microphonePermission == .authorized,
                     buttonText: "Permitir Microfone",
                     helpSteps: [
@@ -430,8 +432,8 @@ struct SetupWizardView: View {
                 // 2. Acessibilidade
                 PermissionCard(
                     icon: "accessibility",
-                    title: "♿ Acessibilidade",
-                    description: "Para colar o texto automaticamente (simula Cmd+V)",
+                    title: L10n.accessibilityTitle,
+                    description: L10n.accessibilityDesc,
                     isGranted: accessibilityPermission,
                     buttonText: "Abrir Preferencias",
                     helpSteps: [
@@ -446,8 +448,8 @@ struct SetupWizardView: View {
                 // 3. Input Monitoring
                 PermissionCard(
                     icon: "keyboard",
-                    title: "⌨️ Monitoramento de Teclado",
-                    description: "Para atalhos globais funcionarem em segundo plano",
+                    title: L10n.inputMonitoringTitle,
+                    description: L10n.inputMonitoringDesc,
                     isGranted: inputMonitoringPermission,
                     buttonText: "Abrir Preferencias",
                     helpSteps: [
@@ -464,7 +466,7 @@ struct SetupWizardView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(.green)
-                    Text("Todas as permissoes concedidas! Tudo pronto.")
+                    Text(L10n.allPermissionsGranted)
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.green)
                 }
@@ -477,7 +479,7 @@ struct SetupWizardView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("\(grantedCount) de 3 permissoes concedidas")
+                    Text(L10n.permissionsGranted(grantedCount, 3))
                         .font(.system(size: 14))
                         .foregroundStyle(.orange)
                 }
@@ -492,7 +494,7 @@ struct SetupWizardView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.shield.fill")
                         .foregroundStyle(.blue)
-                    Text("Suas permissoes sao gerenciadas pelo macOS e podem ser revogadas a qualquer momento em Ajustes do Sistema.")
+                    Text(L10n.permissionsSecurityNote)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
@@ -514,10 +516,10 @@ struct SetupWizardView: View {
     private var testRecordingContent: some View {
         VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Teste o VibeFlow")
-                    .font(.system(size: 18, weight: .semibold))
+                Text(L10n.testVibeFlow)
+                    .font(.system(size: 24, weight: .bold))
 
-                Text("Vamos testar se tudo esta funcionando. Siga as instrucoes abaixo:")
+                Text(L10n.testInstructions)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
             }
@@ -572,7 +574,7 @@ struct SetupWizardView: View {
                 // Audio level indicator
                 if isTestRecording {
                     VStack(spacing: 8) {
-                        Text("Gravando... Fale algo!")
+                        Text(L10n.recordingSpeakSomething)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(.purple)
 
@@ -599,7 +601,7 @@ struct SetupWizardView: View {
                         HStack {
                             Image(systemName: "text.bubble.fill")
                                 .foregroundStyle(.green)
-                            Text("Resultado da transcricao:")
+                            Text(L10n.transcriptionResult)
                                 .font(.system(size: 13, weight: .medium))
                         }
 
@@ -613,7 +615,7 @@ struct SetupWizardView: View {
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(.green)
-                            Text("Transcricao funcionando perfeitamente!")
+                            Text(L10n.transcriptionWorking)
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.green)
                         }
@@ -629,7 +631,7 @@ struct SetupWizardView: View {
                 Button(action: simulateShortcutTest) {
                     HStack {
                         Image(systemName: "play.fill")
-                        Text("Simular teste (se o atalho nao funcionar)")
+                        Text(L10n.simulateTest)
                     }
                 }
                 .buttonStyle(.bordered)
@@ -638,10 +640,10 @@ struct SetupWizardView: View {
 
             // Tips
             VStack(alignment: .leading, spacing: 8) {
-                Text("Dicas:")
+                Text(L10n.tips)
                     .font(.system(size: 13, weight: .medium))
 
-                Text("• Certifique-se de que nenhum outro app esta usando os mesmos atalhos\n• Se o atalho nao funcionar, reinicie o VibeFlow\n• Voce pode customizar os atalhos em Configuracoes > Atalhos")
+                Text(L10n.shortcutTipsBody)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -663,10 +665,10 @@ struct SetupWizardView: View {
     private var languagesContent: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Idiomas e Alternancia Rapida")
-                    .font(.system(size: 18, weight: .semibold))
+                Text(L10n.languagesAndQuickSwitch)
+                    .font(.system(size: 24, weight: .bold))
 
-                Text("O VibeFlow suporta multiplos idiomas. Voce pode alternar entre seus favoritos com um atalho.")
+                Text(L10n.languagesDesc)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
             }
@@ -674,7 +676,7 @@ struct SetupWizardView: View {
             // Current language display
             VStack(spacing: 16) {
                 HStack {
-                    Text("Idioma atual:")
+                    Text(L10n.currentLanguage)
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
 
@@ -704,9 +706,9 @@ struct SetupWizardView: View {
                             .cornerRadius(8)
 
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Alternar Idioma")
-                                .font(.system(size: 14, weight: .medium))
-                            Text("Pressione para ciclar entre seus idiomas favoritos")
+                            Text(L10n.switchLanguage)
+                                .font(.system(size: 16, weight: .semibold))
+                            Text(L10n.pressToSwitchLanguages)
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
@@ -728,7 +730,7 @@ struct SetupWizardView: View {
 
             // Favorite languages
             VStack(alignment: .leading, spacing: 12) {
-                Text("Idiomas Favoritos (para alternancia rapida)")
+                Text(L10n.favoriteLangsForQuickSwitch)
                     .font(.system(size: 14, weight: .medium))
 
                 // Current favorites
@@ -746,14 +748,14 @@ struct SetupWizardView: View {
                     }
                 }
 
-                Text("Voce pode adicionar ou remover idiomas favoritos em Configuracoes > Idiomas")
+                Text(L10n.addRemoveFavoritesInSettings)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
 
             // All languages preview
             VStack(alignment: .leading, spacing: 12) {
-                Text("Idiomas suportados (30+)")
+                Text(L10n.supportedLanguages)
                     .font(.system(size: 14, weight: .medium))
 
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -781,7 +783,7 @@ struct SetupWizardView: View {
             HStack(spacing: 8) {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(.blue)
-                Text("Para gerenciar idiomas: Menu Bar > VibeFlow > Abrir VibeFlow > Idiomas")
+                Text(L10n.manageLanguagesHint)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -806,22 +808,22 @@ struct SetupWizardView: View {
                     .foregroundStyle(.green)
             }
 
-            Text("Tudo Pronto!")
+            Text(L10n.startUsing)
                 .font(.system(size: 28, weight: .bold))
 
-            Text("O VibeFlow esta configurado e pronto para usar")
+            Text(L10n.vibeFlowTagline)
                 .font(.system(size: 16))
                 .foregroundStyle(.secondary)
 
             // Quick reference card
             VStack(alignment: .leading, spacing: 16) {
-                Text("Referencia Rapida")
+                Text(L10n.helpAndDocs)
                     .font(.system(size: 15, weight: .semibold))
 
                 VStack(spacing: 12) {
-                    QuickRefRow(keys: "⌥⌘", action: "Segure para gravar", description: "Solte para transcrever e colar")
-                    QuickRefRow(keys: "⌃⇧L", action: "Alternar idioma", description: "Cicla entre favoritos")
-                    QuickRefRow(keys: "⌘⇧V", action: "Mostrar/ocultar", description: "Abre a janela do VibeFlow")
+                    QuickRefRow(keys: "⌥⌘", action: L10n.record, description: L10n.holdToRecord)
+                    QuickRefRow(keys: "⌃⇧L", action: L10n.switchLanguage, description: L10n.pressToSwitchLanguages)
+                    QuickRefRow(keys: "⌘⇧V", action: L10n.showHideShort, description: L10n.showHide)
                 }
             }
             .padding()

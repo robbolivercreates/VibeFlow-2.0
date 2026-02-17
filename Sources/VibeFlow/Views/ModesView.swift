@@ -233,38 +233,14 @@ struct ModeCard2: View {
 
             // Expanded details
             if isExpanded {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     Divider()
 
-                    Text("Prompt do Sistema")
-                        .font(.system(size: 11, weight: .medium))
+                    Text(mode.detailedDescription)
+                        .font(.system(size: 12))
                         .foregroundStyle(.secondary)
-
-                    Text(mode.systemPrompt(outputLanguage: .english, clarifyText: false))
-                        .font(.system(size: 12, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(6)
                         .fixedSize(horizontal: false, vertical: true)
-
-                    HStack(spacing: 16) {
-                        HStack(spacing: 4) {
-                            Text("Temperatura:")
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                            Text(String(format: "%.1f", mode.temperature))
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        }
-
-                        if mode == .command {
-                            HStack(spacing: 4) {
-                                Image(systemName: "command")
-                                    .font(.system(size: 10))
-                                Text("Modo Comando")
-                                    .font(.system(size: 11))
-                            }
-                            .foregroundStyle(.orange)
-                        }
-                    }
+                        .lineSpacing(2)
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 14)

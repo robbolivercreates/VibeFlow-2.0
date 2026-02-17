@@ -13,10 +13,19 @@ struct ModernSettingsView: View {
     @State private var selectedTab: SettingsTab = .general
     
     enum SettingsTab: String, CaseIterable {
-        case general = "Geral"
-        case language = "Idioma"
-        case shortcuts = "Atalhos"
-        case permissions = "Permissões"
+        case general
+        case language
+        case shortcuts
+        case permissions
+        
+        var localizedName: String {
+            switch self {
+            case .general: return L10n.general
+            case .language: return L10n.languageTab
+            case .shortcuts: return L10n.shortcutsTab
+            case .permissions: return L10n.permissionsTab
+            }
+        }
         
         var icon: String {
             switch self {
@@ -80,9 +89,9 @@ struct ModernSettingsView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Configurações")
+                Text(L10n.settingsTitle)
                     .font(.system(size: 20, weight: .semibold))
-                Text("Personalize seu VibeFlow")
+                Text(L10n.customizeVibeFlow)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -105,7 +114,7 @@ struct ModernSettingsView: View {
         HStack(spacing: 0) {
             ForEach(SettingsTab.allCases, id: \.self) { tab in
                 TabButton(
-                    title: tab.rawValue,
+                    title: tab.localizedName,
                     icon: tab.icon,
                     isSelected: selectedTab == tab
                 ) {
@@ -128,7 +137,7 @@ struct ModernSettingsView: View {
             
             Spacer()
             
-            Button("Abrir Wizard") {
+            Button(L10n.openWizardShort) {
                 showingWizard = true
             }
             .buttonStyle(.bordered)
@@ -196,7 +205,7 @@ struct GeneralSettingsSection: View {
     var body: some View {
         VStack(spacing: 20) {
             // Modo padrão
-            SettingsCard(title: "Modo de Transcrição", icon: "waveform") {
+            SettingsCard(title: L10n.transcriptionMode, icon: "waveform") {
                 VStack(spacing: 8) {
                     ForEach(TranscriptionMode.allCases, id: \.self) { mode in
                         ModeSelectionRow(
@@ -210,35 +219,35 @@ struct GeneralSettingsSection: View {
             }
             
             // Comportamento
-            SettingsCard(title: "Comportamento", icon: "switch.2") {
+            SettingsCard(title: L10n.behavior, icon: "switch.2") {
                 VStack(spacing: 0) {
                     ToggleRow(
-                        title: "Colar automaticamente",
-                        subtitle: "Cola o texto no app ativo",
+                        title: L10n.autoPasteToggle,
+                        subtitle: L10n.autoPasteSub,
                         isOn: $settings.enableAutoPaste
                     )
                     
                     Divider().padding(.leading, 32)
                     
                     ToggleRow(
-                        title: "Fechar após colar",
-                        subtitle: "Esconde a janela automaticamente",
+                        title: L10n.autoClose,
+                        subtitle: L10n.autoCloseSub,
                         isOn: $settings.enableAutoClose
                     )
                     
                     Divider().padding(.leading, 32)
                     
                     ToggleRow(
-                        title: "Efeitos sonoros",
-                        subtitle: "Toca sons ao gravar e processar",
+                        title: L10n.soundEffects,
+                        subtitle: L10n.soundEffectsSub,
                         isOn: $settings.enableSounds
                     )
                     
                     Divider().padding(.leading, 32)
                     
                     ToggleRow(
-                        title: "Salvar histórico",
-                        subtitle: "Mantém as últimas 50 transcrições",
+                        title: L10n.saveHistory,
+                        subtitle: L10n.saveHistorySub,
                         isOn: $settings.enableHistory
                     )
                 }
@@ -255,7 +264,7 @@ struct LanguageSettingsSection: View {
     var body: some View {
         VStack(spacing: 20) {
             // Idioma atual
-            SettingsCard(title: "Idioma de Saída", icon: "globe") {
+            SettingsCard(title: L10n.outputLanguageTitle, icon: "globe") {
                 VStack(spacing: 12) {
                     // Botão principal para selecionar idioma
                     Button(action: { showingLanguageSelector = true }) {
@@ -268,7 +277,7 @@ struct LanguageSettingsSection: View {
                                     .font(.system(size: 15, weight: .medium))
                                     .foregroundStyle(.primary)
                                 
-                                Text("Toque para mudar")
+                                Text(L10n.touchToChange)
                                     .font(.system(size: 11))
                                     .foregroundStyle(.secondary)
                             }
@@ -292,7 +301,7 @@ struct LanguageSettingsSection: View {
                     
                     // Atalho
                     HStack {
-                        Text("Atalho para mudar idioma")
+                        Text(L10n.shortcutToChangeLanguage)
                             .font(.system(size: 12))
                             .foregroundStyle(.secondary)
                         
@@ -309,9 +318,9 @@ struct LanguageSettingsSection: View {
             }
             
             // Idiomas favoritos
-            SettingsCard(title: "Idiomas Favoritos", icon: "star.fill") {
+            SettingsCard(title: L10n.favoriteLangsTitle, icon: "star.fill") {
                 VStack(spacing: 12) {
-                    Text("Selecione os idiomas para ciclar rapidamente")
+                    Text(L10n.selectFavoriteLangs)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -332,7 +341,7 @@ struct LanguageSettingsSection: View {
                     Button(action: { showingLanguageSelector = true }) {
                         HStack {
                             Image(systemName: "pencil")
-                            Text("Editar favoritos")
+                            Text(L10n.editFavorites)
                         }
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.blue)
@@ -369,9 +378,9 @@ struct LanguageSelectorView2: View {
             // Header
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Selecionar Idioma")
+                    Text(L10n.selectLanguage)
                         .font(.system(size: 18, weight: .semibold))
-                    Text("Escolha seu idioma de saída")
+                    Text(L10n.chooseOutputLanguage)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -393,7 +402,7 @@ struct LanguageSelectorView2: View {
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
-                TextField("Buscar idioma...", text: $searchText)
+                TextField(L10n.searchLanguage, text: $searchText)
                     .textFieldStyle(.plain)
             }
             .padding(10)
@@ -405,7 +414,7 @@ struct LanguageSelectorView2: View {
             // Seção de favoritos
             if !settings.favoriteLanguages.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("FAVORITOS")
+                    Text(L10n.favorites)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 20)
@@ -450,13 +459,13 @@ struct LanguageSelectorView2: View {
             
             // Footer info
             HStack {
-                Text("\(settings.favoriteLanguages.count) favoritos")
+                Text(L10n.favoritesCount(settings.favoriteLanguages.count))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                 
                 Spacer()
                 
-                Text("Clique na estrela para adicionar/remover favoritos")
+                Text(L10n.clickStarToToggle)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -562,36 +571,36 @@ struct FavoriteButton: View {
 struct ShortcutsSettingsSection: View {
     var body: some View {
         VStack(spacing: 20) {
-            SettingsCard(title: "Atalhos de Teclado", icon: "keyboard") {
+            SettingsCard(title: L10n.keyboardShortcuts, icon: "keyboard") {
                 VStack(spacing: 16) {
                     SettingsShortcutRow(
-                        action: "Gravar (segure)",
+                        action: L10n.recordHold,
                         shortcut: "⌥⌘",
-                        description: "Segure para gravar, solte para processar"
+                        description: L10n.holdToRecordRelease
                     )
                     
                     SettingsShortcutRow(
-                        action: "Mostrar/Esconder",
+                        action: L10n.showHideShort,
                         shortcut: "⌘⇧V",
-                        description: "Alterna a janela do VibeFlow"
+                        description: L10n.toggleVibeFlowWindow
                     )
                     
                     SettingsShortcutRow(
-                        action: "Mudar Idioma",
+                        action: L10n.changeLanguage,
                         shortcut: "⌃⇧L",
-                        description: "Cicla entre os idiomas favoritos"
+                        description: L10n.cyclesFavoriteLangs
                     )
                     
                     SettingsShortcutRow(
-                        action: "Configurações",
+                        action: L10n.settingsTitle,
                         shortcut: "⌘,",
-                        description: "Abre esta janela"
+                        description: L10n.opensSettingsWindow
                     )
                     
                     SettingsShortcutRow(
-                        action: "Histórico",
+                        action: L10n.history,
                         shortcut: "⌘Y",
-                        description: "Mostra o histórico de transcrições"
+                        description: L10n.showsTranscriptionHistory
                     )
                 }
             }
@@ -610,13 +619,13 @@ struct PermissionsSettingsSection: View {
     var body: some View {
         VStack(spacing: 20) {
             // Permissions Card
-            SettingsCard(title: "Permissões do Sistema", icon: "lock.shield") {
+            SettingsCard(title: L10n.systemPermissions, icon: "lock.shield") {
                 VStack(spacing: 16) {
                     // Microfone
                     SettingsPermissionRow(
                         icon: "microphone.fill",
-                        title: "Microfone",
-                        description: "Para gravar sua voz",
+                        title: L10n.microphone,
+                        description: L10n.toRecordVoice,
                         isGranted: microphonePermission == .authorized,
                         action: requestMicrophone
                     )
@@ -624,8 +633,8 @@ struct PermissionsSettingsSection: View {
                     // Acessibilidade
                     SettingsPermissionRow(
                         icon: "accessibility",
-                        title: "Acessibilidade",
-                        description: "Para colar texto automaticamente",
+                        title: L10n.accessibility,
+                        description: L10n.toAutoPasteText,
                         isGranted: accessibilityPermission,
                         action: openAccessibilitySettings
                     )
@@ -633,8 +642,8 @@ struct PermissionsSettingsSection: View {
                     // Input Monitoring
                     SettingsPermissionRow(
                         icon: "keyboard",
-                        title: "Monitoramento de Teclado",
-                        description: "Para atalhos globais (⌃⇧L, ⌃⇧M, ⌃⇧V)",
+                        title: L10n.keyboardMonitoring,
+                        description: L10n.forGlobalShortcuts,
                         isGranted: inputMonitoringPermission,
                         action: openInputMonitoringSettings
                     )
@@ -642,30 +651,30 @@ struct PermissionsSettingsSection: View {
             }
             
             // Diagnostics Card
-            SettingsCard(title: "Diagnóstico", icon: "stethoscope") {
+            SettingsCard(title: L10n.diagnostics, icon: "stethoscope") {
                 VStack(spacing: 12) {
                     DiagnosticRow(
-                        title: "Microfone",
+                        title: L10n.microphone,
                         status: microphonePermission == .authorized,
-                        detail: microphonePermission == .authorized ? "Funcionando" : "Sem permissão"
+                        detail: microphonePermission == .authorized ? L10n.working : L10n.noPermission
                     )
                     
                     DiagnosticRow(
-                        title: "Acessibilidade",
+                        title: L10n.accessibility,
                         status: accessibilityPermission,
-                        detail: accessibilityPermission ? "Funcionando" : "Sem permissão"
+                        detail: accessibilityPermission ? L10n.working : L10n.noPermission
                     )
                     
                     DiagnosticRow(
-                        title: "Input Monitoring",
+                        title: L10n.inputMonitoring,
                         status: inputMonitoringPermission,
-                        detail: inputMonitoringPermission ? "Funcionando" : "Sem permissão"
+                        detail: inputMonitoringPermission ? L10n.working : L10n.noPermission
                     )
                     
                     DiagnosticRow(
-                        title: "CGEvent Tap (Atalhos Globais)",
+                        title: L10n.cgEventTapTitle,
                         status: cgEventTapActive,
-                        detail: cgEventTapActive ? "Ativo e capturando teclas" : "Inativo — atalhos não funcionarão em segundo plano"
+                        detail: cgEventTapActive ? L10n.activeCapturing : L10n.inactiveShortcuts
                     )
                     
                     Divider()
@@ -678,7 +687,7 @@ struct PermissionsSettingsSection: View {
                             } else {
                                 Image(systemName: "arrow.clockwise")
                             }
-                            Text("Verificar Tudo")
+                            Text(L10n.checkAll)
                         }
                         .font(.system(size: 13, weight: .medium))
                         .frame(maxWidth: .infinity)
@@ -694,11 +703,11 @@ struct PermissionsSettingsSection: View {
                 HStack(spacing: 8) {
                     Image(systemName: "lightbulb.fill")
                         .foregroundStyle(.yellow)
-                    Text("Dica: Se os atalhos pararem de funcionar")
+                    Text(L10n.shortcutsTipTitle)
                         .font(.system(size: 12, weight: .medium))
                 }
                 
-                Text("Quando o VibeFlow é atualizado, o macOS pode revogar as permissões. Nesse caso, vá em Ajustes do Sistema → Privacidade e remova/re-adicione o VibeFlow nas seções de Acessibilidade e Monitoramento de Teclado.")
+                Text(L10n.shortcutsTipBody)
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
             }
@@ -888,11 +897,11 @@ struct ModeSelectionRow: View {
     
     private var modeDescription: String {
         switch mode {
-        case .code: return "Converte linguagem natural em código"
-        case .text: return "Transcrição limpa de texto"
-        case .email: return "Formata como email profissional"
-        case .uxDesign: return "Para documentação de design"
-        case .command: return "Transforma texto selecionado"
+        case .code: return L10n.codeModeShort
+        case .text: return L10n.textModeShort
+        case .email: return L10n.emailModeShort
+        case .uxDesign: return L10n.uxModeShort
+        case .command: return L10n.commandModeShort
         }
     }
 }
@@ -978,7 +987,7 @@ struct SettingsPermissionRow: View {
     }
     
     private var statusText: String {
-        isGranted ? "Permitido" : "Necessário"
+        isGranted ? L10n.allowed : L10n.required
     }
     
     var body: some View {
@@ -1003,7 +1012,7 @@ struct SettingsPermissionRow: View {
                     .foregroundStyle(statusColor)
                 
                 if !isGranted {
-                    Button("Configurar") {
+                    Button(L10n.configure) {
                         action()
                     }
                     .buttonStyle(.bordered)

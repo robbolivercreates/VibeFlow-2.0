@@ -17,25 +17,25 @@ struct SettingsView: View {
             // Tab: Geral
             generalTab
                 .tabItem {
-                    Label("Geral", systemImage: "gear")
+                    Label(L10n.general, systemImage: "gear")
                 }
             
             // Tab: API
             apiTab
                 .tabItem {
-                    Label("API", systemImage: "key")
+                    Label(L10n.api, systemImage: "key")
                 }
             
             // Tab: Wizard & Permissões
             wizardPermissionsTab
                 .tabItem {
-                    Label("Wizard", systemImage: "wand.and.stars")
+                    Label(L10n.setupWizard, systemImage: "wand.and.stars")
                 }
             
             // Tab: Avançado
             advancedTab
                 .tabItem {
-                    Label("Avançado", systemImage: "slider.horizontal.3")
+                    Label(L10n.advanced, systemImage: "slider.horizontal.3")
                 }
         }
         .padding(20)
@@ -64,34 +64,35 @@ struct SettingsView: View {
     private var generalTab: some View {
         Form {
             Section {
-                Picker("Modo padrão", selection: $settings.selectedMode) {
+                Picker(L10n.defaultMode, selection: $settings.selectedMode) {
                     ForEach(TranscriptionMode.allCases, id: \.self) { mode in
                         Text(mode.localizedName).tag(mode)
                     }
                 }
                 .pickerStyle(.segmented)
 
-                Text("O modo determina como o Gemini processa seu áudio.")
+                Text(L10n.modeDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("Idioma de saida") {
-                Picker("Idioma", selection: $settings.outputLanguage) {
+            Section(L10n.outputLanguage) {
+                Picker(L10n.languages, selection: $settings.outputLanguage) {
                     ForEach(SpeechLanguage.allCases) { language in
                         Text(language.displayWithFlag).tag(language)
                     }
                 }
                 .pickerStyle(.menu)
 
-                Text("O texto transcrito sera gerado neste idioma, independente do idioma falado.")
+                Text(L10n.outputLanguageDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
                 // Atalho para ciclar idiomas
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Atalho para mudar idioma")
+                        Text(L10n.shortcutToChangeLanguage)
+                            .font(.system(size: 13, weight: .medium))
                         Spacer()
                         Text(settings.cycleLanguageShortcut)
                             .foregroundStyle(.purple)
@@ -102,14 +103,14 @@ struct SettingsView: View {
                             .cornerRadius(4)
                     }
                     
-                    Text("Pressione ⌃⇧L (Control+Shift+L) para alternar entre idiomas favoritos")
+                    Text(L10n.pressCtrlShiftL)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
             
-            Section("Idiomas Favoritos") {
-                Text("Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌃⇧L")
+            Section(L10n.favoriteLangsForQuickSwitch) {
+                Text(L10n.selectFrequentLanguages)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
@@ -146,29 +147,29 @@ struct SettingsView: View {
                 }
             }
 
-            Section("Comportamento") {
-                Toggle("Colar automaticamente", isOn: $settings.enableAutoPaste)
-                Toggle("Fechar janela após colar", isOn: $settings.enableAutoClose)
-                Toggle("Salvar histórico", isOn: $settings.enableHistory)
-                Toggle("Efeitos sonoros", isOn: $settings.enableSounds)
+            Section(L10n.behavior) {
+                Toggle(L10n.autoPasteToggle, isOn: $settings.enableAutoPaste)
+                Toggle(L10n.autoClose, isOn: $settings.enableAutoClose)
+                Toggle(L10n.saveHistory, isOn: $settings.enableHistory)
+                Toggle(L10n.soundEffects, isOn: $settings.enableSounds)
             }
 
-            Section("Personalizacao") {
-                Toggle("Aprender meu estilo de escrita", isOn: $settings.enableStyleLearning)
+            Section(L10n.personalization) {
+                Toggle(L10n.styleLearning, isOn: $settings.enableStyleLearning)
 
-                Text("VibeFlow aprende seu estilo com base nas transcricoes anteriores para personalizar os resultados.")
+                Text(L10n.writingStyleDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
                 if WritingStyleManager.shared.totalSamples > 0 {
                     HStack {
-                        Text("\(WritingStyleManager.shared.totalSamples) amostras salvas")
+                        Text("\(WritingStyleManager.shared.totalSamples) \(L10n.samplesSaved)")
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
                         Spacer()
 
-                        Button("Limpar") {
+                        Button(L10n.clear) {
                             WritingStyleManager.shared.clearAllSamples()
                         }
                         .buttonStyle(.bordered)
@@ -181,33 +182,33 @@ struct SettingsView: View {
 
     private var apiTab: some View {
         Form {
-            Section("Google Gemini API") {
-                SecureField("API Key", text: $settings.apiKey)
+            Section(L10n.geminiAPI) {
+                SecureField(L10n.api, text: $settings.apiKey)
                     .textFieldStyle(.roundedBorder)
                 
-                Text("Sua API key é armazenada localmente no Keychain do macOS.")
+                Text(L10n.apiKeyStoredInKeychain)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 
                 Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
                     HStack {
                         Image(systemName: "arrow.up.right.square")
-                        Text("Obter API key no Google AI Studio")
+                        Text(L10n.getAPIKeyGoogleAI)
                     }
                 }
                 .padding(.top, 4)
             }
             
-            Section("Informações") {
+            Section(L10n.about) {
                 HStack {
-                    Text("Modelo")
+                    Text(L10n.model)
                     Spacer()
-                    Text("Gemini 2.0 Flash")
+                    Text(L10n.geminiModel)
                         .foregroundStyle(.secondary)
                 }
                 
                 HStack {
-                    Text("Versão")
+                    Text(L10n.version)
                     Spacer()
                     Text(AppVersion.current)
                         .foregroundStyle(.secondary)
@@ -218,20 +219,20 @@ struct SettingsView: View {
     
     private var wizardPermissionsTab: some View {
         Form {
-            Section("Setup Wizard") {
+            Section(L10n.setupWizard) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Wizard de Configuração")
+                        Text(L10n.setupWizard)
                             .font(.body)
                         
-                        Text("Execute o wizard novamente para reconfigurar o VibeFlow")
+                        Text(L10n.rerunWizard)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
-                    Button("Abrir Wizard") {
+                    Button(L10n.openWizardShort) {
                         showingWizard = true
                     }
                     .buttonStyle(.borderedProminent)
@@ -239,7 +240,7 @@ struct SettingsView: View {
                 }
             }
             
-            Section("Permissões") {
+            Section(L10n.permissions) {
                 // Microfone
                 HStack {
                     Image(systemName: "microphone.fill")
@@ -247,7 +248,7 @@ struct SettingsView: View {
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Microfone")
+                        Text(L10n.microphone)
                             .font(.body)
                         
                         Text(permissionStatusText(microphonePermission))
@@ -258,7 +259,7 @@ struct SettingsView: View {
                     Spacer()
                     
                     if microphonePermission != .authorized {
-                        Button("Solicitar") {
+                        Button(L10n.request) {
                             AVCaptureDevice.requestAccess(for: .audio) { _ in
                                 DispatchQueue.main.async {
                                     checkPermissions()
@@ -280,10 +281,10 @@ struct SettingsView: View {
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Acessibilidade")
+                        Text(L10n.accessibility)
                             .font(.body)
                         
-                        Text(accessibilityPermission ? "Permitido" : "Necessário para colar automaticamente")
+                        Text(accessibilityPermission ? L10n.allowed : L10n.requiredForAutoPaste)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -291,7 +292,7 @@ struct SettingsView: View {
                     Spacer()
                     
                     if !accessibilityPermission {
-                        Button("Abrir Preferências") {
+                        Button(L10n.openPreferences) {
                             let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
                             NSWorkspace.shared.open(url)
                         }
@@ -310,10 +311,10 @@ struct SettingsView: View {
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Input Monitoring")
+                        Text(L10n.inputMonitoring)
                             .font(.body)
                         
-                        Text(inputMonitoringPermission ? "Permitido" : "Necessário para atalhos globais")
+                        Text(inputMonitoringPermission ? L10n.allowed : L10n.requiredForShortcuts)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -321,7 +322,7 @@ struct SettingsView: View {
                     Spacer()
                     
                     if !inputMonitoringPermission {
-                        Button("Permitir") {
+                        Button(L10n.allow) {
                             let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
                             NSWorkspace.shared.open(url)
                         }
@@ -335,7 +336,7 @@ struct SettingsView: View {
             }
             
             Section {
-                Text("O VibeFlow precisa de Acessibilidade para colar automaticamente (⌘V) e Input Monitoring para detectar atalhos globais de teclado.")
+                Text(L10n.permissionsHint)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -344,9 +345,9 @@ struct SettingsView: View {
     
     private var advancedTab: some View {
         Form {
-            Section("Atalhos") {
+            Section(L10n.shortcuts) {
                 HStack {
-                    Text("Gravar")
+                    Text(L10n.record)
                     Spacer()
                     Text("⌥⌘ (segure)")
                         .foregroundStyle(.secondary)
@@ -354,7 +355,7 @@ struct SettingsView: View {
                 }
                 
                 HStack {
-                    Text("Mostrar/Esconder")
+                    Text(L10n.showHideShort)
                     Spacer()
                     Text("⌘⇧V")
                         .foregroundStyle(.secondary)
@@ -362,7 +363,7 @@ struct SettingsView: View {
                 }
                 
                 HStack {
-                    Text("Configurações")
+                    Text(L10n.settingsTitle)
                     Spacer()
                     Text("⌘,")
                         .foregroundStyle(.secondary)
@@ -370,19 +371,19 @@ struct SettingsView: View {
                 }
             }
             
-            Section("Dados") {
-                Button("Limpar histórico") {
+            Section(L10n.data) {
+                Button(L10n.clearHistory) {
                     HistoryManager.shared.clear()
                 }
                 .foregroundStyle(.red)
                 .disabled(HistoryManager.shared.items.isEmpty)
             }
             
-            Section("Suporte") {
+            Section(L10n.support) {
                 Link(destination: URL(string: "https://github.com/seu-usuario/vibeflow")!) {
                     HStack {
                         Image(systemName: "questionmark.circle")
-                        Text("Ajuda e documentação")
+                        Text(L10n.helpAndDocs)
                     }
                 }
             }
@@ -393,16 +394,11 @@ struct SettingsView: View {
     
     private func permissionStatusText(_ status: AVAuthorizationStatus) -> String {
         switch status {
-        case .notDetermined:
-            return "Não solicitado"
-        case .restricted:
-            return "Restrito"
-        case .denied:
-            return "Negado"
-        case .authorized:
-            return "Permitido"
-        @unknown default:
-            return "Desconhecido"
+        case .notDetermined: return L10n.statusNotDetermined
+        case .restricted: return L10n.statusRestricted
+        case .denied: return L10n.statusDenied
+        case .authorized: return L10n.statusAuthorized
+        @unknown default: return L10n.statusUnknown
         }
     }
     

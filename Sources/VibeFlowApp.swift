@@ -58,15 +58,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
         }
         
-        // Hide dock icon by making it transparent (workaround for .accessory breaking status items)
-        let transparentIcon = NSImage(size: NSSize(width: 128, height: 128))
-        transparentIcon.lockFocus()
-        NSColor.clear.set()
-        NSRect(x: 0, y: 0, width: 128, height: 128).fill()
-        transparentIcon.unlockFocus()
-        NSApp.applicationIconImage = transparentIcon
-        // Hide the dock tile badge/label
-        NSApp.dockTile.showsApplicationBadge = false
+        // Hide dock icon: switch to .accessory AFTER status item is created
+        // (creating status item in .regular ensures it appears on-screen correctly)
+        DispatchQueue.main.async {
+            NSApp.setActivationPolicy(.accessory)
+        }
         
         // Criar view model
         let viewModel = VibeFlowViewModel()
@@ -866,9 +862,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notificationWindow.orderFrontRegardless()
 
         // Auto-close with fade-out after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.fadeOutAndClose(window: self?.languageNotificationWindow) {
-                self?.languageNotificationWindow = nil
+        // Capture the specific window instance to avoid race conditions with rapid switching
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self, weak notificationWindow] in
+            guard let self = self, let window = notificationWindow else { return }
+            // Only dismiss if this is still the current notification window
+            if self.languageNotificationWindow === window {
+                self.fadeOutAndClose(window: window) {
+                    if self.languageNotificationWindow === window {
+                        self.languageNotificationWindow = nil
+                    }
+                }
+            } else {
+                // This window was already replaced — force close it
+                window.orderOut(nil)
             }
         }
     }
@@ -916,9 +922,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notificationWindow.orderFrontRegardless()
 
         // Auto-close with fade-out after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.fadeOutAndClose(window: self?.modeNotificationWindow) {
-                self?.modeNotificationWindow = nil
+        // Capture the specific window instance to avoid race conditions with rapid switching
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self, weak notificationWindow] in
+            guard let self = self, let window = notificationWindow else { return }
+            // Only dismiss if this is still the current notification window
+            if self.modeNotificationWindow === window {
+                self.fadeOutAndClose(window: window) {
+                    if self.modeNotificationWindow === window {
+                        self.modeNotificationWindow = nil
+                    }
+                }
+            } else {
+                // This window was already replaced — force close it
+                window.orderOut(nil)
             }
         }
     }
@@ -966,9 +982,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notificationWindow.orderFrontRegardless()
 
         // Auto-close with fade-out after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.fadeOutAndClose(window: self?.pasteLastNotificationWindow) {
-                self?.pasteLastNotificationWindow = nil
+        // Capture the specific window instance to avoid race conditions with rapid switching
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self, weak notificationWindow] in
+            guard let self = self, let window = notificationWindow else { return }
+            if self.pasteLastNotificationWindow === window {
+                self.fadeOutAndClose(window: window) {
+                    if self.pasteLastNotificationWindow === window {
+                        self.pasteLastNotificationWindow = nil
+                    }
+                }
+            } else {
+                window.orderOut(nil)
             }
         }
     }
@@ -989,9 +1013,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notificationWindow.orderFrontRegardless()
 
         // Auto-close with fade-out after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-            self?.fadeOutAndClose(window: self?.pasteLastNotificationWindow) {
-                self?.pasteLastNotificationWindow = nil
+        // Capture the specific window instance to avoid race conditions with rapid switching
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self, weak notificationWindow] in
+            guard let self = self, let window = notificationWindow else { return }
+            if self.pasteLastNotificationWindow === window {
+                self.fadeOutAndClose(window: window) {
+                    if self.pasteLastNotificationWindow === window {
+                        self.pasteLastNotificationWindow = nil
+                    }
+                }
+            } else {
+                window.orderOut(nil)
             }
         }
     }
@@ -1069,23 +1101,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if shortcutPressed && !isHoldToTalkActive {
             // Iniciar gravação
             isHoldToTalkActive = true
-            
+
             // Som de início
             sounds.playStart()
-            
+
             // Salvar app anterior
             ClipboardHelper.savePreviousApp()
-            
+
+            // IMPORTANT: Capture selected text BEFORE activating VibeFlow window
+            // This must happen while the previous app still has focus
+            var capturedText: String? = nil
+            if viewModel?.selectedMode == .command {
+                capturedText = ClipboardHelper.getSelectedText()
+                if let text = capturedText {
+                    print("[VibeFlow] Command mode: pre-captured selected text (\(text.count) chars)")
+                } else {
+                    print("[VibeFlow] Command mode: no text selected (captured before window activation)")
+                }
+            }
+
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                
+
+                // Pass the pre-captured text to viewModel
+                if let text = capturedText {
+                    self.viewModel?.commandModeSelectedText = text
+                }
+
                 // Mostrar janela
                 if !(self.window?.isVisible ?? false) {
                     self.centerWindow()
                     self.window?.makeKeyAndOrderFront(nil)
                     NSApp.activate(ignoringOtherApps: true)
                 }
-                
+
                 // Iniciar gravação
                 if !(self.viewModel?.isRecording ?? false) {
                     self.viewModel?.toggleRecording()

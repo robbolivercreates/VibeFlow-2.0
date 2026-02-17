@@ -7,7 +7,10 @@ class VibeFlowViewModel: ObservableObject {
     @Published var statusText = L10n.ready
     @Published var error: String?
     @Published var selectedMode: TranscriptionMode = .code
-    @Published var clarifyText: Bool = true
+    var clarifyText: Bool {
+        get { settings.clarifyText }
+        set { settings.clarifyText = newValue }
+    }
     @Published var needsAPIKey = false
     @Published var audioLevel: CGFloat = 0.0
 
@@ -17,7 +20,8 @@ class VibeFlowViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // Command mode: stores selected text before recording
-    private var commandModeSelectedText: String?
+    // Internal access so AppDelegate can pre-capture text before window activation
+    var commandModeSelectedText: String?
     
     init() {
         loadSettings()
@@ -26,15 +30,7 @@ class VibeFlowViewModel: ObservableObject {
     }
     
     private func loadSettings() {
-        // Usar SettingsManager
         selectedMode = settings.selectedMode
-
-        // Carregar preferência de clareza (padrão: true)
-        if UserDefaults.standard.object(forKey: "clarifyText") != nil {
-            clarifyText = UserDefaults.standard.bool(forKey: "clarifyText")
-        } else {
-            clarifyText = true
-        }
     }
     
     private func setupObservers() {
@@ -107,11 +103,16 @@ class VibeFlowViewModel: ObservableObject {
         error = nil
         statusText = L10n.listening
 
-        // In command mode, capture selected text before recording
+        // In command mode, check if text was already pre-captured by AppDelegate
+        // (text is captured BEFORE window activation for correct focus)
         if selectedMode == .command {
-            commandModeSelectedText = ClipboardHelper.getSelectedText()
+            // Only try to capture if not already set by AppDelegate
+            if commandModeSelectedText == nil {
+                commandModeSelectedText = ClipboardHelper.getSelectedText()
+            }
+
             if commandModeSelectedText != nil {
-                print("[VibeFlow] Command mode: captured selected text (\(commandModeSelectedText!.count) chars)")
+                print("[VibeFlow] Command mode: using selected text (\(commandModeSelectedText!.count) chars)")
             } else {
                 print("[VibeFlow] Command mode: no text selected, will transcribe as normal")
             }

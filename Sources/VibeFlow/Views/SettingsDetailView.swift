@@ -123,6 +123,14 @@ struct SettingsDetailView: View {
         SettingsSection(title: "Comportamento", icon: "gearshape") {
             VStack(spacing: 0) {
                 SettingsToggleRow(
+                    title: L10n.launchAtLogin,
+                    subtitle: L10n.launchAtLoginDescription,
+                    isOn: $settings.launchAtLogin
+                )
+
+                Divider().padding(.leading, 44)
+
+                SettingsToggleRow(
                     title: "Colar automaticamente",
                     subtitle: "Cola o texto transcrito automaticamente",
                     isOn: $settings.enableAutoPaste
@@ -150,6 +158,14 @@ struct SettingsDetailView: View {
                     title: "Efeitos sonoros",
                     subtitle: "Sons ao iniciar e parar gravacao",
                     isOn: $settings.enableSounds
+                )
+
+                Divider().padding(.leading, 44)
+
+                SettingsToggleRow(
+                    title: L10n.clarifyAndOrganize,
+                    subtitle: L10n.clarifyDescription,
+                    isOn: $settings.clarifyText
                 )
             }
         }

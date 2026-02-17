@@ -10,13 +10,13 @@ struct AnalyticsView: View {
         VStack(spacing: 0) {
             // Header
             HStack {
-                Text("Estatísticas")
+                Text(L10n.statistics)
                     .font(.title2)
                     .fontWeight(.bold)
 
                 Spacer()
 
-                Button("Fechar") {
+                Button(L10n.close) {
                     dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
@@ -25,8 +25,8 @@ struct AnalyticsView: View {
 
             // Tab Picker
             Picker("", selection: $selectedTab) {
-                Text("Resumo").tag(0)
-                Text("Conquistas").tag(1)
+                Text(L10n.summary).tag(0)
+                Text(L10n.achievements).tag(1)
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
@@ -58,28 +58,28 @@ struct AnalyticsView: View {
             // Main Stats Grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 StatCard2(
-                    title: "Tempo Economizado",
+                    title: L10n.timeSavedHeader,
                     value: analytics.getFormattedTimeSaved(),
                     icon: "clock.arrow.circlepath",
                     color: .green
                 )
 
                 StatCard2(
-                    title: "Transcrições",
+                    title: L10n.transcriptions,
                     value: "\(analytics.totalTranscriptions)",
                     icon: "mic.fill",
                     color: .blue
                 )
 
                 StatCard2(
-                    title: "Palavras",
+                    title: L10n.words,
                     value: formatNumber(analytics.totalWords),
                     icon: "text.word.spacing",
                     color: .purple
                 )
 
                 StatCard2(
-                    title: "Tempo Gravado",
+                    title: L10n.recordedTimeHeader,
                     value: analytics.getFormattedRecordingTime(),
                     icon: "waveform",
                     color: .orange
@@ -98,7 +98,7 @@ struct AnalyticsView: View {
             // Monthly Chart
             if !analytics.monthlyStats.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Tempo Economizado por Mês")
+                    Text(L10n.timeSavedPerMonth)
                         .font(.headline)
                         .padding(.horizontal)
 
@@ -123,7 +123,7 @@ struct AnalyticsView: View {
                     .foregroundStyle(levelColor)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Nível \(analytics.currentLevel.rawValue)")
+                    Text(L10n.levelN(analytics.currentLevel.rawValue))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(analytics.currentLevel.name)
@@ -135,7 +135,7 @@ struct AnalyticsView: View {
 
                 if analytics.transcriptionsToNextLevel > 0 {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Próximo nível")
+                        Text(L10n.nextLevel)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Text("\(analytics.transcriptionsToNextLevel) transcrições")
@@ -143,7 +143,7 @@ struct AnalyticsView: View {
                             .fontWeight(.medium)
                     }
                 } else {
-                    Text("Nível Máximo!")
+                    Text(L10n.maxLevel)
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundStyle(.yellow)
@@ -194,7 +194,7 @@ struct AnalyticsView: View {
                     Text("\(analytics.currentStreak)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
-                Text("Streak atual")
+                Text(L10n.currentStreak)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -211,7 +211,7 @@ struct AnalyticsView: View {
                     Text("\(analytics.longestStreak)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
-                Text("Maior streak")
+                Text(L10n.longestStreak)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -228,7 +228,7 @@ struct AnalyticsView: View {
                     Text("\(analytics.todayTranscriptions)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
-                Text("Hoje")
+                Text(L10n.today)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -243,7 +243,7 @@ struct AnalyticsView: View {
 
     private var speedStatsCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Velocidade")
+            Text(L10n.speed)
                 .font(.headline)
 
             HStack(spacing: 20) {
@@ -252,7 +252,7 @@ struct AnalyticsView: View {
                     Text(String(format: "%.0f", analytics.averageSpeakingWPM))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(.blue)
-                    Text("WPM falando")
+                    Text(L10n.wpmSpeaking)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -263,7 +263,7 @@ struct AnalyticsView: View {
                     Text("40")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(.gray)
-                    Text("WPM digitando")
+                    Text(L10n.wpmTyping)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -274,7 +274,7 @@ struct AnalyticsView: View {
                     Text(String(format: "%.1fx", analytics.efficiencyMultiplier))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(.green)
-                    Text("mais rápido")
+                    Text(L10n.faster)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -295,14 +295,14 @@ struct AnalyticsView: View {
 
             if analytics.timeSavedMinutes > 60 {
                 let hours = Int(analytics.timeSavedMinutes / 60)
-                Text("Você economizou **\(hours) hora\(hours > 1 ? "s" : "")** que seriam gastas digitando!")
+                Text(L10n.timeSavedHours(hours))
                     .font(.subheadline)
             } else if analytics.timeSavedMinutes > 0 {
                 let words = Int((analytics.timeSavedMinutes * 40))
-                Text("Você economizou tempo equivalente a digitar **\(formatNumber(words)) palavras**!")
+                Text(L10n.timeSavedWords(formatNumber(words)))
                     .font(.subheadline)
             } else {
-                Text("Comece a usar o VibeFlow para ver quanto tempo você economiza!")
+                Text(L10n.startUsingToSeeTime)
                     .font(.subheadline)
             }
 
@@ -470,7 +470,7 @@ struct MonthlyChart: View {
         guard let date = formatter.date(from: monthString) else { return "?" }
 
         formatter.dateFormat = "MMM"
-        formatter.locale = Locale(identifier: "pt_BR")
+        formatter.locale = Locale(identifier: L10n.current.rawValue == "pt" ? "pt_BR" : L10n.current.rawValue == "es" ? "es_ES" : "en_US")
         return formatter.string(from: date).uppercased()
     }
 

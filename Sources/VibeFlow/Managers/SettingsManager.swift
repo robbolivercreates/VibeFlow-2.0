@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import ServiceManagement
 
 /// Gerencia todas as configurações do app usando UserDefaults
 class SettingsManager: ObservableObject {
@@ -27,6 +28,7 @@ class SettingsManager: ObservableObject {
         static let cycleModeShortcut = "cycle_mode_shortcut"
         static let pasteLastShortcut = "paste_last_shortcut"
         static let enableStyleLearning = "enable_style_learning"
+        static let clarifyText = "clarify_text"
     }
     
     // MARK: - Published Properties
@@ -82,6 +84,20 @@ class SettingsManager: ObservableObject {
 
     @Published var enableStyleLearning: Bool {
         didSet { defaults.set(enableStyleLearning, forKey: Keys.enableStyleLearning) }
+    }
+
+    @Published var clarifyText: Bool {
+        didSet { defaults.set(clarifyText, forKey: Keys.clarifyText) }
+    }
+
+    @Published var launchAtLogin: Bool {
+        didSet {
+            if launchAtLogin {
+                try? SMAppService.mainApp.register()
+            } else {
+                try? SMAppService.mainApp.unregister()
+            }
+        }
     }
     
     /// Lista de idiomas favoritos para ciclagem rápida
@@ -160,6 +176,26 @@ class SettingsManager: ObservableObject {
         self.outputLanguage = SpeechLanguage(rawValue: savedLanguage) ?? .english
 
         self.enableStyleLearning = defaults.object(forKey: Keys.enableStyleLearning) as? Bool ?? true
+
+        // Launch at login: enable by default on first run
+        let launchStatus = SMAppService.mainApp.status
+        if launchStatus == .notRegistered {
+            try? SMAppService.mainApp.register()
+            self.launchAtLogin = true
+        } else {
+            self.launchAtLogin = launchStatus == .enabled
+        }
+
+        // Migrate clarifyText from old ViewModel key if needed, default: true
+        if defaults.object(forKey: Keys.clarifyText) != nil {
+            self.clarifyText = defaults.bool(forKey: Keys.clarifyText)
+        } else if defaults.object(forKey: "clarifyText") != nil {
+            let migrated = defaults.bool(forKey: "clarifyText")
+            self.clarifyText = migrated
+            defaults.set(migrated, forKey: Keys.clarifyText)
+        } else {
+            self.clarifyText = true
+        }
         
         // Load favorite languages (default: English, Portuguese, Spanish)
         if let savedFavorites = defaults.stringArray(forKey: Keys.favoriteLanguages) {
