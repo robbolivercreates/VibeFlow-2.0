@@ -7,6 +7,7 @@ struct LoginView: View {
     @State private var isSignUp = false
     @State private var errorMessage: String?
     @State private var showEmailConfirmation = false
+    @State private var showForgotPassword = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -60,6 +61,17 @@ struct LoginView: View {
 
                 SecureField(L10n.password, text: $password)
                     .textFieldStyle(.roundedBorder)
+            }
+
+            // Forgot password link (sign in only)
+            if !isSignUp {
+                Button(L10n.forgotPassword) {
+                    showForgotPassword = true
+                }
+                .font(.system(size: 12))
+                .foregroundStyle(.purple)
+                .buttonStyle(.plain)
+                .frame(maxWidth: .infinity, alignment: .trailing)
             }
 
             // Error message
@@ -121,6 +133,9 @@ struct LoginView: View {
         }
         .padding(24)
         .frame(maxWidth: 400)
+        .sheet(isPresented: $showForgotPassword) {
+            ForgotPasswordView()
+        }
     }
 
     private func submitForm() {
@@ -157,6 +172,132 @@ struct LoginView: View {
     }
 }
 
+// MARK: - Forgot Password View
+
+struct ForgotPasswordView: View {
+    @StateObject private var auth = AuthManager.shared
+    @Environment(\.dismiss) private var dismiss
+    @State private var email = ""
+    @State private var isLoading = false
+    @State private var emailSent = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        VStack(spacing: 20) {
+            // Header
+            VStack(spacing: 8) {
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.purple)
+
+                Text(L10n.forgotPasswordTitle)
+                    .font(.system(size: 18, weight: .semibold))
+
+                Text(L10n.forgotPasswordDesc)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            if emailSent {
+                // Success state
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.green)
+
+                    Text(L10n.resetEmailSentTitle)
+                        .font(.system(size: 15, weight: .medium))
+
+                    Text(L10n.resetEmailSentDesc)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding()
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(10)
+
+                Button(L10n.close) { dismiss() }
+                    .buttonStyle(.borderedProminent)
+                    .tint(.purple)
+
+            } else {
+                // Input state
+                TextField("Email", text: $email)
+                    .textFieldStyle(.roundedBorder)
+
+                if let error = errorMessage {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(error)
+                    }
+                    .font(.system(size: 12))
+                    .foregroundStyle(.red)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(6)
+                }
+
+                Button(action: sendReset) {
+                    HStack(spacing: 8) {
+                        if isLoading { ProgressView().scaleEffect(0.7) }
+                        Text(L10n.sendResetLink)
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.purple)
+                .disabled(email.isEmpty || isLoading)
+
+                Button(L10n.cancel) { dismiss() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13))
+            }
+        }
+        .padding(24)
+        .frame(width: 380)
+    }
+
+    private func sendReset() {
+        isLoading = true
+        errorMessage = nil
+        Task {
+            do {
+                try await auth.resetPassword(email: email)
+                await MainActor.run {
+                    isLoading = false
+                    emailSent = true
+                }
+            } catch {
+                await MainActor.run {
+                    isLoading = false
+                    errorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Login Onboarding Wrapper
+// Used on first launch: observes auth state and calls onAuthenticated when login succeeds.
+
+struct LoginOnboardingWrapper: View {
+    @StateObject private var auth = AuthManager.shared
+    let onAuthenticated: () -> Void
+
+    var body: some View {
+        LoginView()
+            .onChange(of: auth.isAuthenticated) { isAuth in
+                if isAuth { onAuthenticated() }
+            }
+    }
+}
+
 // MARK: - Localization Extensions
 
 extension L10n {
@@ -172,4 +313,10 @@ extension L10n {
     static var dontHaveAccount: String { t("Don't have an account? Sign up", "Nao tem uma conta? Crie uma", "No tienes cuenta? Registrate") }
     static var checkYourEmail: String { t("Check your email to confirm your account.", "Verifique seu email para confirmar sua conta.", "Revisa tu email para confirmar tu cuenta.") }
     static var loggedIn: String { t("Logged in!", "Conectado!", "Conectado!") }
+    static var forgotPassword: String { t("Forgot password?", "Esqueci minha senha", "Olvide mi contrasena") }
+    static var forgotPasswordTitle: String { t("Reset Password", "Redefinir Senha", "Restablecer Contrasena") }
+    static var forgotPasswordDesc: String { t("Enter your email and we'll send you a link to reset your password.", "Digite seu email e enviaremos um link para redefinir sua senha.", "Ingresa tu email y te enviaremos un enlace para restablecer tu contrasena.") }
+    static var sendResetLink: String { t("Send reset link", "Enviar link de redefinicao", "Enviar enlace de restablecimiento") }
+    static var resetEmailSentTitle: String { t("Email sent!", "Email enviado!", "Email enviado!") }
+    static var resetEmailSentDesc: String { t("Check your inbox to reset your password.", "Verifique sua caixa de entrada para redefinir a senha.", "Revisa tu bandeja de entrada para restablecer tu contrasena.") }
 }

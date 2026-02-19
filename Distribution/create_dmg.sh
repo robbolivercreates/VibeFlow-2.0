@@ -1,18 +1,18 @@
 #!/bin/bash
 
-# Script para criar DMG installer do VibeFlow
+# Script para criar DMG installer do VoxAiGo
 # Uso: ./create_dmg.sh
 
 set -e
 
-echo "🎨 Criando DMG do VibeFlow..."
+echo "🎨 Criando DMG do VoxAiGo..."
 
 # Configurações
-APP_NAME="VibeFlow"
-APP_VERSION="2.1.0"
+APP_NAME="VoxAiGo"
+APP_VERSION="3.0.0"
 DMG_NAME="${APP_NAME}-${APP_VERSION}.dmg"
 VOLUME_NAME="${APP_NAME} ${APP_VERSION}"
-SOURCE_APP="../VibeFlow.app"
+SOURCE_APP="../VoxAiGo.app"
 TEMP_DIR="temp_dmg"
 OUTPUT_DIR="output"
 
@@ -35,15 +35,15 @@ ln -s /Applications "$TEMP_DIR/Applications"
 
 # Criar README no DMG
 cat > "$TEMP_DIR/README.txt" << 'EOF'
-🎙️ VibeFlow - Instalação
+🎙️ VoxAiGo - Instalação
 
-1. Arraste VibeFlow.app para a pasta Applications
+1. Arraste VoxAiGo.app para a pasta Applications
 2. Abra o app pela primeira vez
 3. Siga o wizard de configuração
-4. Insira sua license key quando solicitado
+4. Faça login com sua conta
 
-🆘 Suporte: suporte@vibeflow.app
-🌐 Website: https://vibeflow.app
+🆘 Suporte: suporte@voxaigo.app
+🌐 Website: https://voxaigo.app
 EOF
 
 echo "📦 Criando imagem DMG..."
@@ -67,7 +67,7 @@ echo "📊 Tamanho: $(du -h "$OUTPUT_DIR/$DMG_NAME" | cut -f1)"
 # Opcional: Notarize (para distribuição sem avisos de segurança)
 # echo ""
 # echo "🔒 Enviando para notarização..."
-# xcrun altool --notarize-app --primary-bundle-id "com.vibeflow.app" \
+# xcrun altool --notarize-app --primary-bundle-id "com.voxaigo.app" \
 #     --username "seu@email.com" --password "@keychain:AC_PASSWORD" \
 #     --file "$OUTPUT_DIR/$DMG_NAME"
 

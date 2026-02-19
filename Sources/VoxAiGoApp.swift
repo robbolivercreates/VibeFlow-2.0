@@ -14,6 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var historyWindow: NSWindow?
     var snippetsWindow: NSWindow?
     var wizardWindow: NSWindow?
+    var loginOnboardingWindow: NSWindow?
     var viewModel: VoxAiGoViewModel?
     var isHoldToTalkActive = false
     var globalKeyMonitor: Any?
@@ -176,9 +177,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - First Launch
     
     func checkFirstLaunch() {
-        // Show wizard if onboarding not completed or not authenticated
-        guard !settings.onboardingCompleted || !AuthManager.shared.isAuthenticated else { return }
-        showWizard()
+        if !AuthManager.shared.isAuthenticated {
+            // Not logged in: show blocking login window first
+            showLoginOnboarding()
+        } else if !settings.onboardingCompleted {
+            // Logged in but never completed wizard: run wizard
+            showWizard()
+        }
+        // else: normal launch — everything is set up
+    }
+
+    func showLoginOnboarding() {
+        loginOnboardingWindow?.close()
+        loginOnboardingWindow = nil
+
+        let loginView = LoginOnboardingWrapper {
+            DispatchQueue.main.async { [weak self] in
+                self?.loginOnboardingWindow?.close()
+                self?.loginOnboardingWindow = nil
+                if !(self?.settings.onboardingCompleted ?? true) {
+                    self?.showWizard()
+                }
+            }
+        }
+
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 480, height: 580),
+            styleMask: [.titled, .miniaturizable],  // NO .closable — login is required
+            backing: .buffered,
+            defer: false
+        )
+        win.isReleasedWhenClosed = false
+        win.contentView = NSHostingView(rootView: loginView)
+        win.title = "Bem-vindo ao VoxAiGo"
+        win.collectionBehavior = [.moveToActiveSpace]
+        win.center()
+        loginOnboardingWindow = win
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
     
     @objc func resetAndShowWizard() {

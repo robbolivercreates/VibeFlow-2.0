@@ -19,6 +19,9 @@ struct ModesView: View {
                 // MARK: - All Modes
                 allModesSection
 
+                // MARK: - Conversation Reply Feature
+                conversationReplyModeSection
+
                 // MARK: - Mode Tips
                 tipSection
             }
@@ -136,6 +139,18 @@ struct ModesView: View {
                     )
                 }
             }
+        }
+    }
+
+    // MARK: - Conversation Reply Feature
+
+    private var conversationReplyModeSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Funcionalidade Especial")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            ConversationReplyFeatureCard(showUpgrade: $showUpgradeModal)
         }
     }
 
@@ -423,6 +438,165 @@ private struct ModeProFeatureRow: View {
                 .frame(width: 20)
             Text(text)
                 .font(.system(size: 13))
+        }
+    }
+}
+
+// MARK: - Conversation Reply Feature Card
+
+struct ConversationReplyFeatureCard: View {
+    @StateObject private var settings = SettingsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
+    @Binding var showUpgrade: Bool
+    @State private var isExpanded = false
+    @State private var isHovered = false
+
+    private let featureColor = Color(red: 0.4, green: 0.72, blue: 1.0)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Main row
+            HStack(spacing: 14) {
+                // Icon
+                ZStack {
+                    Circle()
+                        .fill(featureColor.opacity(0.12))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "bubble.left.and.bubble.right")
+                        .font(.system(size: 16))
+                        .foregroundStyle(featureColor)
+                }
+
+                // Info
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 8) {
+                        Text("Resposta de Conversa")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(.primary)
+
+                        // Pro badge
+                        if !subscription.isPro {
+                            HStack(spacing: 3) {
+                                Image(systemName: "diamond.fill")
+                                    .font(.system(size: 7))
+                                Text("PRO")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(
+                                LinearGradient(colors: [Color.orange, Color.pink], startPoint: .leading, endPoint: .trailing)
+                            )
+                            .cornerRadius(4)
+                        } else if settings.enableConversationReply {
+                            Text("ATIVO")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(featureColor)
+                                .cornerRadius(4)
+                        }
+                    }
+
+                    Text("Traduza mensagens recebidas e responda no idioma deles")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                // Toggle or upgrade button
+                if subscription.isPro {
+                    Toggle("", isOn: $settings.enableConversationReply)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                        .scaleEffect(0.8)
+                } else {
+                    Button("Ativar Pro") { showUpgrade = true }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(.orange)
+                }
+
+                // Expand button
+                Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+            }
+            .padding(14)
+
+            // Expanded: how it works
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+
+                    Text("COMO FUNCIONA")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.secondary)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        CRModeStepRow(number: "1", color: featureColor, text: "Selecione uma mensagem em qualquer app (WhatsApp, Slack, email…)")
+                        CRModeStepRow(number: "2", color: featureColor, text: "Pressione ⌃⇧R — um painel flutua com a tradução no seu idioma")
+                        CRModeStepRow(number: "3", color: featureColor, text: "Leia a tradução. Você tem 15 segundos antes de fechar automaticamente")
+                        CRModeStepRow(number: "4", color: featureColor, text: "Segure ⌥⌘ e fale sua resposta normalmente")
+                        CRModeStepRow(number: "5", color: featureColor, text: "Sua resposta é traduzida para o idioma deles e colada automaticamente")
+                    }
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "globe")
+                            .font(.system(size: 11))
+                            .foregroundStyle(featureColor)
+                        Text("Funciona com qualquer combinação de idiomas — nenhuma configuração necessária.")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isHovered ? featureColor.opacity(0.04) : Color(nsColor: .controlBackgroundColor))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(featureColor.opacity(0.25), lineWidth: 1)
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
+        }
+    }
+}
+
+private struct CRModeStepRow: View {
+    let number: String
+    let color: Color
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 16, height: 16)
+                .background(Circle().fill(color))
+
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
         }
     }
 }

@@ -793,7 +793,11 @@ struct SetupWizardView: View {
     }
 
     private func goBack() {
-        if let previous = WizardStep(rawValue: currentStep.rawValue - 1) {
+        if var previous = WizardStep(rawValue: currentStep.rawValue - 1) {
+            // Skip login step going back if already authenticated (came from login window)
+            if previous == .login && auth.isAuthenticated {
+                previous = WizardStep(rawValue: previous.rawValue - 1) ?? previous
+            }
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentStep = previous
             }
@@ -804,7 +808,11 @@ struct SetupWizardView: View {
         if currentStep == .ready {
             settings.completeOnboarding()
             dismiss()
-        } else if let next = WizardStep(rawValue: currentStep.rawValue + 1) {
+        } else if var next = WizardStep(rawValue: currentStep.rawValue + 1) {
+            // Skip login step going forward if already authenticated (came from login window)
+            if next == .login && auth.isAuthenticated {
+                next = WizardStep(rawValue: next.rawValue + 1) ?? next
+            }
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentStep = next
             }

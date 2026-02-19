@@ -210,6 +210,21 @@ class AuthManager: ObservableObject {
         }
     }
 
+    // MARK: - Password Reset
+
+    func resetPassword(email: String) async throws {
+        var request = URLRequest(url: URL(string: "\(Self.supabaseURL)/auth/v1/recover")!)
+        request.httpMethod = "POST"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw AuthError.serverError("HTTP \(code)")
+        }
+    }
+
     func signOut() {
         // Fire-and-forget sign out on server
         if let token = accessToken {
