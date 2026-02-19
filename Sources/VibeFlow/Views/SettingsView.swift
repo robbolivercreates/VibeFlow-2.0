@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 import IOKit
 
-/// View de configurações do VibeFlow
+/// View de configurações do VoxAiGo
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var settings = SettingsManager.shared
@@ -11,6 +11,11 @@ struct SettingsView: View {
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
     @State private var inputMonitoringPermission = false
+
+    // Easter egg state
+    @State private var versionTapCount = 0
+    @State private var showEasterEggPrompt = false
+    @State private var easterEggPassword = ""
     
     var body: some View {
         TabView {
@@ -20,10 +25,10 @@ struct SettingsView: View {
                     Label(L10n.general, systemImage: "gear")
                 }
             
-            // Tab: API
-            apiTab
+            // Tab: Account
+            accountTab
                 .tabItem {
-                    Label(L10n.api, systemImage: "key")
+                    Label(L10n.account, systemImage: "person.crop.circle")
                 }
             
             // Tab: Wizard & Permissões
@@ -163,7 +168,7 @@ struct SettingsView: View {
 
                 if WritingStyleManager.shared.totalSamples > 0 {
                     HStack {
-                        Text("\(WritingStyleManager.shared.totalSamples) \(L10n.samplesSaved)")
+                        Text(L10n.samplesSaved(WritingStyleManager.shared.totalSamples))
                             .font(.caption)
                             .foregroundStyle(.secondary)
 
@@ -180,38 +185,56 @@ struct SettingsView: View {
         }
     }
 
-    private var apiTab: some View {
+    private var accountTab: some View {
         Form {
-            Section(L10n.geminiAPI) {
-                SecureField(L10n.api, text: $settings.apiKey)
-                    .textFieldStyle(.roundedBorder)
-                
-                Text(L10n.apiKeyStoredInKeychain)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
-                    HStack {
-                        Image(systemName: "arrow.up.right.square")
-                        Text(L10n.getAPIKeyGoogleAI)
-                    }
+            AccountView(onVersionTap: {
+                versionTapCount += 1
+                if versionTapCount >= 5 {
+                    versionTapCount = 0
+                    showEasterEggPrompt = true
                 }
-                .padding(.top, 4)
+            })
+
+            // Easter egg: BYOK section (hidden by default)
+            if settings.byokEnabled {
+                Section("BYOK (Bring Your Own Key)") {
+                    SecureField("Gemini API Key", text: $settings.byokApiKey)
+                        .textFieldStyle(.roundedBorder)
+
+                    Text(L10n.byokDescription)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Toggle(L10n.byokToggle, isOn: $settings.byokEnabled)
+                }
             }
-            
-            Section(L10n.about) {
-                HStack {
-                    Text(L10n.model)
-                    Spacer()
-                    Text(L10n.geminiModel)
-                        .foregroundStyle(.secondary)
-                }
-                
-                HStack {
-                    Text(L10n.version)
-                    Spacer()
-                    Text(AppVersion.current)
-                        .foregroundStyle(.secondary)
+
+            // Easter egg prompt
+            if showEasterEggPrompt {
+                Section {
+                    HStack {
+                        SecureField("Password", text: $easterEggPassword)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit {
+                                if easterEggPassword == "egg" {
+                                    settings.byokEnabled = true
+                                    showEasterEggPrompt = false
+                                    easterEggPassword = ""
+                                } else {
+                                    showEasterEggPrompt = false
+                                    easterEggPassword = ""
+                                }
+                            }
+
+                        Button("OK") {
+                            if easterEggPassword == "egg" {
+                                settings.byokEnabled = true
+                            }
+                            showEasterEggPrompt = false
+                            easterEggPassword = ""
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
         }
@@ -380,7 +403,7 @@ struct SettingsView: View {
             }
             
             Section(L10n.support) {
-                Link(destination: URL(string: "https://github.com/seu-usuario/vibeflow")!) {
+                Link(destination: URL(string: "https://github.com/seu-usuario/voxaigo")!) {
                     HStack {
                         Image(systemName: "questionmark.circle")
                         Text(L10n.helpAndDocs)
@@ -414,6 +437,13 @@ struct SettingsView: View {
             settings.favoriteLanguages.sort { $0.displayName < $1.displayName }
         }
     }
+}
+
+// MARK: - BYOK Localization
+
+extension L10n {
+    static var byokDescription: String { t("Use your own Gemini API key directly (bypasses server).", "Use sua propria chave API do Gemini diretamente (bypassa o servidor).", "Usa tu propia clave API de Gemini directamente (bypassa el servidor).") }
+    static var byokToggle: String { t("Enable BYOK", "Ativar BYOK", "Activar BYOK") }
 }
 
 #Preview {

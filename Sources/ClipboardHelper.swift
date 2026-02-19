@@ -14,9 +14,9 @@ class ClipboardHelper {
     // Guarda referência ao app que estava ativo
     private static var previousApp: NSRunningApplication?
 
-    /// Salva qual app estava ativo antes do VibeFlow
+    /// Salva qual app estava ativo antes do VoxAiGo
     static func savePreviousApp() {
-        // Pega o app que está na frente (exceto o próprio VibeFlow)
+        // Pega o app que está na frente (exceto o próprio VoxAiGo)
         let apps = NSWorkspace.shared.runningApplications.filter {
             $0.isActive && $0.bundleIdentifier != Bundle.main.bundleIdentifier
         }
@@ -182,7 +182,7 @@ class ClipboardHelper {
             !$0.isTerminated
         }
 
-        // Esconder VibeFlow
+        // Esconder VoxAiGo
         DispatchQueue.main.async {
             NSApp.hide(nil)
         }

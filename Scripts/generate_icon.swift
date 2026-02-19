@@ -3,7 +3,7 @@
 import AppKit
 import Foundation
 
-/// Gera o ícone do VibeFlow em múltiplas resoluções
+/// Gera o ícone do VoxAiGo em múltiplas resoluções
 func createAppIcon(size: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: size, height: size))
     
@@ -77,7 +77,7 @@ func generateIconSet() {
         (512, 2, "icon_512x512@2x")
     ]
     
-    let iconsetPath = FileManager.default.currentDirectoryPath + "/VibeFlow.iconset"
+    let iconsetPath = FileManager.default.currentDirectoryPath + "/VoxAiGo.iconset"
     
     // Criar pasta iconset
     try? FileManager.default.createDirectory(atPath: iconsetPath, withIntermediateDirectories: true)
@@ -105,7 +105,7 @@ func generateIconSet() {
     
     print("\n📁 Iconset criado em: \(iconsetPath)")
     print("\n🔧 Para converter para .icns, execute:")
-    print("   iconutil -c icns VibeFlow.iconset")
+    print("   iconutil -c icns VoxAiGo.iconset")
 }
 
 // Executar

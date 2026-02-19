@@ -6,7 +6,7 @@ This document provides essential context for AI assistants working with the Vibe
 
 **VibeFlow** is a macOS menu-bar application that converts voice input into formatted code and text using Google's Gemini AI. It's a productivity tool for developers that enables voice-to-code transcription.
 
-- **Version:** 2.1.0
+- **Version:** 2.3.0
 - **Platform:** macOS 13.0+ (Ventura and later)
 - **Language:** Swift 5.9+
 - **Framework:** SwiftUI with AppKit integration
@@ -340,11 +340,12 @@ Distribution/output/*.dmg         # Installer (after create_dmg.sh)
 
 ## Version History
 
-- **2.1.0** (Current) - Email mode, Setup Wizard, History, Snippets, Sound effects
+- **2.3.0** (Current) - Gemini 2.5 Flash migration, version standardization
+- **2.1.0** - Email mode, Setup Wizard, History, Snippets, Sound effects
 - **2.0.0** - Dynamic temperature, UI refresh
 - **1.0.0** - Initial release
 
 ---
 
-**Last Updated:** 2026-02-04
+**Last Updated:** 2026-02-17
 **Maintained by:** AI Assistant based on codebase analysis

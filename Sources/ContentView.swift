@@ -45,7 +45,7 @@ private enum VoiceColors {
 
 // MARK: - Main Content View
 struct ContentView: View {
-    @EnvironmentObject var viewModel: VibeFlowViewModel
+    @EnvironmentObject var viewModel: VoxAiGoViewModel
 
     var body: some View {
         GeometryReader { geometry in
@@ -58,7 +58,7 @@ struct ContentView: View {
 
 // MARK: - Modern Voice Overlay
 struct ModernVoiceOverlay: View {
-    @ObservedObject var viewModel: VibeFlowViewModel
+    @ObservedObject var viewModel: VoxAiGoViewModel
     @StateObject private var settings = SettingsManager.shared
 
     // Animation states
@@ -508,6 +508,6 @@ struct LanguageSelectorView3: View {
             .ignoresSafeArea()
 
         ContentView()
-            .environmentObject(VibeFlowViewModel())
+            .environmentObject(VoxAiGoViewModel())
     }
 }

@@ -35,7 +35,7 @@ struct L10n {
         return .portuguese
     }
     
-    private static func t(_ en: String, _ pt: String, _ es: String) -> String {
+    static func t(_ en: String, _ pt: String, _ es: String) -> String {
         switch current {
         case .english: return en
         case .portuguese: return pt
@@ -81,14 +81,14 @@ struct L10n {
     static var favoriteLanguages: String { t("Favorite Languages", "Idiomas Favoritos", "Idiomas Favoritos") }
     static var microphone: String { t("Microphone", "Microfone", "Micrófono") }
     static var noMicrophoneFound: String { t("No microphone found", "Nenhum microfone encontrado", "No se encontró micrófono") }
-    static var openVibeFlow: String { t("Open VibeFlow", "Abrir VibeFlow", "Abrir VibeFlow") }
-    static var configureSetup: String { t("Configure VibeFlow", "Configurar VibeFlow", "Configurar VibeFlow") }
+    static var openVoxAiGo: String { t("Open VoxAiGo", "Abrir VoxAiGo", "Abrir VoxAiGo") }
+    static var configureSetup: String { t("Configure VoxAiGo", "Configurar VoxAiGo", "Configurar VoxAiGo") }
     static var nextMode: String { t("Next Mode (⌃⇧M)", "Próximo Modo (⌃⇧M)", "Siguiente Modo (⌃⇧M)") }
     static var cycleLanguage: String { t("Cycle Language (⌃⇧L)", "Alternar Idioma (⌃⇧L)", "Cambiar Idioma (⌃⇧L)") }
     static var pasteLastTranscription: String { t("Paste Last (⌃⇧V)", "Colar Último (⌃⇧V)", "Pegar Último (⌃⇧V)") }
     
     // MARK: - Setup Wizard
-    static var wizardTitle: String { t("Set up VibeFlow", "Configurar VibeFlow", "Configurar VibeFlow") }
+    static var wizardTitle: String { t("Set up VoxAiGo", "Configurar VoxAiGo", "Configurar VoxAiGo") }
     static var vibeFlowTagline: String { t("Transform your voice into code and text with artificial intelligence", "Transforme sua voz em codigo e texto com inteligencia artificial", "Transforma tu voz en código y texto con inteligencia artificial") }
     
     // Wizard - Features
@@ -130,18 +130,18 @@ struct L10n {
     
     // Wizard - Permission Help Steps
     static var helpOpenPrefs: String { t("Click \"Open Preferences\" — it will open Preferences and Finder", "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder", "Haz clic en \"Abrir Preferencias\" — abrirá Preferencias y Finder") }
-    static var helpDragVibeFlow: String { t("Drag the VibeFlow icon from Finder to the permissions list", "Arraste o icone do VibeFlow do Finder para a lista de permissoes", "Arrastra el ícono de VibeFlow del Finder a la lista de permisos") }
-    static var helpEnableToggle: String { t("Enable the toggle next to \"VibeFlow\"", "Ative o toggle (chave) ao lado de \"VibeFlow\"", "Activa el interruptor junto a \"VibeFlow\"") }
+    static var helpDragVoxAiGo: String { t("Drag the VoxAiGo icon from Finder to the permissions list", "Arraste o icone do VoxAiGo do Finder para a lista de permissoes", "Arrastra el ícono de VoxAiGo del Finder a la lista de permisos") }
+    static var helpEnableToggle: String { t("Enable the toggle next to \"VoxAiGo\"", "Ative o toggle (chave) ao lado de \"VoxAiGo\"", "Activa el interruptor junto a \"VoxAiGo\"") }
     
     // Wizard - Test
-    static var testVibeFlow: String { t("Test VibeFlow", "Teste o VibeFlow", "Prueba VibeFlow") }
+    static var testVoxAiGo: String { t("Test VoxAiGo", "Teste o VoxAiGo", "Prueba VoxAiGo") }
     static var testInstructions: String { t("Let's test if everything is working. Follow the instructions below:", "Vamos testar se tudo esta funcionando. Siga as instrucoes abaixo:", "Vamos a probar si todo funciona. Sigue las instrucciones:") }
     static var shortcutWorking: String { t("Shortcut working!", "Atalho funcionando!", "¡Atajo funcionando!") }
     static var shortcutTipsBody: String {
         t(
-            "• Make sure no other app is using the same shortcuts\n• If the shortcut doesn't work, restart VibeFlow\n• You can customize shortcuts in Settings > Shortcuts",
-            "• Certifique-se de que nenhum outro app esta usando os mesmos atalhos\n• Se o atalho nao funcionar, reinicie o VibeFlow\n• Voce pode customizar os atalhos em Configuracoes > Atalhos",
-            "• Asegúrate de que ninguna otra app use los mismos atajos\n• Si el atajo no funciona, reinicia VibeFlow\n• Puedes personalizar los atajos en Configuración > Atajos"
+            "• Make sure no other app is using the same shortcuts\n• If the shortcut doesn't work, restart VoxAiGo\n• You can customize shortcuts in Settings > Shortcuts",
+            "• Certifique-se de que nenhum outro app esta usando os mesmos atalhos\n• Se o atalho nao funcionar, reinicie o VoxAiGo\n• Voce pode customizar os atalhos em Configuracoes > Atalhos",
+            "• Asegúrate de que ninguna otra app use los mismos atajos\n• Si el atajo no funciona, reinicia VoxAiGo\n• Puedes personalizar los atajos en Configuración > Atajos"
         )
     }
     static var testRecordingShortcut: String { t("Test the recording shortcut", "Teste o atalho de gravacao", "Prueba el atajo de grabación") }
@@ -161,14 +161,14 @@ struct L10n {
     static var favoriteLangsForQuickSwitch: String { t("Favorite Languages (for quick switch)", "Idiomas Favoritos (para alternancia rapida)", "Idiomas Favoritos (para cambio rápido)") }
     static var addRemoveFavoritesInSettings: String { t("You can add or remove favorite languages in Settings > Languages", "Voce pode adicionar ou remover idiomas favoritos em Configuracoes > Idiomas", "Puedes agregar o quitar idiomas favoritos en Configuración > Idiomas") }
     static var supportedLanguages: String { t("Supported languages (30+)", "Idiomas suportados (30+)", "Idiomas soportados (30+)") }
-    static var manageLanguagesHint: String { t("To manage languages: Menu Bar > VibeFlow > Open VibeFlow > Languages", "Para gerenciar idiomas: Menu Bar > VibeFlow > Abrir VibeFlow > Idiomas", "Para gestionar idiomas: Barra de Menú > VibeFlow > Abrir VibeFlow > Idiomas") }
+    static var manageLanguagesHint: String { t("To manage languages: Menu Bar > VoxAiGo > Open VoxAiGo > Languages", "Para gerenciar idiomas: Menu Bar > VoxAiGo > Abrir VoxAiGo > Idiomas", "Para gestionar idiomas: Barra de Menú > VoxAiGo > Abrir VoxAiGo > Idiomas") }
     
     // Wizard - Ready
     static var startUsing: String { t("Start Using", "Comecar a Usar", "Empezar a Usar") }
     
     // Wizard - Language Selection (new first step)
     static var chooseLanguage: String { t("Choose your language", "Escolha seu idioma", "Elige tu idioma") }
-    static var interfaceLanguageDesc: String { t("Select the language for the VibeFlow interface", "Selecione o idioma da interface do VibeFlow", "Selecciona el idioma de la interfaz de VibeFlow") }
+    static var interfaceLanguageDesc: String { t("Select the language for the VoxAiGo interface", "Selecione o idioma da interface do VoxAiGo", "Selecciona el idioma de la interfaz de VoxAiGo") }
     
     // MARK: - Home View
     static var recents: String { t("Recents", "Recentes", "Recientes") }
@@ -190,10 +190,10 @@ struct L10n {
     
     // MARK: - Settings / Settings Detail
     static var settingsTitle: String { t("Settings", "Ajustes", "Ajustes") }
-    static var customizeVibeFlow: String { t("Customize your VibeFlow", "Personalize seu VibeFlow", "Personaliza tu VibeFlow") }
+    static var customizeVoxAiGo: String { t("Customize your VoxAiGo", "Personalize seu VoxAiGo", "Personaliza tu VoxAiGo") }
     static var geminiModel: String { t("Gemini 2.0 Flash", "Gemini 2.0 Flash", "Gemini 2.0 Flash") }
     static var clickShortcutToEdit: String { t("Click a shortcut to edit. Press the desired keys.", "Clique em um atalho para editar. Pressione as teclas desejadas.", "Haz clic en un atajo para editar. Presiona las teclas deseadas.") }
-    static var configureVibeFlowPrefs: String { t("Configure VibeFlow according to your preferences.", "Configure o VibeFlow de acordo com suas preferencias.", "Configura VibeFlow según tus preferencias.") }
+    static var configureVoxAiGoPrefs: String { t("Configure VoxAiGo according to your preferences.", "Configure o VoxAiGo de acordo com suas preferencias.", "Configura VoxAiGo según tus preferencias.") }
     static var clearAllDataWarning: String { t("This will clear all transcription history and style samples. This action cannot be undone.", "Isso ira limpar todo o historico de transcricoes e amostras de estilo. Esta acao nao pode ser desfeita.", "Esto borrará todo el historial de transcripciones y muestras de estilo. Esta acción no se puede deshacer.") }
     
     // Settings - Tabs/Labels
@@ -220,7 +220,7 @@ struct L10n {
     static var selectFrequentLanguages: String { t("Select the languages you use frequently to switch quickly with ⌃⇧L", "Selecione os idiomas que você usa com frequência para alternar rapidamente com ⌃⇧L", "Selecciona los idiomas que usas frecuentemente para cambiar rápidamente con ⌃⇧L") }
     
     // Settings - Style
-    static var writingStyleDescription: String { t("VibeFlow learns your style from previous transcriptions to personalize results.", "VibeFlow aprende seu estilo com base nas transcricoes anteriores para personalizar os resultados.", "VibeFlow aprende tu estilo de transcripciones anteriores para personalizar los resultados.") }
+    static var writingStyleDescription: String { t("VoxAiGo learns your style from previous transcriptions to personalize results.", "VoxAiGo aprende seu estilo com base nas transcricoes anteriores para personalizar os resultados.", "VoxAiGo aprende tu estilo de transcripciones anteriores para personalizar los resultados.") }
     static func samplesSaved(_ count: Int) -> String { t("\(count) samples saved", "\(count) amostras salvas", "\(count) muestras guardadas") }
     
     // Settings - API
@@ -234,12 +234,12 @@ struct L10n {
     
     // Settings - Wizard
     static var setupWizard: String { t("Setup Wizard", "Wizard de Configuração", "Asistente de Configuración") }
-    static var rerunWizard: String { t("Run the wizard again to reconfigure VibeFlow", "Execute o wizard novamente para reconfigurar o VibeFlow", "Ejecuta el asistente nuevamente para reconfigurar VibeFlow") }
+    static var rerunWizard: String { t("Run the wizard again to reconfigure VoxAiGo", "Execute o wizard novamente para reconfigurar o VoxAiGo", "Ejecuta el asistente nuevamente para reconfigurar VoxAiGo") }
     
     // Settings - Permissions
     static var accessibility: String { t("Accessibility", "Acessibilidade", "Accesibilidad") }
     static var inputMonitoring: String { t("Input Monitoring", "Input Monitoring", "Input Monitoring") }
-    static var permissionsHint: String { t("VibeFlow needs Accessibility to auto-paste (⌘V) and Input Monitoring to detect global keyboard shortcuts.", "O VibeFlow precisa de Acessibilidade para colar automaticamente (⌘V) e Input Monitoring para detectar atalhos globais de teclado.", "VibeFlow necesita Accesibilidad para pegar automáticamente (⌘V) e Input Monitoring para detectar atajos globales de teclado.") }
+    static var permissionsHint: String { t("VoxAiGo needs Accessibility to auto-paste (⌘V) and Input Monitoring to detect global keyboard shortcuts.", "O VoxAiGo precisa de Acessibilidade para colar automaticamente (⌘V) e Input Monitoring para detectar atalhos globais de teclado.", "VoxAiGo necesita Accesibilidad para pegar automáticamente (⌘V) e Input Monitoring para detectar atajos globales de teclado.") }
     static var request: String { t("Request", "Solicitar", "Solicitar") }
     static var allow: String { t("Allow", "Permitir", "Permitir") }
     static var allowed: String { t("Allowed", "Permitido", "Permitido") }
@@ -263,7 +263,7 @@ struct L10n {
     
     // Settings - Tips
     static var shortcutsTipTitle: String { t("Tip: If shortcuts stop working", "Dica: Se os atalhos pararem de funcionar", "Consejo: Si los atajos dejan de funcionar") }
-    static var shortcutsTipBody: String { t("When VibeFlow is updated, macOS may revoke permissions. In that case, go to System Settings → Privacy and remove/re-add VibeFlow in the Accessibility and Input Monitoring sections.", "Quando o VibeFlow é atualizado, o macOS pode revogar as permissões. Nesse caso, vá em Ajustes do Sistema → Privacidade e remova/re-adicione o VibeFlow nas seções de Acessibilidade e Monitoramento de Teclado.", "Cuando VibeFlow se actualiza, macOS puede revocar los permisos. En ese caso, ve a Ajustes del Sistema → Privacidad y quita/reagrega VibeFlow en las secciones de Accesibilidad y Monitoreo de Teclado.") }
+    static var shortcutsTipBody: String { t("When VoxAiGo is updated, macOS may revoke permissions. In that case, go to System Settings → Privacy and remove/re-add VoxAiGo in the Accessibility and Input Monitoring sections.", "Quando o VoxAiGo é atualizado, o macOS pode revogar as permissões. Nesse caso, vá em Ajustes do Sistema → Privacidade e remova/re-adicione o VoxAiGo nas seções de Acessibilidade e Monitoramento de Teclado.", "Cuando VoxAiGo se actualiza, macOS puede revocar los permisos. En ese caso, ve a Ajustes del Sistema → Privacidad y quita/reagrega VoxAiGo en las secciones de Accesibilidad y Monitoreo de Teclado.") }
     
     // MARK: - Modern Settings
     static var touchToChange: String { t("Touch to change", "Toque para mudar", "Toca para cambiar") }
@@ -306,7 +306,7 @@ struct L10n {
     static func timeSavedWords(_ words: String) -> String {
         t("You saved time equivalent to typing **\(words) words**!", "Você economizou tempo equivalente a digitar **\(words) palavras**!", "¡Ahorraste tiempo equivalente a teclear **\(words) palabras**!")
     }
-    static var startUsingToSeeTime: String { t("Start using VibeFlow to see how much time you save!", "Comece a usar o VibeFlow para ver quanto tempo você economiza!", "¡Empieza a usar VibeFlow para ver cuánto tiempo ahorras!") }
+    static var startUsingToSeeTime: String { t("Start using VoxAiGo to see how much time you save!", "Comece a usar o VoxAiGo para ver quanto tempo você economiza!", "¡Empieza a usar VoxAiGo para ver cuánto tiempo ahorras!") }
     static func achievementsCount(_ unlocked: Int, _ total: Int) -> String { t("\(unlocked) of \(total) achievements", "\(unlocked) de \(total) conquistas", "\(unlocked) de \(total) logros") }
     
     // MARK: - Modes View
@@ -334,14 +334,14 @@ struct L10n {
     
     // MARK: - Style View
     static var writingStyle: String { t("Writing Style", "Estilo de Escrita", "Estilo de Escritura") }
-    static var writingStyleFullDesc: String { t("VibeFlow learns your writing style to personalize transcriptions, imitating your vocabulary, tone and formatting.", "O VibeFlow aprende seu estilo de escrita para personalizar as transcricoes, imitando seu vocabulario, tom e formatacao.", "VibeFlow aprende tu estilo de escritura para personalizar las transcripciones, imitando tu vocabulario, tono y formato.") }
+    static var writingStyleFullDesc: String { t("VoxAiGo learns your writing style to personalize transcriptions, imitating your vocabulary, tone and formatting.", "O VoxAiGo aprende seu estilo de escrita para personalizar as transcricoes, imitando seu vocabulario, tom e formatacao.", "VoxAiGo aprende tu estilo de escritura para personalizar las transcripciones, imitando tu vocabulario, tono y formato.") }
     static var styleLearning: String { t("Style Learning", "Aprendizado de Estilo", "Aprendizaje de Estilo") }
-    static var styleLearningDesc: String { t("When enabled, VibeFlow analyzes your transcriptions to learn your unique style.", "Quando ativado, o VibeFlow analisa suas transcricoes para aprender seu estilo unico.", "Cuando está activado, VibeFlow analiza tus transcripciones para aprender tu estilo único.") }
+    static var styleLearningDesc: String { t("When enabled, VoxAiGo analyzes your transcriptions to learn your unique style.", "Quando ativado, o VoxAiGo analisa suas transcricoes para aprender seu estilo unico.", "Cuando está activado, VoxAiGo analiza tus transcripciones para aprender tu estilo único.") }
     static var howItWorks: String { t("How It Works", "Como Funciona", "Cómo Funciona") }
     static var learnedSamples: String { t("Learned Samples", "Amostras Aprendidas", "Muestras Aprendidas") }
     static var clearAll: String { t("Clear All", "Limpar Tudo", "Limpiar Todo") }
     static var noSamplesYet: String { t("No samples yet", "Nenhuma amostra ainda", "Sin muestras aún") }
-    static var doTranscriptionsToLearn: String { t("Do some transcriptions for VibeFlow to learn your style", "Faca algumas transcricoes para o VibeFlow aprender seu estilo", "Haz algunas transcripciones para que VibeFlow aprenda tu estilo") }
+    static var doTranscriptionsToLearn: String { t("Do some transcriptions for VoxAiGo to learn your style", "Faca algumas transcricoes para o VoxAiGo aprender seu estilo", "Haz algunas transcripciones para que VoxAiGo aprenda tu estilo") }
     static func sampleCount(_ n: Int) -> String { t("\(n) sample\(n == 1 ? "" : "s")", "\(n) amostra\(n == 1 ? "" : "s")", "\(n) muestra\(n == 1 ? "" : "s")") }
     static var clearSamplesForThisMode: String { t("Clear samples for this mode", "Limpar amostras deste modo", "Limpiar muestras de este modo") }
     static func clearConfirmMode(_ mode: String) -> String { t("Do you want to clear all samples from mode \(mode)?", "Deseja limpar todas as amostras do modo \(mode)?", "¿Deseas limpiar todas las muestras del modo \(mode)?") }
@@ -349,7 +349,7 @@ struct L10n {
     
     // MARK: - Languages View
     static var languages: String { t("Languages", "Idiomas", "Idiomas") }
-    static var languagesDesc: String { t("Configure the output language for your transcriptions. You can speak in any language - VibeFlow translates automatically.", "Configure o idioma de saida das suas transcricoes. Voce pode falar em qualquer idioma - o VibeFlow traduz automaticamente.", "Configura el idioma de salida de tus transcripciones. Puedes hablar en cualquier idioma - VibeFlow traduce automáticamente.") }
+    static var languagesDesc: String { t("Configure the output language for your transcriptions. You can speak in any language - VoxAiGo translates automatically.", "Configure o idioma de saida das suas transcricoes. Voce pode falar em qualquer idioma - o VoxAiGo traduz automaticamente.", "Configura el idioma de salida de tus transcripciones. Puedes hablar en cualquier idioma - VoxAiGo traduce automáticamente.") }
     static var shortcutToSwitch: String { t("Shortcut to switch", "Atalho para alternar", "Atajo para alternar") }
     static var useCtrlShiftL: String { t("Use ⌃⇧L to quickly switch between your favorite languages.", "Use ⌃⇧L para alternar rapidamente entre seus idiomas favoritos.", "Usa ⌃⇧L para alternar rápidamente entre tus idiomas favoritos.") }
     static var allLanguages: String { t("All Languages", "Todos os Idiomas", "Todos los Idiomas") }
@@ -364,7 +364,7 @@ struct L10n {
     
     // MARK: - Launch at Login
     static var launchAtLogin: String { t("Launch at login", "Abrir ao iniciar", "Abrir al iniciar") }
-    static var launchAtLoginDescription: String { t("Automatically start VibeFlow when you log in", "Inicia o VibeFlow automaticamente ao ligar o Mac", "Inicia VibeFlow automáticamente al encender el Mac") }
+    static var launchAtLoginDescription: String { t("Automatically start VoxAiGo when you log in", "Inicia o VoxAiGo automaticamente ao ligar o Mac", "Inicia VoxAiGo automáticamente al encender el Mac") }
 
     // MARK: - Clarity features
     static var textClarity: String { t("Text Clarity", "Clareza do Texto", "Claridad del Texto") }
@@ -389,9 +389,9 @@ struct L10n {
     ) }
 
     static var textModeDetail: String { t(
-        "For everyday use. Speak naturally and get clean, well-formatted text — without the \"ums\", \"ahs\", and filler words.\n\nWhen to use:\n• Writing messages, notes, or documents\n• Capturing ideas quickly by voice\n• Any situation where you'd normally type text\n\nTip: Speak naturally — VibeFlow automatically removes hesitations and corrects grammar.",
-        "Para o dia a dia. Fale naturalmente e receba texto limpo e bem formatado — sem os \"éé\", \"tipo\", \"né\" e palavras de preenchimento.\n\nQuando usar:\n• Escrever mensagens, notas ou documentos\n• Capturar ideias rapidamente por voz\n• Qualquer situação em que você normalmente digitaria\n\nDica: Fale naturalmente — o VibeFlow remove hesitações e corrige a gramática automaticamente.",
-        "Para el día a día. Habla naturalmente y obtén texto limpio y bien formateado — sin los \"este\", \"o sea\", \"bueno\" y muletillas.\n\nCuándo usar:\n• Escribir mensajes, notas o documentos\n• Capturar ideas rápidamente por voz\n• Cualquier situación donde normalmente teclearías\n\nConsejo: Habla naturalmente — VibeFlow elimina vacilaciones y corrige la gramática automáticamente."
+        "For everyday use. Speak naturally and get clean, well-formatted text — without the \"ums\", \"ahs\", and filler words.\n\nWhen to use:\n• Writing messages, notes, or documents\n• Capturing ideas quickly by voice\n• Any situation where you'd normally type text\n\nTip: Speak naturally — VoxAiGo automatically removes hesitations and corrects grammar.",
+        "Para o dia a dia. Fale naturalmente e receba texto limpo e bem formatado — sem os \"éé\", \"tipo\", \"né\" e palavras de preenchimento.\n\nQuando usar:\n• Escrever mensagens, notas ou documentos\n• Capturar ideias rapidamente por voz\n• Qualquer situação em que você normalmente digitaria\n\nDica: Fale naturalmente — o VoxAiGo remove hesitações e corrige a gramática automaticamente.",
+        "Para el día a día. Habla naturalmente y obtén texto limpio y bien formateado — sin los \"este\", \"o sea\", \"bueno\" y muletillas.\n\nCuándo usar:\n• Escribir mensajes, notas o documentos\n• Capturar ideas rápidamente por voz\n• Cualquier situación donde normalmente teclearías\n\nConsejo: Habla naturalmente — VoxAiGo elimina vacilaciones y corrige la gramática automáticamente."
     ) }
 
     static var emailModeDetail: String { t(
@@ -407,9 +407,9 @@ struct L10n {
     ) }
 
     static var commandModeDetail: String { t(
-        "A powerful mode that transforms selected text based on voice commands. Select text in any app, then use a voice command to modify it.\n\nWhen to use:\n• \"Make it professional\" — rewrites in formal tone\n• \"Summarize\" — creates a concise summary\n• \"Translate to English\" — translates the text\n• \"Fix grammar\" — corrects errors only\n• \"Add bullet points\" — formats as a list\n\nTip: First select text in any app, then activate VibeFlow and say the command.",
-        "Um modo poderoso que transforma texto selecionado com comandos de voz. Selecione texto em qualquer app e use um comando de voz para modificá-lo.\n\nQuando usar:\n• \"Mais profissional\" — reescreve em tom formal\n• \"Resumir\" — cria um resumo conciso\n• \"Traduzir para inglês\" — traduz o texto\n• \"Corrigir gramática\" — corrige apenas erros\n• \"Adicionar tópicos\" — formata como lista\n\nDica: Primeiro selecione o texto em qualquer app, depois ative o VibeFlow e diga o comando.",
-        "Un modo poderoso que transforma texto seleccionado con comandos de voz. Selecciona texto en cualquier app y usa un comando de voz para modificarlo.\n\nCuándo usar:\n• \"Más profesional\" — reescribe en tono formal\n• \"Resumir\" — crea un resumen conciso\n• \"Traducir al inglés\" — traduce el texto\n• \"Corregir gramática\" — corrige solo errores\n• \"Agregar viñetas\" — formatea como lista\n\nConsejo: Primero selecciona texto en cualquier app, luego activa VibeFlow y di el comando."
+        "A powerful mode that transforms selected text based on voice commands. Select text in any app, then use a voice command to modify it.\n\nWhen to use:\n• \"Make it professional\" — rewrites in formal tone\n• \"Summarize\" — creates a concise summary\n• \"Translate to English\" — translates the text\n• \"Fix grammar\" — corrects errors only\n• \"Add bullet points\" — formats as a list\n\nTip: First select text in any app, then activate VoxAiGo and say the command.",
+        "Um modo poderoso que transforma texto selecionado com comandos de voz. Selecione texto em qualquer app e use um comando de voz para modificá-lo.\n\nQuando usar:\n• \"Mais profissional\" — reescreve em tom formal\n• \"Resumir\" — cria um resumo conciso\n• \"Traduzir para inglês\" — traduz o texto\n• \"Corrigir gramática\" — corrige apenas erros\n• \"Adicionar tópicos\" — formata como lista\n\nDica: Primeiro selecione o texto em qualquer app, depois ative o VoxAiGo e diga o comando.",
+        "Un modo poderoso que transforma texto seleccionado con comandos de voz. Selecciona texto en cualquier app y usa un comando de voz para modificarlo.\n\nCuándo usar:\n• \"Más profesional\" — reescribe en tono formal\n• \"Resumir\" — crea un resumen conciso\n• \"Traducir al inglés\" — traduce el texto\n• \"Corregir gramática\" — corrige solo errores\n• \"Agregar viñetas\" — formatea como lista\n\nConsejo: Primero selecciona texto en cualquier app, luego activa VoxAiGo y di el comando."
     ) }
     
     // MARK: - ModernSettingsView
@@ -430,12 +430,24 @@ struct L10n {
     // ModernSettings - Shortcut descriptions
     static var recordHold: String { t("Record (hold)", "Gravar (segure)", "Grabar (mantener)") }
     static var holdToRecordRelease: String { t("Hold to record, release to process", "Segure para gravar, solte para processar", "Mantén para grabar, suelta para procesar") }
-    static var toggleVibeFlowWindow: String { t("Toggles the VibeFlow window", "Alterna a janela do VibeFlow", "Alterna la ventana de VibeFlow") }
+    static var toggleVoxAiGoWindow: String { t("Toggles the VoxAiGo window", "Alterna a janela do VoxAiGo", "Alterna la ventana de VoxAiGo") }
     static var changeLanguage: String { t("Change Language", "Mudar Idioma", "Cambiar Idioma") }
     static var cyclesFavoriteLangs: String { t("Cycles between favorite languages", "Cicla entre os idiomas favoritos", "Cicla entre los idiomas favoritos") }
     static var opensSettingsWindow: String { t("Opens this window", "Abre esta janela", "Abre esta ventana") }
     static var showsTranscriptionHistory: String { t("Shows the transcription history", "Mostra o histórico de transcrições", "Muestra el historial de transcripciones") }
-    
+    static var conversationReplyShortcutDesc: String { t("Translate selected text and reply in their language", "Traduz texto selecionado e responde no idioma deles", "Traduce texto seleccionado y responde en su idioma") }
+
+    // Conversation Reply Settings
+    static var conversationReplyTitle: String { t("Conversation Reply", "Resposta de Conversa", "Respuesta de Conversación") }
+    static var enableConversationReply: String { t("Enable Conversation Reply", "Habilitar Resposta de Conversa", "Habilitar Respuesta de Conversación") }
+    static var enableConversationReplySub: String { t("Translate messages and reply in the sender's language", "Traduz mensagens e responde no idioma do remetente", "Traduce mensajes y responde en el idioma del remitente") }
+    static var conversationReplyActivate: String { t("Activate with", "Ativar com", "Activar con") }
+    static var crStep1: String { t("Select a message in any app (WhatsApp, Slack, email…)", "Selecione uma mensagem em qualquer app (WhatsApp, Slack, email…)", "Selecciona un mensaje en cualquier app (WhatsApp, Slack, email…)") }
+    static var crStep2: String { t("Press ⌃⇧R — a panel appears with the translation", "Pressione ⌃⇧R — um painel aparece com a tradução", "Presiona ⌃⇧R — aparece un panel con la traducción") }
+    static var crStep3: String { t("Read the translation in your language (\(SettingsManager.shared.outputLanguage.displayName))", "Leia a tradução no seu idioma (\(SettingsManager.shared.outputLanguage.displayName))", "Lee la traducción en tu idioma (\(SettingsManager.shared.outputLanguage.displayName))") }
+    static var crStep4: String { t("Hold ⌥⌘ and speak your reply in your language", "Segure ⌥⌘ e fale sua resposta no seu idioma", "Mantén ⌥⌘ y habla tu respuesta en tu idioma") }
+    static var crStep5: String { t("Your reply is auto-translated and pasted in their language", "Sua resposta é traduzida automaticamente e colada no idioma deles", "Tu respuesta se traduce automáticamente y se pega en su idioma") }
+
     // ModernSettings - Permissions
     static var toRecordVoice: String { t("To record your voice", "Para gravar sua voz", "Para grabar tu voz") }
     static var toAutoPasteText: String { t("To auto-paste text", "Para colar texto automaticamente", "Para pegar texto automáticamente") }

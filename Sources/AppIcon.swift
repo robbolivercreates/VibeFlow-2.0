@@ -6,14 +6,14 @@ class AppIconGenerator {
 
     // MARK: - Brand Colors
 
-    /// Cores da marca VibeFlow
+    /// Cores da marca VoxAiGo
     private static let brandPurple = NSColor(red: 0.42, green: 0.35, blue: 0.85, alpha: 1.0)
     private static let brandIndigo = NSColor(red: 0.35, green: 0.30, blue: 0.75, alpha: 1.0)
     private static let brandViolet = NSColor(red: 0.55, green: 0.40, blue: 0.90, alpha: 1.0)
 
     // MARK: - App Icon
 
-    /// Cria o ícone principal do VibeFlow - Design minimalista e elegante
+    /// Cria o ícone principal do VoxAiGo - Design minimalista e elegante
     static func createAppIcon(size: CGFloat = 512) -> NSImage {
         let image = NSImage(size: NSSize(width: size, height: size))
 

@@ -91,7 +91,7 @@ struct ModernSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(L10n.settingsTitle)
                     .font(.system(size: 20, weight: .semibold))
-                Text(L10n.customizeVibeFlow)
+                Text(L10n.customizeVoxAiGo)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
@@ -131,7 +131,7 @@ struct ModernSettingsView: View {
     // MARK: - Footer
     private var footerView: some View {
         HStack {
-            Text("VibeFlow v2.1")
+            Text("VoxAiGo v2.1")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             
@@ -218,6 +218,57 @@ struct GeneralSettingsSection: View {
                 }
             }
             
+            // Conversation Reply
+            SettingsCard(title: L10n.conversationReplyTitle, icon: "bubble.left.and.bubble.right") {
+                VStack(spacing: 12) {
+                    // Toggle
+                    Toggle(isOn: $settings.enableConversationReply) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L10n.enableConversationReply)
+                                .font(.system(size: 13))
+                            Text(L10n.enableConversationReplySub)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+
+                    if settings.enableConversationReply {
+                        Divider()
+
+                        // How it works
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(L10n.howItWorks)
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundStyle(.secondary)
+
+                            VStack(alignment: .leading, spacing: 6) {
+                                ConversationReplyStep(number: "1", text: L10n.crStep1)
+                                ConversationReplyStep(number: "2", text: L10n.crStep2)
+                                ConversationReplyStep(number: "3", text: L10n.crStep3)
+                                ConversationReplyStep(number: "4", text: L10n.crStep4)
+                                ConversationReplyStep(number: "5", text: L10n.crStep5)
+                            }
+                        }
+
+                        Divider()
+
+                        // Shortcut info
+                        HStack {
+                            Text(L10n.conversationReplyActivate)
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            HStack(spacing: 2) {
+                                ShortcutKey(text: "⌃")
+                                ShortcutKey(text: "⇧")
+                                ShortcutKey(text: "R")
+                            }
+                        }
+                    }
+                }
+            }
+
             // Comportamento
             SettingsCard(title: L10n.behavior, icon: "switch.2") {
                 VStack(spacing: 0) {
@@ -578,32 +629,63 @@ struct ShortcutsSettingsSection: View {
                         shortcut: "⌥⌘",
                         description: L10n.holdToRecordRelease
                     )
-                    
+
                     SettingsShortcutRow(
                         action: L10n.showHideShort,
                         shortcut: "⌘⇧V",
-                        description: L10n.toggleVibeFlowWindow
+                        description: L10n.toggleVoxAiGoWindow
                     )
-                    
+
                     SettingsShortcutRow(
                         action: L10n.changeLanguage,
                         shortcut: "⌃⇧L",
                         description: L10n.cyclesFavoriteLangs
                     )
-                    
+
                     SettingsShortcutRow(
                         action: L10n.settingsTitle,
                         shortcut: "⌘,",
                         description: L10n.opensSettingsWindow
                     )
-                    
+
                     SettingsShortcutRow(
                         action: L10n.history,
                         shortcut: "⌘Y",
                         description: L10n.showsTranscriptionHistory
                     )
+
+                    Divider()
+
+                    SettingsShortcutRow(
+                        action: L10n.conversationReplyTitle,
+                        shortcut: "⌃⇧R",
+                        description: L10n.conversationReplyShortcutDesc
+                    )
                 }
             }
+        }
+    }
+}
+
+// MARK: - Conversation Reply Step
+struct ConversationReplyStep: View {
+    let number: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(number)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 16, height: 16)
+                .background(Circle().fill(Color(red: 0.4, green: 0.72, blue: 1.0)))
+
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
         }
     }
 }

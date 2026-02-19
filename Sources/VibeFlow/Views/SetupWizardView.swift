@@ -5,7 +5,7 @@ import AVFoundation
 enum WizardStep: Int, CaseIterable {
     case language = 0
     case welcome = 1
-    case apiKey = 2
+    case login = 2
     case permissions = 3
     case testRecording = 4
     case languages = 5
@@ -15,9 +15,9 @@ enum WizardStep: Int, CaseIterable {
         switch self {
         case .language: return L10n.chooseLanguage
         case .welcome: return "Bem-vindo"
-        case .apiKey: return "API Key"
+        case .login: return L10n.loginToVoxAiGo
         case .permissions: return L10n.requiredPermissions
-        case .testRecording: return L10n.testVibeFlow
+        case .testRecording: return L10n.testVoxAiGo
         case .languages: return L10n.languages
         case .ready: return "Pronto"
         }
@@ -27,7 +27,7 @@ enum WizardStep: Int, CaseIterable {
         switch self {
         case .language: return "globe"
         case .welcome: return "waveform.circle.fill"
-        case .apiKey: return "key.fill"
+        case .login: return "person.crop.circle.fill"
         case .permissions: return "lock.shield.fill"
         case .testRecording: return "mic.fill"
         case .languages: return "flag.fill"
@@ -41,11 +41,8 @@ struct SetupWizardView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var settings = SettingsManager.shared
 
+    @StateObject private var auth = AuthManager.shared
     @State private var currentStep: WizardStep = .welcome
-    @State private var apiKeyInput = ""
-    @State private var isValidatingKey = false
-    @State private var keyValidationResult: Bool? = nil
-    @State private var keyValidationError: String?
 
     // Permissions
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
@@ -89,8 +86,6 @@ struct SetupWizardView: View {
         .frame(width: 680, height: 580)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear {
-            apiKeyInput = settings.apiKey
-            keyValidationResult = settings.hasApiKey ? true : nil
             checkPermissions()
         }
         .onDisappear {
@@ -192,8 +187,8 @@ struct SetupWizardView: View {
             languageSelectionContent
         case .welcome:
             welcomeContent
-        case .apiKey:
-            apiKeyContent
+        case .login:
+            loginContent
         case .permissions:
             permissionsContent
         case .testRecording:
@@ -269,10 +264,10 @@ struct SetupWizardView: View {
     private var welcomeContent: some View {
         VStack(spacing: 24) {
             // Logo
-            VibeFlowLogo(size: 80)
+            VoxAiGoLogo(size: 80)
                 .padding(.bottom, 8)
 
-            Text("VibeFlow")
+            Text("VoxAiGo")
                 .font(.system(size: 32, weight: .bold))
 
             Text(L10n.vibeFlowTagline)
@@ -291,112 +286,30 @@ struct SetupWizardView: View {
         }
     }
 
-    // MARK: - API Key Step
+    // MARK: - Login Step
 
-    private var apiKeyContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Instructions
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.configureGeminiKey)
-                    .font(.system(size: 18, weight: .semibold))
+    private var loginContent: some View {
+        VStack(spacing: 20) {
+            if auth.isAuthenticated {
+                // Already logged in
+                VStack(spacing: 16) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundStyle(.green)
 
-                Text("O VibeFlow usa o Google Gemini para transcrever seu audio. Voce precisa de uma API key gratuita.")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
+                    Text(L10n.loggedIn)
+                        .font(.system(size: 18, weight: .semibold))
 
-            // API Key input - REGULAR TextField for copy/paste support
-            VStack(alignment: .leading, spacing: 8) {
-                Text("API Key")
-                    .font(.system(size: 13, weight: .medium))
-
-                HStack(spacing: 12) {
-                    TextField(L10n.pasteAPIKeyHere, text: $apiKeyInput)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.system(size: 14, design: .monospaced))
-                        .onChange(of: apiKeyInput) { newValue in
-                            keyValidationResult = nil
-                            keyValidationError = nil
-                            settings.apiKey = newValue
-                        }
-
-                    Button(action: validateAPIKey) {
-                        HStack(spacing: 6) {
-                            if isValidatingKey {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            } else {
-                                Image(systemName: "checkmark.circle")
-                            }
-                            Text(isValidatingKey ? L10n.validating : L10n.validate)
-                        }
-                        .frame(width: 110)
+                    if let email = auth.userEmail {
+                        Text(email)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.bordered)
-                    .disabled(apiKeyInput.isEmpty || isValidatingKey)
                 }
-
-                // Validation result
-                if let result = keyValidationResult {
-                    HStack(spacing: 6) {
-                        Image(systemName: result ? "checkmark.circle.fill" : "xmark.circle.fill")
-                        Text(result ? "API key valida! Pronto para usar." : "API key invalida. Verifique e tente novamente.")
-                    }
-                    .font(.system(size: 13))
-                    .foregroundStyle(result ? .green : .red)
-                    .padding(.top, 4)
-                }
-
-                if let error = keyValidationError {
-                    Text(error)
-                        .font(.system(size: 13))
-                        .foregroundStyle(.red)
-                        .padding(.top, 4)
-                }
+                .padding(.vertical, 40)
+            } else {
+                LoginView()
             }
-            .padding(20)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
-            )
-
-            // Get API Key link
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.howToGetAPIKey)
-                    .font(.system(size: 14, weight: .medium))
-
-                VStack(alignment: .leading, spacing: 8) {
-                    InstructionRow(number: 1, text: "Acesse o Google AI Studio")
-                    InstructionRow(number: 2, text: "Faca login com sua conta Google")
-                    InstructionRow(number: 3, text: "Clique em 'Get API Key' > 'Create API key'")
-                    InstructionRow(number: 4, text: "Copie a chave e cole acima")
-                }
-
-                Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "arrow.up.right.square.fill")
-                        Text(L10n.openGoogleAIStudio)
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Color.purple)
-                    .cornerRadius(8)
-                }
-                .padding(.top, 8)
-            }
-            .padding(.top, 8)
-
-            // Security note
-            HStack(spacing: 8) {
-                Image(systemName: "lock.fill")
-                    .foregroundStyle(.secondary)
-                Text(L10n.apiKeyStoredLocally)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 8)
         }
     }
 
@@ -408,7 +321,7 @@ struct SetupWizardView: View {
                 Text("Permissoes Necessarias")
                     .font(.system(size: 18, weight: .semibold))
 
-                Text("O VibeFlow precisa de 3 permissoes para funcionar. Cada uma tem um papel importante:")
+                Text("O VoxAiGo precisa de 3 permissoes para funcionar. Cada uma tem um papel importante:")
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
             }
@@ -438,8 +351,8 @@ struct SetupWizardView: View {
                     buttonText: "Abrir Preferencias",
                     helpSteps: [
                         "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
-                        "Arraste o icone do VibeFlow do Finder para a lista de permissoes",
-                        "Ative o toggle (chave) ao lado de \"VibeFlow\"",
+                        "Arraste o icone do VoxAiGo do Finder para a lista de permissoes",
+                        "Ative o toggle (chave) ao lado de \"VoxAiGo\"",
                         "Volte aqui — sera detectado automaticamente"
                     ],
                     action: openAccessibilitySettings
@@ -454,8 +367,8 @@ struct SetupWizardView: View {
                     buttonText: "Abrir Preferencias",
                     helpSteps: [
                         "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
-                        "Arraste o icone do VibeFlow do Finder para a lista de permissoes",
-                        "Ative o toggle (chave) ao lado de \"VibeFlow\""
+                        "Arraste o icone do VoxAiGo do Finder para a lista de permissoes",
+                        "Ative o toggle (chave) ao lado de \"VoxAiGo\""
                     ],
                     action: openInputMonitoringSettings
                 )
@@ -516,7 +429,7 @@ struct SetupWizardView: View {
     private var testRecordingContent: some View {
         VStack(spacing: 24) {
             VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.testVibeFlow)
+                Text(L10n.testVoxAiGo)
                     .font(.system(size: 24, weight: .bold))
 
                 Text(L10n.testInstructions)
@@ -842,7 +755,7 @@ struct SetupWizardView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Configuracoes")
                         .font(.system(size: 14, weight: .medium))
-                    Text("Clique no icone do VibeFlow na barra de menu > Abrir VibeFlow")
+                    Text("Clique no icone do VoxAiGo na barra de menu > Abrir VoxAiGo")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
@@ -862,8 +775,8 @@ struct SetupWizardView: View {
             return true
         case .welcome:
             return true
-        case .apiKey:
-            return keyValidationResult == true
+        case .login:
+            return auth.isAuthenticated
         case .permissions:
             return allPermissionsGranted
         case .testRecording:
@@ -895,56 +808,6 @@ struct SetupWizardView: View {
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentStep = next
             }
-        }
-    }
-
-    private func validateAPIKey() {
-        guard !apiKeyInput.isEmpty else { return }
-
-        isValidatingKey = true
-        keyValidationResult = nil
-        keyValidationError = nil
-
-        Task {
-            let isValid = await performKeyValidation(apiKeyInput)
-
-            await MainActor.run {
-                isValidatingKey = false
-                keyValidationResult = isValid
-
-                if isValid {
-                    settings.apiKey = apiKeyInput
-                } else {
-                    keyValidationError = "Verifique se a chave foi copiada corretamente"
-                }
-            }
-        }
-    }
-
-    private func performKeyValidation(_ key: String) async -> Bool {
-        guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=\(key)") else {
-            return false
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let body: [String: Any] = [
-            "contents": [["parts": [["text": "Hi"]]]],
-            "generationConfig": ["maxOutputTokens": 1]
-        ]
-
-        guard let jsonData = try? JSONSerialization.data(withJSONObject: body) else {
-            return false
-        }
-        request.httpBody = jsonData
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            return (response as? HTTPURLResponse)?.statusCode == 200
-        } catch {
-            return false
         }
     }
 
@@ -994,8 +857,8 @@ struct SetupWizardView: View {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
         
-        // Also reveal VibeFlow.app in Finder so user can drag it
-        revealVibeFlowInFinder()
+        // Also reveal VoxAiGo.app in Finder so user can drag it
+        revealVoxAiGoInFinder()
     }
 
     private func openInputMonitoringSettings() {
@@ -1003,12 +866,12 @@ struct SetupWizardView: View {
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
         NSWorkspace.shared.open(url)
         
-        // Also reveal VibeFlow.app in Finder so user can drag it
-        revealVibeFlowInFinder()
+        // Also reveal VoxAiGo.app in Finder so user can drag it
+        revealVoxAiGoInFinder()
     }
     
-    private func revealVibeFlowInFinder() {
-        let appPath = "/Applications/VibeFlow.app"
+    private func revealVoxAiGoInFinder() {
+        let appPath = "/Applications/VoxAiGo.app"
         let appURL = URL(fileURLWithPath: appPath)
         if FileManager.default.fileExists(atPath: appPath) {
             NSWorkspace.shared.activateFileViewerSelecting([appURL])
@@ -1057,7 +920,7 @@ struct SetupWizardView: View {
             withAnimation {
                 isTestRecording = false
                 shortcutTestPassed = true
-                testTranscriptionResult = "Este e um exemplo de transcricao. O VibeFlow esta funcionando corretamente!"
+                testTranscriptionResult = "Este e um exemplo de transcricao. O VoxAiGo esta funcionando corretamente!"
             }
         }
 

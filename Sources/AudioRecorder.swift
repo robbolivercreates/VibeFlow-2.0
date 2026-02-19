@@ -208,11 +208,13 @@ class AudioRecorder: NSObject, ObservableObject {
                         self?.performRecording()
                     } else {
                         self?.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
+                        NotificationCenter.default.post(name: .recordingCancelled, object: nil)
                     }
                 }
             }
         default:
             self.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
+            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
         }
     }
     

@@ -22,6 +22,9 @@ struct SettingsDetailView: View {
                 // MARK: - Behavior
                 behaviorSection
 
+                // MARK: - Conversation Reply
+                conversationReplySection
+
                 // MARK: - Shortcuts
                 shortcutsSection
 
@@ -62,58 +65,17 @@ struct SettingsDetailView: View {
             Text("Ajustes")
                 .font(.system(size: 28, weight: .bold))
 
-            Text("Configure o VibeFlow de acordo com suas preferencias.")
+            Text("Configure o VoxAiGo de acordo com suas preferencias.")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
         }
     }
 
-    // MARK: - API Section
+    // MARK: - Account Section
 
     private var apiSection: some View {
-        SettingsSection(title: "API", icon: "key") {
-            VStack(spacing: 0) {
-                // API Key
-                SettingsRow(
-                    title: "Google Gemini API Key",
-                    subtitle: settings.apiKey.isEmpty ? "Nao configurada" : "••••••••" + settings.apiKey.suffix(4)
-                ) {
-                    SecureField("API Key", text: $settings.apiKey)
-                        .textFieldStyle(.roundedBorder)
-                        .frame(width: 200)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Get API Key link
-                SettingsRow(
-                    title: "Obter API Key",
-                    subtitle: "Google AI Studio"
-                ) {
-                    Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
-                        HStack(spacing: 4) {
-                            Text("Abrir")
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 10))
-                        }
-                        .font(.system(size: 13))
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Model info
-                SettingsRow(
-                    title: "Modelo",
-                    subtitle: "Versao da IA utilizada"
-                ) {
-                    Text("Gemini 2.0 Flash")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-            }
+        SettingsSection(title: L10n.account, icon: "person.crop.circle") {
+            AccountView()
         }
     }
 
@@ -167,6 +129,48 @@ struct SettingsDetailView: View {
                     subtitle: L10n.clarifyDescription,
                     isOn: $settings.clarifyText
                 )
+            }
+        }
+    }
+
+    // MARK: - Conversation Reply Section
+
+    private var conversationReplySection: some View {
+        SettingsSection(title: "Resposta de Conversa", icon: "bubble.left.and.bubble.right") {
+            VStack(spacing: 0) {
+                SettingsToggleRow(
+                    title: "Habilitar Resposta de Conversa",
+                    subtitle: "Traduz mensagens e responde no idioma do remetente",
+                    isOn: $settings.enableConversationReply
+                )
+
+                if settings.enableConversationReply {
+                    Divider().padding(.leading, 44)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("COMO FUNCIONA")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ConversationReplyStepRow(number: "1", text: "Selecione uma mensagem em qualquer app (WhatsApp, Slack, email…)")
+                            ConversationReplyStepRow(number: "2", text: "Pressione ⌃⇧R — um painel aparece com a tradução")
+                            ConversationReplyStepRow(number: "3", text: "Leia a tradução no seu idioma")
+                            ConversationReplyStepRow(number: "4", text: "Segure ⌥⌘ e fale sua resposta no seu idioma")
+                            ConversationReplyStepRow(number: "5", text: "Sua resposta é traduzida automaticamente e colada no idioma deles")
+                        }
+
+                        HStack {
+                            Text("Ativar com")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            ShortcutBadge(shortcut: settings.conversationReplyShortcut)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
             }
         }
     }
@@ -231,6 +235,18 @@ struct SettingsDetailView: View {
                     ShortcutEditor(
                         shortcut: $settings.pasteLastShortcut,
                         placeholder: "⌃⇧V"
+                    )
+                }
+
+                Divider().padding(.leading, 44)
+
+                SettingsRow(
+                    title: "Resposta de Conversa",
+                    subtitle: "Traduz texto selecionado e responde no idioma deles"
+                ) {
+                    ShortcutEditor(
+                        shortcut: $settings.conversationReplyShortcut,
+                        placeholder: "⌃⇧R"
                     )
                 }
 
@@ -320,7 +336,7 @@ struct SettingsDetailView: View {
             VStack(spacing: 0) {
                 SettingsRow(
                     title: "Setup Wizard",
-                    subtitle: "Reconfigurar o VibeFlow do inicio"
+                    subtitle: "Reconfigurar o VoxAiGo do inicio"
                 ) {
                     Button("Abrir Wizard") {
                         // Use notification to open wizard window properly
@@ -356,6 +372,7 @@ struct SettingsDetailView: View {
                         settings.cycleLanguageShortcut = "⌃⇧L"
                         settings.cycleModeShortcut = "⌃⇧M"
                         settings.pasteLastShortcut = "⌃⇧V"
+                        settings.conversationReplyShortcut = "⌃⇧R"
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
@@ -365,7 +382,7 @@ struct SettingsDetailView: View {
 
                 SettingsRow(
                     title: "Versao",
-                    subtitle: "VibeFlow para macOS"
+                    subtitle: "VoxAiGo para macOS"
                 ) {
                     Text(AppVersion.current)
                         .font(.system(size: 13, design: .monospaced))
@@ -598,6 +615,30 @@ struct ShortcutEditor: View {
             36: "↩", 48: "⇥", 49: "Space", 50: "`", 51: "⌫"
         ]
         return keyMap[keyCode] ?? ""
+    }
+}
+
+// MARK: - Conversation Reply Step Row
+
+struct ConversationReplyStepRow: View {
+    let number: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: 16, height: 16)
+                .background(Circle().fill(Color.purple))
+
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Spacer()
+        }
     }
 }
 

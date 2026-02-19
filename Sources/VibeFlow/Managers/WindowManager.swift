@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Gerenciador centralizado de janelas do VibeFlow
+/// Gerenciador centralizado de janelas do VoxAiGo
 /// Evita que o app feche quando janelas secundárias são fechadas
 class WindowManager: ObservableObject {
     static let shared = WindowManager()
@@ -22,13 +22,13 @@ class WindowManager: ObservableObject {
         
         var title: String {
             switch self {
-            case .mainFloating: return "VibeFlow"
+            case .mainFloating: return "VoxAiGo"
             case .settings: return "Configurações"
             case .history: return "Histórico"
             case .snippets: return "Snippets"
             case .analytics: return "Estatísticas"
-            case .wizard: return "Bem-vindo ao VibeFlow"
-            case .license: return "Ativar VibeFlow"
+            case .wizard: return "Bem-vindo ao VoxAiGo"
+            case .license: return "Ativar VoxAiGo"
             }
         }
         
@@ -114,7 +114,7 @@ class WindowManager: ObservableObject {
         )
         
         window.contentView = hostingView
-        window.title = "VibeFlow - \(type.title)"
+        window.title = "VoxAiGo - \(type.title)"
         window.isReleasedWhenClosed = false
         
         // Configurações específicas por tipo

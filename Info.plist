@@ -3,28 +3,39 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDisplayName</key>
-	<string>Vibe Flow</string>
+	<string>VoxAiGo</string>
 	<key>CFBundleExecutable</key>
-	<string>VibeFlow</string>
+	<string>VoxAiGo</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.vibeflow.app</string>
+	<string>com.voxaigo.app</string>
 	<key>CFBundleName</key>
-	<string>VibeFlow</string>
+	<string>VoxAiGo</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.2.0</string>
+	<string>3.0.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<!-- NOTE: LSUIElement removed — it causes NSStatusItem to be positioned off-screen.
 	     Dock icon is hidden programmatically via NSApp.setActivationPolicy(.accessory) instead. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.voxaigo.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>voxaigo</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>Vibe Flow precisa simular teclas para colar código automaticamente no editor ativo.</string>
+	<string>VoxAiGo precisa simular teclas para colar código automaticamente no editor ativo.</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Vibe Flow precisa acessar o microfone para gravar seu ditado de código.</string>
+	<string>VoxAiGo precisa acessar o microfone para gravar seu ditado de código.</string>
 </dict>
 </plist>

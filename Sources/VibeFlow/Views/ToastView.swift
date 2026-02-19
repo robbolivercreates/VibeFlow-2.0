@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sistema de notificações/toast sutis para o VibeFlow
+/// Sistema de notificações/toast sutis para o VoxAiGo
 enum ToastType {
     case success
     case error

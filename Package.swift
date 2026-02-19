@@ -2,25 +2,21 @@
 import PackageDescription
 
 let package = Package(
-    name: "VibeFlow",
+    name: "VoxAiGo",
     platforms: [
         .macOS(.v13)
     ],
     products: [
         .executable(
-            name: "VibeFlow",
-            targets: ["VibeFlow"]
+            name: "VoxAiGo",
+            targets: ["VoxAiGo"]
         )
     ],
-    dependencies: [
-        .package(url: "https://github.com/google/generative-ai-swift", from: "0.5.0")
-    ],
+    dependencies: [],
     targets: [
         .executableTarget(
-            name: "VibeFlow",
-            dependencies: [
-                .product(name: "GoogleGenerativeAI", package: "generative-ai-swift")
-            ],
+            name: "VoxAiGo",
+            dependencies: [],
             path: "Sources"
         )
     ]

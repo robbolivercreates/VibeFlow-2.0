@@ -189,7 +189,7 @@ enum TranscriptionMode: String, CaseIterable {
 4. Retorna texto transcrito
 
 **Modificar quando:**
-- Mudar modelo (atual: gemini-2.0-flash)
+- Mudar modelo (atual: gemini-2.5-flash)
 - Ajustar parâmetros de geração
 - Adicionar retry logic
 
@@ -320,7 +320,7 @@ cd Distribution
 ### Saídas:
 - `.build/release/VibeFlow` - Binário
 - `VibeFlow.app` - App bundle
-- `Distribution/output/VibeFlow-2.1.0.dmg` - DMG para distribuição
+- `Distribution/output/VibeFlow-2.3.0.dmg` - DMG para distribuição
 
 ---
 
@@ -382,6 +382,6 @@ GoogleGenerativeAI  // API Gemini
 
 ---
 
-**Última atualização:** 2026-02-02
-**Versão:** 2.1.0
+**Última atualização:** 2026-02-17
+**Versão:** 2.3.0
 **Autor:** Robson Oliveira

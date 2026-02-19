@@ -14,7 +14,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var historyWindow: NSWindow?
     var snippetsWindow: NSWindow?
     var wizardWindow: NSWindow?
-    var viewModel: VibeFlowViewModel?
+    var viewModel: VoxAiGoViewModel?
     var isHoldToTalkActive = false
     var globalKeyMonitor: Any?
     var localKeyMonitor: Any?
@@ -23,6 +23,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // CGEvent tap for reliable global keyboard shortcut detection
     var globalKeyTap: CFMachPort?
     var accessibilityRetryTimer: Timer?
+
+    // Conversation Reply HUD (retained, interactive, stays until dismissed or timeout)
+    var conversationReplyWindow: NSWindow?
+    var lastConversationReplyTime: Date = .distantPast
+    let conversationReplyDebounceInterval: TimeInterval = 0.5
 
     // Notification windows (retained to prevent memory issues)
     var languageNotificationWindow: NSWindow?
@@ -48,7 +53,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // .accessory mode and LSUIElement both move status items off-screen on this system.
         AppDelegate.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = AppDelegate.statusItem?.button {
-            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VibeFlow") {
+            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VoxAiGo") {
                 let config = NSImage.SymbolConfiguration(pointSize: 16, weight: .medium)
                 button.image = sfImage.withSymbolConfiguration(config) ?? sfImage
             } else {
@@ -65,7 +70,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         
         // Criar view model
-        let viewModel = VibeFlowViewModel()
+        let viewModel = VoxAiGoViewModel()
         self.viewModel = viewModel
         
         // Update menu after viewModel is created
@@ -105,9 +110,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    // MARK: - URL Scheme Handler (OAuth callback)
+
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            if url.scheme == "voxaigo" {
+                AuthManager.shared.handleOAuthCallback(url: url)
+            }
+        }
+    }
+
     /// Creates and configures the menu bar status item
     private func createStatusBarItem() {
-        let diag = "/tmp/vibeflow_diag.txt"
+        let diag = "/tmp/voxaigo_diag.txt"
         var log = "[\(Date())] createStatusBarItem called\n"
         
         AppDelegate.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -115,7 +130,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         
         if let button = AppDelegate.statusItem?.button {
             // Use SF Symbol instead of custom drawing to test visibility
-            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VibeFlow") {
+            if let sfImage = NSImage(systemSymbolName: "waveform", accessibilityDescription: "VoxAiGo") {
                 let config = NSImage.SymbolConfiguration(pointSize: 16, weight: .medium)
                 let configured = sfImage.withSymbolConfiguration(config) ?? sfImage
                 button.image = configured
@@ -161,8 +176,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - First Launch
     
     func checkFirstLaunch() {
-        // Verificar onboarding (pular license)
-        guard !settings.onboardingCompleted || !settings.hasApiKey else { return }
+        // Show wizard if onboarding not completed or not authenticated
+        guard !settings.onboardingCompleted || !AuthManager.shared.isAuthenticated else { return }
         showWizard()
     }
     
@@ -189,7 +204,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         wizardWindow?.isReleasedWhenClosed = false
         wizardWindow?.contentView = hostingView
-        wizardWindow?.title = "Configurar VibeFlow"
+        wizardWindow?.title = "Configurar VoxAiGo"
         wizardWindow?.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         wizardWindow?.center()
         wizardWindow?.makeKeyAndOrderFront(nil)
@@ -201,7 +216,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: wizardWindow,
             queue: .main
         ) { [weak self] _ in
-            self?.viewModel?.reloadAPIKey()
+            self?.viewModel?.reloadSettings()
         }
     }
     
@@ -211,9 +226,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         
         // Título
-        let titleItem = NSMenuItem(title: "VibeFlow \(AppVersion.current)", action: nil, keyEquivalent: "")
+        let titleItem = NSMenuItem(title: "VoxAiGo \(AppVersion.current)", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
+
+        // Account info
+        if AuthManager.shared.isAuthenticated {
+            let sub = SubscriptionManager.shared
+            let planLabel = sub.isPro ? "PRO" : "Free (\(sub.freeTranscriptionsUsed)/\(SubscriptionManager.freeMonthlyLimit))"
+            let accountItem = NSMenuItem(title: "\(AuthManager.shared.userEmail ?? "") - \(planLabel)", action: nil, keyEquivalent: "")
+            accountItem.isEnabled = false
+            menu.addItem(accountItem)
+        }
+
         menu.addItem(NSMenuItem.separator())
         
         // Ações principais
@@ -327,8 +352,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Main Window (VibeFlow Central)
-        let mainWindowItem = NSMenuItem(title: "Abrir VibeFlow", action: #selector(showMainWindow), keyEquivalent: "")
+        // Main Window (VoxAiGo Central)
+        let mainWindowItem = NSMenuItem(title: "Abrir VoxAiGo", action: #selector(showMainWindow), keyEquivalent: "")
         mainWindowItem.target = self
         menu.addItem(mainWindowItem)
 
@@ -425,7 +450,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         newWindow.contentView = hostingView
-        newWindow.title = "VibeFlow"
+        newWindow.title = "VoxAiGo"
         newWindow.minSize = NSSize(width: 720, height: 520)
         newWindow.isReleasedWhenClosed = false
         newWindow.center()
@@ -437,7 +462,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: newWindow,
             queue: .main
         ) { [weak self] notification in
-            self?.viewModel?.reloadAPIKey()
+            self?.viewModel?.reloadSettings()
             self?.mainAppWindow = nil
         }
 
@@ -464,7 +489,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         newWindow.contentView = hostingView
-        newWindow.title = "VibeFlow - Histórico"
+        newWindow.title = "VoxAiGo - Histórico"
         newWindow.isReleasedWhenClosed = false
         newWindow.center()
         historyWindow = newWindow
@@ -500,7 +525,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         newWindow.contentView = hostingView
-        newWindow.title = "VibeFlow - Snippets"
+        newWindow.title = "VoxAiGo - Snippets"
         newWindow.isReleasedWhenClosed = false
         newWindow.center()
         snippetsWindow = newWindow
@@ -536,7 +561,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             defer: false
         )
         analyticsWindow?.contentView = hostingView
-        analyticsWindow?.title = "VibeFlow - Estatísticas"
+        analyticsWindow?.title = "VoxAiGo - Estatísticas"
         analyticsWindow?.center()
         analyticsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -566,7 +591,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return event
         }
 
-        // Local keyDown monitor (shortcuts work when VibeFlow window is active)
+        // Local keyDown monitor (shortcuts work when VoxAiGo window is active)
         localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             self?.handleGlobalKeyEvent(event)
             return event
@@ -576,7 +601,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Checks if Accessibility permission is granted and prompts user if not.
     /// Also starts a retry timer to recreate CGEvent tap once permission is granted.
     private func checkAccessibilityPermission() {
-        var diag = "[VibeFlow \(Date())] checkAccessibilityPermission\n"
+        var diag = "[VoxAiGo \(Date())] checkAccessibilityPermission\n"
         
         let trusted = AXIsProcessTrusted()
         diag += "  AXIsProcessTrusted = \(trusted)\n"
@@ -588,7 +613,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Start periodic retry — once permission is granted, recreate the tap
             accessibilityRetryTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] timer in
                 if AXIsProcessTrusted() {
-                    let msg = "[VibeFlow \(Date())] Accessibility permission granted via retry! Setting up tap...\n"
+                    let msg = "[VoxAiGo \(Date())] Accessibility permission granted via retry! Setting up tap...\n"
                     self?.appendDiag(msg)
                     timer.invalidate()
                     self?.accessibilityRetryTimer = nil
@@ -616,7 +641,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// CGEvent taps work at a lower level than NSEvent monitors and reliably
     /// detect key presses even when the app is a background accessory app.
     func setupGlobalKeyTap() {
-        var diag = "[VibeFlow \(Date())] setupGlobalKeyTap\n"
+        var diag = "[VoxAiGo \(Date())] setupGlobalKeyTap\n"
         diag += "  AXIsProcessTrusted = \(AXIsProcessTrusted())\n"
         
         // If we already have a working tap, skip
@@ -649,7 +674,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
                     if let tap = appDelegate.globalKeyTap {
                         CGEvent.tapEnable(tap: tap, enable: true)
-                        appDelegate.appendDiag("[VibeFlow \(Date())] Re-enabled tap after system disabled it\n")
+                        appDelegate.appendDiag("[VoxAiGo \(Date())] Re-enabled tap after system disabled it\n")
                     }
                 }
 
@@ -732,6 +757,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+
+        // Conversation Reply shortcut (default: ⌃⇧R)
+        if matchesShortcut(settings.conversationReplyShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.activateConversationReply()
+            }
+            return
+        }
     }
 
     func handleGlobalKeyEvent(_ event: NSEvent) {
@@ -756,7 +789,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Language cycle shortcut (default: ⌃⇧L)
         if matchesShortcut(settings.cycleLanguageShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
-                print("[VibeFlow] Language shortcut detected!")
+                print("[VoxAiGo] Language shortcut detected!")
                 self?.cycleLanguage()
             }
             return
@@ -774,6 +807,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if matchesShortcut(settings.pasteLastShortcut, modifiers: modifiers, keyChar: keyChar) {
             DispatchQueue.main.async { [weak self] in
                 self?.pasteLastTranscription()
+            }
+            return
+        }
+
+        // Conversation Reply shortcut (default: ⌃⇧R)
+        if matchesShortcut(settings.conversationReplyShortcut, modifiers: modifiers, keyChar: keyChar) {
+            DispatchQueue.main.async { [weak self] in
+                self?.activateConversationReply()
             }
             return
         }
@@ -825,7 +866,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Debounce rapid key presses
         let now = Date()
         guard now.timeIntervalSince(lastLanguageCycleTime) >= languageCycleDebounceInterval else {
-            print("[VibeFlow] Language cycle debounced")
+            print("[VoxAiGo] Language cycle debounced")
             return
         }
         lastLanguageCycleTime = now
@@ -843,7 +884,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Update menu to reflect change
         updateMenu()
 
-        print("[VibeFlow] Language changed: \(previousLanguage.displayName) → \(newLanguage.displayName)")
+        print("[VoxAiGo] Language changed: \(previousLanguage.displayName) → \(newLanguage.displayName)")
     }
     
     func showLanguageNotification(language: SpeechLanguage) {
@@ -903,7 +944,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Update menu to reflect change
         updateMenu()
 
-        print("[VibeFlow] Mode changed: \(previousMode.localizedName) → \(newMode.localizedName)")
+        print("[VoxAiGo] Mode changed: \(previousMode.localizedName) → \(newMode.localizedName)")
     }
 
     func showModeNotification(mode: TranscriptionMode) {
@@ -943,7 +984,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Debounce rapid key presses
         let now = Date()
         guard now.timeIntervalSince(lastPasteLastTime) >= pasteLastDebounceInterval else {
-            print("[VibeFlow] Paste last debounced")
+            print("[VoxAiGo] Paste last debounced")
             return
         }
         lastPasteLastTime = now
@@ -956,13 +997,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Show notification
             showPasteLastNotification(text: item.text, mode: item.mode)
 
-            print("[VibeFlow] Pasted last transcription: \(item.text.prefix(30))...")
+            print("[VoxAiGo] Pasted last transcription: \(item.text.prefix(30))...")
         } else {
             // No history - show empty notification
             sounds.playError()
             showNoHistoryNotification()
 
-            print("[VibeFlow] No history to paste")
+            print("[VoxAiGo] No history to paste")
         }
     }
 
@@ -1099,24 +1140,58 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                               (requireControl || requireOption || requireShift || requireCommand)
 
         if shortcutPressed && !isHoldToTalkActive {
+            // Block recording if user is not authenticated (and no BYOK key)
+            guard AuthManager.shared.isAuthenticated || settings.hasByokKey else {
+                sounds.playError()
+                DispatchQueue.main.async { [weak self] in
+                    self?.showMainWindow()
+                }
+                return
+            }
+
             // Iniciar gravação
             isHoldToTalkActive = true
 
+            // ── Conversation Reply path ──────────────────────────────────
+            // If the conversation HUD is showing and waiting for a reply,
+            // intercept ⌥⌘ to record a translation reply instead of normal transcription.
+            if case .ready = ConversationReplyManager.shared.state {
+                sounds.playStart()
+                ClipboardHelper.savePreviousApp()
+
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { return }
+                    let targetLanguage = ConversationReplyManager.shared.detectedLanguageName
+
+                    ConversationReplyManager.shared.beginRecordingReply()
+                    self.resizeConversationWindow(forRecording: true)
+
+                    // Start recording WITHOUT showing the normal floating window
+                    self.viewModel?.isConversationReplyMode = true
+                    self.viewModel?.conversationReplyTargetLanguage = targetLanguage
+                    if !(self.viewModel?.isRecording ?? false) {
+                        self.viewModel?.toggleRecording()
+                    }
+                }
+                return
+            }
+
+            // ── Normal recording path ────────────────────────────────────
             // Som de início
             sounds.playStart()
 
             // Salvar app anterior
             ClipboardHelper.savePreviousApp()
 
-            // IMPORTANT: Capture selected text BEFORE activating VibeFlow window
+            // IMPORTANT: Capture selected text BEFORE activating VoxAiGo window
             // This must happen while the previous app still has focus
             var capturedText: String? = nil
             if viewModel?.selectedMode == .command {
                 capturedText = ClipboardHelper.getSelectedText()
                 if let text = capturedText {
-                    print("[VibeFlow] Command mode: pre-captured selected text (\(text.count) chars)")
+                    print("[VoxAiGo] Command mode: pre-captured selected text (\(text.count) chars)")
                 } else {
-                    print("[VibeFlow] Command mode: no text selected (captured before window activation)")
+                    print("[VoxAiGo] Command mode: no text selected (captured before window activation)")
                 }
             }
 
@@ -1216,6 +1291,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .openSetupWizard,
             object: nil
         )
+
+        // Conversation Reply: dismiss HUD on timeout or explicit dismiss
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleConversationReplyTimedOut),
+            name: .conversationReplyTimedOut,
+            object: nil
+        )
     }
     
     @objc func handleRecordingCancelled() {
@@ -1251,6 +1334,192 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
     
+    // MARK: - Conversation Reply
+
+    /// Called when ⌃⇧R is pressed. Reads selected text, translates it, shows the HUD.
+    @objc func activateConversationReply() {
+        // Check if feature is enabled
+        guard SettingsManager.shared.enableConversationReply else { return }
+
+        // Debounce
+        let now = Date()
+        guard now.timeIntervalSince(lastConversationReplyTime) >= conversationReplyDebounceInterval else { return }
+        lastConversationReplyTime = now
+
+        // If already active: dismiss
+        if ConversationReplyManager.shared.isActive {
+            ConversationReplyManager.shared.dismiss()
+            dismissConversationReplyHUD()
+            return
+        }
+
+        // Read selected text BEFORE showing the HUD (clipboard trick needs app focus on source)
+        guard let selectedText = ClipboardHelper.getSelectedText(), !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            sounds.playError()
+            showLanguageNotification(language: settings.outputLanguage)  // Reuse HUD to show feedback
+            print("[VoxAiGo] Conversation Reply: no text selected")
+            return
+        }
+
+        guard AuthManager.shared.isAuthenticated || settings.hasByokKey else {
+            sounds.playError()
+            showMainWindow()
+            return
+        }
+
+        sounds.playStart()
+        ConversationReplyManager.shared.beginTranslating()
+        showConversationReplyHUD()
+
+        let targetLanguage = settings.outputLanguage
+
+        Task {
+            do {
+                let translation: String
+                let fromLanguageName: String
+                let fromLanguageCode: String
+
+                if AuthManager.shared.isAuthenticated {
+                    // Supabase auth — routes through edge function, no client-side key needed
+                    (translation, fromLanguageName, fromLanguageCode) = try await SupabaseService.detectAndTranslate(
+                        text: selectedText,
+                        targetLanguage: targetLanguage
+                    )
+                } else if settings.hasByokKey {
+                    // BYOK — direct Gemini call
+                    (translation, fromLanguageName, fromLanguageCode) = try await GeminiService.detectAndTranslate(
+                        text: selectedText,
+                        targetLanguage: targetLanguage,
+                        apiKey: settings.byokApiKey
+                    )
+                } else {
+                    throw NSError(
+                        domain: "ConversationReply",
+                        code: 3,
+                        userInfo: [NSLocalizedDescriptionKey: "Please log in to use Conversation Reply."]
+                    )
+                }
+
+                let context = ConversationContext(
+                    originalText: selectedText,
+                    translation: translation,
+                    fromLanguageName: fromLanguageName,
+                    fromLanguageCode: fromLanguageCode,
+                    toLanguageName: targetLanguage.displayName
+                )
+
+                await MainActor.run {
+                    ConversationReplyManager.shared.showReady(context)
+                    self.resizeConversationWindow(forRecording: false)
+                }
+
+            } catch {
+                await MainActor.run {
+                    ConversationReplyManager.shared.dismiss()
+                    self.dismissConversationReplyHUD()
+                    print("[VoxAiGo] Conversation Reply error: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    /// Shows the Conversation Reply HUD window with slide-in animation.
+    private func showConversationReplyHUD() {
+        guard let viewModel = viewModel else { return }
+
+        let manager = ConversationReplyManager.shared
+        let contentView = ConversationReplyView(manager: manager, viewModel: viewModel)
+
+        // Reuse window if exists
+        if let existing = conversationReplyWindow {
+            existing.contentView = NSHostingView(rootView: contentView)
+            existing.orderFrontRegardless()
+            return
+        }
+
+        let width: CGFloat = 360
+        let height: CGFloat = 56   // Start small (translating state)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = NSHostingView(rootView: contentView)
+        window.level = .screenSaver
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = false
+        window.isReleasedWhenClosed = false
+        window.ignoresMouseEvents = false     // Needs clicks for the X button
+        window.collectionBehavior = [.canJoinAllSpaces, .stationary]
+
+        if let screen = NSScreen.main {
+            let screenFrame = screen.visibleFrame
+            let x = screenFrame.midX - width / 2
+            let y = screenFrame.maxY - height - 30
+            window.setFrameOrigin(NSPoint(x: x, y: y - 20))  // Start 20pt above final position
+        }
+
+        conversationReplyWindow = window
+
+        // Slide in + fade in
+        window.alphaValue = 0
+        window.orderFrontRegardless()
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.28
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            window.animator().alphaValue = 1
+            if let screen = NSScreen.main {
+                let screenFrame = screen.visibleFrame
+                let x = screenFrame.midX - width / 2
+                let y = screenFrame.maxY - height - 30
+                window.animator().setFrameOrigin(NSPoint(x: x, y: y))
+            }
+        }
+    }
+
+    /// Resizes the Conversation Reply HUD for recording (compact) or ready (expanded) state.
+    func resizeConversationWindow(forRecording: Bool) {
+        guard let window = conversationReplyWindow,
+              let screen = NSScreen.main else { return }
+
+        let width: CGFloat = 360
+        let height: CGFloat = forRecording ? 68 : 160
+        let screenFrame = screen.visibleFrame
+        let x = screenFrame.midX - width / 2
+        let y = screenFrame.maxY - height - 30
+
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.22
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(NSRect(x: x, y: y, width: width, height: height), display: true)
+        }
+    }
+
+    /// Dismisses the Conversation Reply HUD with a slide-out + fade animation.
+    private func dismissConversationReplyHUD() {
+        guard let window = conversationReplyWindow else { return }
+
+        NSAnimationContext.runAnimationGroup({ ctx in
+            ctx.duration = 0.22
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            window.animator().alphaValue = 0
+            let frame = window.frame
+            window.animator().setFrameOrigin(NSPoint(x: frame.origin.x, y: frame.origin.y + 12))
+        }, completionHandler: { [weak self] in
+            window.orderOut(nil)
+            window.alphaValue = 1
+            self?.conversationReplyWindow = nil
+        })
+    }
+
+    @objc func handleConversationReplyTimedOut() {
+        dismissConversationReplyHUD()
+    }
+
     deinit {
         if let tap = globalKeyTap {
             CGEvent.tapEnable(tap: tap, enable: false)

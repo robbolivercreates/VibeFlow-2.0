@@ -40,7 +40,7 @@ O VibeFlow utiliza a API do **Google Gemini 2.0 Flash** para processamento de á
 ### Configuração Atual
 
 ```swift
-Modelo: gemini-2.0-flash
+Modelo: gemini-2.5-flash
 Temperature: 0.2
 Max Output Tokens: 4096
 Formato de Áudio: MPEG4 AAC (.m4a)

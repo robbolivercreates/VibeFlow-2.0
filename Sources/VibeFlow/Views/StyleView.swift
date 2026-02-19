@@ -55,7 +55,7 @@ struct StyleView: View {
             Text("Estilo de Escrita")
                 .font(.system(size: 28, weight: .bold))
 
-            Text("O VibeFlow aprende seu estilo de escrita para personalizar as transcricoes, imitando seu vocabulario, tom e formatacao.")
+            Text("O VoxAiGo aprende seu estilo de escrita para personalizar as transcricoes, imitando seu vocabulario, tom e formatacao.")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -70,7 +70,7 @@ struct StyleView: View {
                 Text("Aprendizado de Estilo")
                     .font(.system(size: 15, weight: .medium))
 
-                Text("Quando ativado, o VibeFlow analisa suas transcricoes para aprender seu estilo unico.")
+                Text("Quando ativado, o VoxAiGo analisa suas transcricoes para aprender seu estilo unico.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }
@@ -104,7 +104,7 @@ struct StyleView: View {
                 FeatureCard2(
                     icon: "waveform",
                     title: "1. Voce Fala",
-                    description: "Faca transcricoes normalmente usando o VibeFlow."
+                    description: "Faca transcricoes normalmente usando o VoxAiGo."
                 )
 
                 FeatureCard2(
@@ -165,7 +165,7 @@ struct StyleView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.secondary)
 
-                Text("Faca algumas transcricoes para o VibeFlow aprender seu estilo")
+                Text("Faca algumas transcricoes para o VoxAiGo aprender seu estilo")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
             }

@@ -4,6 +4,8 @@ import SwiftUI
 struct ModesView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var analytics = AnalyticsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
+    @State private var showUpgradeModal = false
 
     var body: some View {
         ScrollView {
@@ -23,6 +25,9 @@ struct ModesView: View {
             .padding(32)
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(isPresented: $showUpgradeModal) {
+            UpgradeModalView(isPresented: $showUpgradeModal)
+        }
     }
 
     // MARK: - Header
@@ -119,8 +124,15 @@ struct ModesView: View {
                     ModeCard2(
                         mode: mode,
                         isSelected: mode == settings.selectedMode,
+                        isPro: !subscription.canUseMode(mode),
                         usageCount: analytics.modeUsage[mode.rawValue] ?? 0,
-                        onSelect: { settings.selectedMode = mode }
+                        onSelect: {
+                            if subscription.canUseMode(mode) {
+                                settings.selectedMode = mode
+                            } else {
+                                showUpgradeModal = true
+                            }
+                        }
                     )
                 }
             }
@@ -156,6 +168,7 @@ struct ModesView: View {
 struct ModeCard2: View {
     let mode: TranscriptionMode
     let isSelected: Bool
+    let isPro: Bool
     let usageCount: Int
     let onSelect: () -> Void
 
@@ -171,12 +184,23 @@ struct ModeCard2: View {
                     // Icon
                     ZStack {
                         Circle()
-                            .fill(mode.color.opacity(isSelected ? 0.2 : 0.1))
+                            .fill(isPro ? Color.gray.opacity(0.1) : mode.color.opacity(isSelected ? 0.2 : 0.1))
                             .frame(width: 40, height: 40)
 
                         Image(systemName: mode.icon)
                             .font(.system(size: 16))
-                            .foregroundStyle(mode.color)
+                            .foregroundStyle(isPro ? Color.gray : mode.color)
+
+                        // Pro lock overlay
+                        if isPro {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.white)
+                                .padding(3)
+                                .background(Color.orange)
+                                .clipShape(Circle())
+                                .offset(x: 13, y: 13)
+                        }
                     }
 
                     // Info
@@ -184,9 +208,24 @@ struct ModeCard2: View {
                         HStack(spacing: 8) {
                             Text(mode.localizedName)
                                 .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
-                                .foregroundStyle(isSelected ? mode.color : .primary)
+                                .foregroundStyle(isPro ? .secondary : (isSelected ? mode.color : .primary))
 
-                            if isSelected {
+                            if isPro {
+                                // Pro badge
+                                HStack(spacing: 3) {
+                                    Image(systemName: "diamond.fill")
+                                        .font(.system(size: 7))
+                                    Text("PRO")
+                                        .font(.system(size: 9, weight: .bold))
+                                }
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    LinearGradient(colors: [Color.orange, Color.pink], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .cornerRadius(4)
+                            } else if isSelected {
                                 Text("ATIVO")
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundStyle(.white)
@@ -249,16 +288,141 @@ struct ModeCard2: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isSelected ? mode.color.opacity(0.06) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color(nsColor: .controlBackgroundColor)))
+                .fill(isPro ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : (isSelected ? mode.color.opacity(0.06) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color(nsColor: .controlBackgroundColor))))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isSelected ? mode.color.opacity(0.25) : Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(isPro ? Color.orange.opacity(0.25) : (isSelected ? mode.color.opacity(0.25) : Color(nsColor: .separatorColor)), lineWidth: 1)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
+        }
+    }
+}
+
+// MARK: - Upgrade Modal
+
+struct UpgradeModalView: View {
+    @Binding var isPresented: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 64, height: 64)
+                    Image(systemName: "diamond.fill")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+
+                Text("Recurso Pro")
+                    .font(.system(size: 22, weight: .bold))
+
+                Text("Este modo está disponível apenas no plano Pro.\nDesbloqueie acesso ilimitado a todos os recursos.")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 32)
+            .padding(.horizontal, 32)
+
+            // Features list
+            VStack(alignment: .leading, spacing: 10) {
+                ModeProFeatureRow(icon: "infinity", text: "Transcrições ilimitadas por mês")
+                ModeProFeatureRow(icon: "waveform.and.mic", text: "Todos os 5 modos (Email, UX Design, Comando)")
+                ModeProFeatureRow(icon: "globe", text: "15+ idiomas disponíveis")
+                ModeProFeatureRow(icon: "sparkles", text: "Aprendizado de estilo pessoal")
+                ModeProFeatureRow(icon: "text.badge.plus", text: "Snippets personalizados")
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.orange.opacity(0.06))
+            )
+            .padding(.horizontal, 24)
+            .padding(.top, 20)
+
+            // Pricing
+            VStack(spacing: 8) {
+                Text("A partir de")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text("R$14,90")
+                        .font(.system(size: 32, weight: .bold))
+                    Text("/mês")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+                Text("(plano anual) · ou R$19,90/mês")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.top, 20)
+
+            // Buttons
+            VStack(spacing: 10) {
+                Button(action: {
+                    SubscriptionManager.shared.openUpgradeURL(annual: false)
+                    isPresented = false
+                }) {
+                    HStack {
+                        Image(systemName: "diamond.fill")
+                        Text("Assinar Pro — R$19,90/mês")
+                            .fontWeight(.semibold)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .foregroundStyle(.white)
+                    .cornerRadius(10)
+                }
+                .buttonStyle(.borderless)
+
+                Button(action: {
+                    SubscriptionManager.shared.openUpgradeURL(annual: true)
+                    isPresented = false
+                }) {
+                    Text("Plano Anual — R$14,90/mês (economize 25%)")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.orange)
+                }
+                .buttonStyle(.borderless)
+
+                Button("Agora não") { isPresented = false }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .font(.system(size: 13))
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 28)
+        }
+        .frame(width: 380)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct ModeProFeatureRow: View {
+    let icon: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(.orange)
+                .frame(width: 20)
+            Text(text)
+                .font(.system(size: 13))
         }
     }
 }

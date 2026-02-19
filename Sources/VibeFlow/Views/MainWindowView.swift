@@ -45,11 +45,11 @@ struct MainWindowView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // Logo/Brand
                 HStack(spacing: 10) {
-                    // Custom VibeFlow logo
-                    VibeFlowLogo(size: 28)
+                    // Custom VoxAiGo logo
+                    VoxAiGoLogo(size: 28)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("VibeFlow")
+                        Text("VoxAiGo")
                             .font(.system(size: 17, weight: .semibold))
 
                         Text("v2.1")
@@ -179,8 +179,8 @@ struct SidebarItem: View {
     }
 }
 
-/// Custom VibeFlow logo - Minimalist waveform in a rounded square
-struct VibeFlowLogo: View {
+/// Custom VoxAiGo logo - Minimalist waveform in a rounded square
+struct VoxAiGoLogo: View {
     let size: CGFloat
 
     // Brand color
@@ -224,10 +224,10 @@ struct VibeFlowLogo: View {
 
 #Preview("Logo") {
     HStack(spacing: 20) {
-        VibeFlowLogo(size: 28)
-        VibeFlowLogo(size: 48)
-        VibeFlowLogo(size: 64)
-        VibeFlowLogo(size: 128)
+        VoxAiGoLogo(size: 28)
+        VoxAiGoLogo(size: 48)
+        VoxAiGoLogo(size: 64)
+        VoxAiGoLogo(size: 128)
     }
     .padding()
 }

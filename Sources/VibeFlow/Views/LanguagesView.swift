@@ -42,7 +42,7 @@ struct LanguagesView: View {
             Text("Idiomas")
                 .font(.system(size: 28, weight: .bold))
 
-            Text("Configure o idioma de saida das suas transcricoes. Voce pode falar em qualquer idioma - o VibeFlow traduz automaticamente.")
+            Text("Configure o idioma de saida das suas transcricoes. Voce pode falar em qualquer idioma - o VoxAiGo traduz automaticamente.")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

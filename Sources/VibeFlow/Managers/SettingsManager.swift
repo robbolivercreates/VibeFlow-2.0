@@ -10,7 +10,8 @@ class SettingsManager: ObservableObject {
     
     // MARK: - Keys
     private enum Keys {
-        static let apiKey = "gemini_api_key"
+        static let byokEnabled = "byok_enabled"
+        static let byokApiKey = "byok_api_key"
         static let onboardingCompleted = "onboarding_completed"
         static let selectedMode = "selected_mode"
         static let enableSounds = "enable_sounds"
@@ -27,15 +28,21 @@ class SettingsManager: ObservableObject {
         static let cycleLanguageShortcut = "cycle_language_shortcut"
         static let cycleModeShortcut = "cycle_mode_shortcut"
         static let pasteLastShortcut = "paste_last_shortcut"
+        static let conversationReplyShortcut = "conversation_reply_shortcut"
+        static let enableConversationReply = "enable_conversation_reply"
         static let enableStyleLearning = "enable_style_learning"
         static let clarifyText = "clarify_text"
     }
     
     // MARK: - Published Properties
-    @Published var apiKey: String {
-        didSet { defaults.set(apiKey, forKey: Keys.apiKey) }
+    @Published var byokEnabled: Bool {
+        didSet { defaults.set(byokEnabled, forKey: Keys.byokEnabled) }
     }
-    
+
+    @Published var byokApiKey: String {
+        didSet { defaults.set(byokApiKey, forKey: Keys.byokApiKey) }
+    }
+
     @Published var onboardingCompleted: Bool {
         didSet { defaults.set(onboardingCompleted, forKey: Keys.onboardingCompleted) }
     }
@@ -134,6 +141,19 @@ class SettingsManager: ObservableObject {
         }
     }
 
+    /// Atalho para Conversation Reply (selecionar texto + traduzir + responder)
+    @Published var conversationReplyShortcut: String {
+        didSet {
+            defaults.set(conversationReplyShortcut, forKey: Keys.conversationReplyShortcut)
+            NotificationCenter.default.post(name: .shortcutChanged, object: nil)
+        }
+    }
+
+    /// Habilita/desabilita o recurso Conversation Reply
+    @Published var enableConversationReply: Bool {
+        didSet { defaults.set(enableConversationReply, forKey: Keys.enableConversationReply) }
+    }
+
     @Published var shortcutRecordKey: String {
         didSet { 
             defaults.set(shortcutRecordKey, forKey: Keys.shortcutRecord)
@@ -152,17 +172,31 @@ class SettingsManager: ObservableObject {
     private var currentFavoriteIndex: Int = 0
 
     // MARK: - Computed
-    var hasApiKey: Bool {
-        !apiKey.isEmpty
+    var hasByokKey: Bool {
+        byokEnabled && !byokApiKey.isEmpty
     }
-    
+
     // MARK: - Init
     private init() {
-        self.apiKey = defaults.string(forKey: Keys.apiKey) ?? ""
+        // BYOK easter egg (hidden by default)
+        self.byokEnabled = defaults.bool(forKey: Keys.byokEnabled)
+        self.byokApiKey = defaults.string(forKey: Keys.byokApiKey) ?? ""
+
+        // Migration: move old gemini_api_key to byokApiKey if present
+        if let oldKey = defaults.string(forKey: "gemini_api_key"), !oldKey.isEmpty,
+           oldKey != "YOUR_API_KEY_HERE", oldKey != "SUA_API_KEY_AQUI" {
+            self.byokApiKey = oldKey
+            self.byokEnabled = true
+            defaults.set(oldKey, forKey: Keys.byokApiKey)
+            defaults.set(true, forKey: Keys.byokEnabled)
+            defaults.removeObject(forKey: "gemini_api_key")
+            print("[SettingsManager] Migrated old API key to BYOK")
+        }
+
         self.onboardingCompleted = defaults.bool(forKey: Keys.onboardingCompleted)
         
-        let savedMode = defaults.string(forKey: Keys.selectedMode) ?? TranscriptionMode.code.rawValue
-        self.selectedMode = TranscriptionMode(rawValue: savedMode) ?? .code
+        let savedMode = defaults.string(forKey: Keys.selectedMode) ?? TranscriptionMode.text.rawValue
+        self.selectedMode = TranscriptionMode(rawValue: savedMode) ?? .text
         
         self.enableSounds = defaults.object(forKey: Keys.enableSounds) as? Bool ?? true
         self.enableHistory = defaults.object(forKey: Keys.enableHistory) as? Bool ?? true
@@ -207,6 +241,8 @@ class SettingsManager: ObservableObject {
         self.cycleLanguageShortcut = defaults.string(forKey: Keys.cycleLanguageShortcut) ?? "⌃⇧L"
         self.cycleModeShortcut = defaults.string(forKey: Keys.cycleModeShortcut) ?? "⌃⇧M"
         self.pasteLastShortcut = defaults.string(forKey: Keys.pasteLastShortcut) ?? "⌃⇧V"
+        self.conversationReplyShortcut = defaults.string(forKey: Keys.conversationReplyShortcut) ?? "⌃⇧R"
+        self.enableConversationReply = defaults.object(forKey: Keys.enableConversationReply) as? Bool ?? true
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
