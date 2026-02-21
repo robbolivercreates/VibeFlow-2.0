@@ -1,48 +1,60 @@
 import SwiftUI
 import AVFoundation
 
-// MARK: - Wizard Steps
+// MARK: - Wizard Step
 enum WizardStep: Int, CaseIterable {
-    case language = 0
-    case welcome = 1
-    case login = 2
-    case permissions = 3
-    case testRecording = 4
-    case languages = 5
+    case login = 0
+    case permissions = 1
+    case testRecording = 2
+    case modesTraining = 3
+    case wakeWordTest = 4
+    case languageSwitch = 5
     case ready = 6
 
     var title: String {
         switch self {
-        case .language: return L10n.chooseLanguage
-        case .welcome: return "Bem-vindo"
-        case .login: return L10n.loginToVoxAiGo
-        case .permissions: return L10n.requiredPermissions
-        case .testRecording: return L10n.testVoxAiGo
-        case .languages: return L10n.languages
-        case .ready: return "Pronto"
+        case .login:          return "Bem-vindo ao VoxAiGo"
+        case .permissions:    return "Permissões"
+        case .testRecording:  return "Primeira Gravação"
+        case .modesTraining:  return "Treinar Modos"
+        case .wakeWordTest:   return "Comando de Voz"
+        case .languageSwitch: return "Trocar Idioma"
+        case .ready:          return "Pronto para decolar 🚀"
         }
     }
 
-    var icon: String {
+    var subtitle: String {
         switch self {
-        case .language: return "globe"
-        case .welcome: return "waveform.circle.fill"
-        case .login: return "person.crop.circle.fill"
-        case .permissions: return "lock.shield.fill"
-        case .testRecording: return "mic.fill"
-        case .languages: return "flag.fill"
-        case .ready: return "checkmark.seal.fill"
+        case .login:          return "Entre na sua conta para começar"
+        case .permissions:    return "Necessário para capturar voz e atalhos de teclado"
+        case .testRecording:  return "Segure ⌥⌘ e fale qualquer coisa"
+        case .modesTraining:  return "Pressione ⌃⇧M para ciclar pelos modos"
+        case .wakeWordTest:   return "Diga \"Hey Vox, Email\" sem usar o teclado"
+        case .languageSwitch: return "Mude o idioma de saída por voz ou pelo seletor"
+        case .ready:          return "Você aprendeu tudo. Comece a usar agora."
+        }
+    }
+
+    var leftIcon: String {
+        switch self {
+        case .login:          return "waveform.circle.fill"
+        case .permissions:    return "lock.shield.fill"
+        case .testRecording:  return "mic.fill"
+        case .modesTraining:  return "square.grid.2x2.fill"
+        case .wakeWordTest:   return "waveform.badge.mic"
+        case .languageSwitch: return "globe"
+        case .ready:          return "checkmark.seal.fill"
         }
     }
 }
 
-// MARK: - Main Setup Wizard View
+// MARK: - Main View
 struct SetupWizardView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var settings = SettingsManager.shared
-
     @StateObject private var auth = AuthManager.shared
-    @State private var currentStep: WizardStep = .welcome
+
+    @State private var currentStep: WizardStep = .login
 
     // Permissions
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
@@ -50,86 +62,634 @@ struct SetupWizardView: View {
     @State private var inputMonitoringPermission = false
     @State private var permissionTimer: Timer?
 
-    // Test Recording
-    @State private var isTestRecording = false
-    @State private var testRecordingSuccess = false
-    @State private var testTranscriptionResult: String?
-    @State private var testAudioLevel: CGFloat = 0
-    @State private var testRecordingTimer: Timer?
-    @State private var shortcutTestPassed = false
-    
-    // Language selection
-    @State private var selectedLanguage: AppLanguage = L10n.current
+    // Real Recording Test
+    @State private var transcriptionResult: String? = nil
+    @State private var isListeningForTranscription = false
 
-    // Languages
-    @State private var languageCycleDemo = false
-    @State private var demoLanguageIndex = 0
-    private let demoLanguages: [SpeechLanguage] = [.english, .portuguese, .spanish]
+    // Modes Training
+    @State private var modeChangedCount = 0
+    @State private var currentDemoMode: TranscriptionMode = SettingsManager.shared.selectedMode
+    private let requiredModeCycles = 3
+
+    // Wake Word Test
+    @State private var wakeWordDetected = false
+    @State private var detectedWakeCommand: String? = nil
+
+    // Language Switch
+    @State private var languageChanged = false
+    @State private var selectedPickerLanguage: SpeechLanguage = SettingsManager.shared.outputLanguage
+
+    // Notification observers
+    @State private var observers: [Any] = []
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Header with step indicator
-            wizardHeader
+        HStack(spacing: 0) {
+            // ── Left Panel (40%) ──────────────────────────────────
+            leftPanel
+                .frame(width: 280)
+                .background(Color.black)
 
-            // Content
-            ScrollView {
-                VStack(spacing: 0) {
-                    stepContent
-                        .padding(.horizontal, 40)
-                        .padding(.vertical, 30)
+            // ── Right Panel (60%) ─────────────────────────────────
+            VStack(spacing: 0) {
+                // Content
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        rightContent
+                            .padding(36)
+                    }
                 }
-            }
 
-            // Footer with navigation
-            wizardFooter
+                // Footer: progress + navigation
+                wizardFooter
+            }
+            .background(Color(NSColor.windowBackgroundColor))
         }
-        .frame(width: 680, height: 580)
-        .background(VoxTheme.background)
+        .frame(width: 780, height: 540)
         .onAppear {
             checkPermissions()
+            registerObservers()
         }
         .onDisappear {
+            removeObservers()
             permissionTimer?.invalidate()
-            testRecordingTimer?.invalidate()
         }
     }
 
-    // MARK: - Header
+    // MARK: - Left Panel
 
-    private var wizardHeader: some View {
-        VStack(spacing: 16) {
-            // Step indicators
-            HStack(spacing: 8) {
-                ForEach(WizardStep.allCases, id: \.rawValue) { step in
-                    StepIndicator(
-                        step: step,
-                        currentStep: currentStep,
-                        isCompleted: step.rawValue < currentStep.rawValue
-                    )
+    private var leftPanel: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Logo at top
+            VStack(alignment: .leading, spacing: 6) {
+                VoxAiGoLogo(size: 36)
+                Text("VoxAiGo")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 32)
 
-                    if step != .ready {
+            Spacer()
+
+            // Step visual
+            leftVisual
+                .padding(.horizontal, 28)
+
+            Spacer()
+
+            // Step label
+            VStack(alignment: .leading, spacing: 6) {
+                Text(currentStep.title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                Text(currentStep.subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 24)
+        }
+    }
+
+    @ViewBuilder
+    private var leftVisual: some View {
+        switch currentStep {
+        case .login:
+            VStack(spacing: 16) {
+                Image(systemName: "waveform.circle.fill")
+                    .font(.system(size: 72))
+                    .foregroundStyle(VoxTheme.accent)
+                Text("Transforme voz em texto\ncom inteligência artificial")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
+            }
+
+        case .permissions:
+            VStack(spacing: 12) {
+                ForEach(["mic.fill", "accessibility", "keyboard"], id: \.self) { icon in
+                    HStack(spacing: 10) {
+                        Image(systemName: icon)
+                            .font(.system(size: 18))
+                            .foregroundStyle(VoxTheme.accent)
+                            .frame(width: 32)
                         Rectangle()
-                            .fill(step.rawValue < currentStep.rawValue ? VoxTheme.accent : VoxTheme.surfaceBorder)
-                            .frame(height: 2)
-                            .frame(maxWidth: 30)
+                            .fill(.white.opacity(0.08))
+                            .frame(height: 1)
                     }
                 }
             }
-            .padding(.horizontal, 40)
-            .padding(.top, 24)
 
-            // Current step title
-            HStack(spacing: 10) {
-                Image(systemName: currentStep.icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(VoxTheme.accent)
-
-                Text(currentStep.title)
-                    .font(.system(size: 18, weight: .semibold))
+        case .testRecording:
+            VStack(spacing: 16) {
+                Image(systemName: transcriptionResult != nil ? "checkmark.circle.fill" : "mic.circle.fill")
+                    .font(.system(size: 72))
+                    .foregroundStyle(transcriptionResult != nil ? Color.green : VoxTheme.accent)
+                    .animation(.spring(), value: transcriptionResult != nil)
+                Text(transcriptionResult != nil ? "Gravação funcionando!" : "Segure ⌥⌘ e fale")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.white.opacity(0.6))
+                    .multilineTextAlignment(.center)
             }
-            .padding(.bottom, 8)
+
+        case .modesTraining:
+            VStack(spacing: 12) {
+                Image(systemName: currentDemoMode.icon)
+                    .font(.system(size: 56))
+                    .foregroundStyle(VoxTheme.accent)
+                    .animation(.spring(), value: currentDemoMode.rawValue)
+                Text(currentDemoMode.rawValue)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                Text("\(modeChangedCount)/\(requiredModeCycles) modos")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.white.opacity(0.5))
+            }
+
+        case .wakeWordTest:
+            VStack(spacing: 16) {
+                Image(systemName: wakeWordDetected ? "checkmark.circle.fill" : "waveform.badge.mic")
+                    .font(.system(size: 72))
+                    .foregroundStyle(wakeWordDetected ? Color.green : VoxTheme.accent)
+                    .animation(.spring(), value: wakeWordDetected)
+                if !wakeWordDetected {
+                    Text("\"\(settings.wakeWord), Email\"")
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.6))
+                } else {
+                    Text("Comando detectado! ✅")
+                        .font(.system(size: 13))
+                        .foregroundStyle(Color.green.opacity(0.8))
+                }
+            }
+
+        case .languageSwitch:
+            VStack(spacing: 12) {
+                Text(settings.outputLanguage.flag)
+                    .font(.system(size: 64))
+                    .animation(.spring(), value: settings.outputLanguage.rawValue)
+                Text(settings.outputLanguage.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .animation(.easeInOut, value: settings.outputLanguage.rawValue)
+            }
+
+        case .ready:
+            VStack(spacing: 16) {
+                ZStack {
+                    Circle()
+                        .fill(VoxTheme.accent.opacity(0.15))
+                        .frame(width: 100, height: 100)
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 50))
+                        .foregroundStyle(VoxTheme.accent)
+                }
+                Text("Bem-vindo!")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+        }
+    }
+
+    // MARK: - Right Content
+
+    @ViewBuilder
+    private var rightContent: some View {
+        switch currentStep {
+        case .login:       loginContent
+        case .permissions: permissionsContent
+        case .testRecording: testRecordingContent
+        case .modesTraining: modesTrainingContent
+        case .wakeWordTest: wakeWordContent
+        case .languageSwitch: languageSwitchContent
+        case .ready:       readyContent
+        }
+    }
+
+    // MARK: Step: Login
+
+    private var loginContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            stepHeader(title: "Entre na sua conta", subtitle: "Crie uma conta gratuita ou faça login para começar a usar o VoxAiGo.")
+
+            if auth.isAuthenticated {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(VoxTheme.accent)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Logado com sucesso!")
+                            .font(.system(size: 15, weight: .semibold))
+                        if let email = auth.userEmail {
+                            Text(email)
+                                .font(.system(size: 13))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.accent.opacity(0.08))
+                .cornerRadius(12)
+            } else {
+                LoginView()
+            }
+        }
+    }
+
+    // MARK: Step: Permissions
+
+    private var permissionsContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Permissões necessárias", subtitle: "O VoxAiGo precisa de 3 permissões para capturar sua voz e responder ao atalho de teclado.")
+
+            VStack(spacing: 10) {
+                PermissionCard(
+                    icon: "mic.fill",
+                    title: "🎤 Microfone",
+                    description: "Para gravar sua voz durante a ditação.",
+                    isGranted: microphonePermission == .authorized,
+                    buttonText: "Permitir Microfone",
+                    helpSteps: ["Clique em \"Permitir Microfone\"", "Na janela do macOS, clique em \"OK\""],
+                    action: requestMicrophonePermission
+                )
+                PermissionCard(
+                    icon: "accessibility",
+                    title: "Acessibilidade",
+                    description: "Para colar o texto automaticamente onde você está digitando.",
+                    isGranted: accessibilityPermission,
+                    buttonText: "Abrir Preferências",
+                    helpSteps: ["Clique em \"Abrir Preferências\"", "Arraste o ícone do VoxAiGo para a lista", "Ative o toggle ao lado de \"VoxAiGo\""],
+                    action: openAccessibilitySettings
+                )
+                PermissionCard(
+                    icon: "keyboard",
+                    title: "Monitoramento de Entrada",
+                    description: "Para detectar o atalho ⌥⌘ sem que o VoxAiGo precise estar em foco.",
+                    isGranted: inputMonitoringPermission,
+                    buttonText: "Abrir Preferências",
+                    helpSteps: ["Clique em \"Abrir Preferências\"", "Adicione e ative o VoxAiGo na lista"],
+                    action: openInputMonitoringSettings
+                )
+            }
+
+            if allPermissionsGranted {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(VoxTheme.accent)
+                    Text("Todas as permissões concedidas. Pode continuar!").font(.system(size: 13, weight: .medium)).foregroundStyle(VoxTheme.accent)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.accent.opacity(0.08))
+                .cornerRadius(10)
+            }
+        }
+        .onAppear { startPermissionChecking() }
+        .onDisappear { permissionTimer?.invalidate() }
+    }
+
+    // MARK: Step: Real Recording Test
+
+    private var testRecordingContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            stepHeader(title: "Faça sua primeira gravação", subtitle: "Segure ⌥⌘ (Option + Command), fale qualquer coisa e solte. O resultado aparecerá abaixo.")
+
+            // Shortcut visual badge
+            HStack(spacing: 12) {
+                Text("⌥⌘")
+                    .font(.system(size: 22, weight: .bold, design: .monospaced))
+                    .foregroundStyle(VoxTheme.accent)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(VoxTheme.accent.opacity(0.12))
+                    .cornerRadius(8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Segurar para gravar")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Option + Command — solte para transcrever")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Result area
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: "text.bubble")
+                        .foregroundStyle(.secondary)
+                    Text("Resultado da transcrição")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    if transcriptionResult != nil {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(VoxTheme.accent)
+                    }
+                }
+
+                ZStack(alignment: .leading) {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .frame(minHeight: 90)
+                    if let result = transcriptionResult {
+                        Text(result)
+                            .font(.system(size: 14))
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text("Aguardando gravação…")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.tertiary)
+                            .padding(12)
+                    }
+                }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(transcriptionResult != nil ? VoxTheme.accent.opacity(0.4) : Color.clear, lineWidth: 1.5)
+                )
+
+                if transcriptionResult != nil {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(VoxTheme.accent).font(.caption)
+                        Text("Transcrição funcionando! Pode continuar.")
+                            .font(.caption).foregroundStyle(VoxTheme.accent)
+                    }
+                }
+            }
+
+            // Tip
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill").foregroundStyle(.yellow).font(.caption)
+                Text("Dica: No modo **Text**, a transcrição é colada automaticamente onde você estava digitando.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(10)
+            .background(Color.yellow.opacity(0.06))
+            .cornerRadius(8)
+        }
+    }
+
+    // MARK: Step: Modes Training
+
+    private let featuredModes: [(TranscriptionMode, String)] = [
+        (.text, "Transcrição limpa sem formatação extra"),
+        (.vibeCoder, "Converte sua fala em prompt otimizado para AI"),
+        (.email, "Formata automaticamente como e-mail profissional"),
+        (.meeting, "Gera atas e action items da reunião"),
+        (.social, "Adapta o texto para redes sociais")
+    ]
+
+    private var modesTrainingContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Treinar ciclo de modos", subtitle: "Pressione ⌃⇧M (Control + Shift + M) pelo menos \(requiredModeCycles) vezes para avançar.")
+
+            // Shortcut badge
+            HStack(spacing: 12) {
+                Text("⌃⇧M")
+                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .foregroundStyle(VoxTheme.accent)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(VoxTheme.accent.opacity(0.12)).cornerRadius(8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ciclar modos")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Control + Shift + M — cada pressão muda para o próximo")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+                Spacer()
+                // Counter badge
+                Text("\(min(modeChangedCount, requiredModeCycles))/\(requiredModeCycles)")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(modeChangedCount >= requiredModeCycles ? VoxTheme.accent : .secondary)
+                    .padding(.horizontal, 10).padding(.vertical, 5)
+                    .background(modeChangedCount >= requiredModeCycles ? VoxTheme.accent.opacity(0.12) : Color(NSColor.controlBackgroundColor))
+                    .cornerRadius(8)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Progress dots
+            HStack(spacing: 6) {
+                ForEach(0..<requiredModeCycles, id: \.self) { i in
+                    Circle()
+                        .fill(i < modeChangedCount ? VoxTheme.accent : Color(NSColor.separatorColor))
+                        .frame(width: 10, height: 10)
+                        .animation(.spring(), value: modeChangedCount)
+                }
+                Spacer()
+            }
+
+            // Featured modes list
+            VStack(spacing: 8) {
+                ForEach(featuredModes, id: \.0.rawValue) { mode, desc in
+                    HStack(spacing: 12) {
+                        Image(systemName: mode.icon)
+                            .font(.system(size: 16))
+                            .foregroundStyle(currentDemoMode == mode ? VoxTheme.accent : .secondary)
+                            .frame(width: 28)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(mode.rawValue)
+                                .font(.system(size: 13, weight: currentDemoMode == mode ? .semibold : .regular))
+                                .foregroundStyle(currentDemoMode == mode ? .primary : .secondary)
+                            Text(desc)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
+                        Spacer()
+                        if currentDemoMode == mode {
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(VoxTheme.accent)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(currentDemoMode == mode ? VoxTheme.accent.opacity(0.07) : Color.clear)
+                    .cornerRadius(8)
+                    .animation(.easeInOut(duration: 0.2), value: currentDemoMode.rawValue)
+                }
+            }
+        }
+    }
+
+    // MARK: Step: Wake Word Test
+
+    private var wakeWordContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            stepHeader(title: "Comando de voz", subtitle: "Sem tocar no teclado — use sua voz para mudar de modo.")
+
+            // Instruction card
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Como fazer:")
+                    .font(.system(size: 13, weight: .semibold))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    WizardInstructionRow(number: "1", text: "Segure ⌥⌘ normalmente")
+                    WizardInstructionRow(number: "2", text: "Fale: \"\(settings.wakeWord), Email\"")
+                    WizardInstructionRow(number: "3", text: "Solte — o modo muda automaticamente")
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Result
+            if wakeWordDetected {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.green)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Comando detectado!")
+                            .font(.system(size: 15, weight: .semibold))
+                        if let cmd = detectedWakeCommand {
+                            Text(cmd)
+                                .font(.system(size: 12, design: .monospaced))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.green.opacity(0.08))
+                .cornerRadius(12)
+            } else {
+                HStack(spacing: 8) {
+                    ProgressView().scaleEffect(0.7)
+                    Text("Aguardando comando \"\(settings.wakeWord), Email\"…")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(NSColor.controlBackgroundColor))
+                .cornerRadius(12)
+            }
+
+            // Wake word tip
+            HStack(spacing: 8) {
+                Image(systemName: "info.circle.fill").foregroundStyle(VoxTheme.accent).font(.caption)
+                Text("Você pode personalizar a palavra de ativação em Configurações → Comandos de Voz.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            .padding(10).background(VoxTheme.accent.opacity(0.05)).cornerRadius(8)
+        }
+    }
+
+    // MARK: Step: Language Switch
+
+    private var languageSwitchContent: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            stepHeader(title: "Trocar idioma de saída", subtitle: "Use sua voz ou o seletor abaixo para mudar o idioma em que o texto será escrito.")
+
+            // Voice option
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Por voz", systemImage: "waveform.badge.mic")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    Text("\"\(settings.wakeWord), Inglês\"")
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundStyle(VoxTheme.accent)
+                    Text("ou")
+                        .foregroundStyle(.secondary)
+                    Text("\"\(settings.wakeWord), próximo idioma\"")
+                        .font(.system(size: 14, design: .monospaced))
+                        .foregroundStyle(VoxTheme.accent)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
 
             Divider()
+
+            // Manual picker
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Ou selecione manualmente", systemImage: "hand.point.up")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Picker("", selection: $selectedPickerLanguage) {
+                    ForEach(SpeechLanguage.allCases, id: \.self) { lang in
+                        Text("\(lang.flag) \(lang.displayName)").tag(lang)
+                    }
+                }
+                .pickerStyle(.menu)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onChange(of: selectedPickerLanguage) { newLang in
+                    settings.outputLanguage = newLang
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            if languageChanged {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                    Text("Idioma alterado para \(settings.outputLanguage.flag) \(settings.outputLanguage.displayName)!")
+                        .font(.system(size: 13, weight: .medium)).foregroundStyle(.green)
+                }
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.green.opacity(0.08)).cornerRadius(10)
+            }
+        }
+    }
+
+    // MARK: Step: Ready
+
+    private var readyContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            stepHeader(title: "Tudo configurado! 🎉", subtitle: "Aqui está o resumo de tudo que você pode fazer com o VoxAiGo.")
+
+            // Cheat sheet
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Guia rápido de atalhos")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.bottom, 4)
+
+                Group {
+                    QuickRefRow(keys: "⌥⌘", action: "Gravar", description: "Segurar para gravar, soltar para transcrever")
+                    QuickRefRow(keys: "⌃⇧M", action: "Ciclar Modos", description: "Próximo modo na lista")
+                    QuickRefRow(keys: "⌃⇧L", action: "Ciclar Idiomas", description: "Idiomas favoritos em ordem")
+                    QuickRefRow(keys: "⌘,", action: "Configurações", description: "Personalizar tudo")
+                    QuickRefRow(keys: "⌘⇧V", action: "Mostrar/Ocultar", description: "Janela principal do VoxAiGo")
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Voice commands hint
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Comandos de voz", systemImage: "waveform.badge.mic")
+                    .font(.system(size: 13, weight: .semibold))
+                    .padding(.bottom, 2)
+                ForEach([
+                    ("\(settings.wakeWord), Email", "Mudar para modo E-mail"),
+                    ("\(settings.wakeWord), Inglês", "Mudar para inglês"),
+                    ("\(settings.wakeWord), próximo idioma", "Avançar idioma")
+                ], id: \.0) { cmd, desc in
+                    HStack {
+                        Text("\"\(cmd)\"")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(VoxTheme.accent)
+                        Text("→ \(desc)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding()
+            .background(VoxTheme.accent.opacity(0.05))
+            .cornerRadius(12)
         }
     }
 
@@ -138,14 +698,13 @@ struct SetupWizardView: View {
     private var wizardFooter: some View {
         VStack(spacing: 0) {
             Divider()
-
-            HStack {
-                // Back button
-                if currentStep != .language {
+            HStack(spacing: 16) {
+                // Back
+                if currentStep != .login {
                     Button(action: goBack) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "chevron.left")
-                            Text(L10n.back)
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left").font(.caption)
+                            Text("Voltar")
                         }
                     }
                     .buttonStyle(.bordered)
@@ -153,19 +712,38 @@ struct SetupWizardView: View {
 
                 Spacer()
 
-                // Progress text
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color(NSColor.separatorColor))
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(VoxTheme.accent)
+                            .frame(width: geo.size.width * CGFloat(currentStep.rawValue + 1) / CGFloat(WizardStep.allCases.count))
+                            .animation(.spring(), value: currentStep.rawValue)
+                    }
+                }
+                .frame(width: 120, height: 4)
+
                 Text("\(currentStep.rawValue + 1) de \(WizardStep.allCases.count)")
-                    .font(.system(size: 13))
+                    .font(.system(size: 12))
                     .foregroundStyle(.secondary)
 
                 Spacer()
 
-                // Next/Finish button
+                // Skip (for optional steps)
+                if canSkip {
+                    Button("Pular") { goNext() }
+                        .buttonStyle(.bordered)
+                        .foregroundStyle(.secondary)
+                }
+
+                // Next / Finish
                 Button(action: goNext) {
                     HStack(spacing: 6) {
-                        Text(currentStep == .ready ? L10n.startUsing : L10n.continueBtn)
+                        Text(currentStep == .ready ? "Começar!" : "Continuar")
                         if currentStep != .ready {
-                            Image(systemName: "chevron.right")
+                            Image(systemName: "chevron.right").font(.caption)
                         }
                     }
                 }
@@ -173,863 +751,174 @@ struct SetupWizardView: View {
                 .tint(VoxTheme.accent)
                 .disabled(!canProceed)
             }
-            .padding(.horizontal, 30)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 14)
         }
     }
 
-    // MARK: - Step Content
-
-    @ViewBuilder
-    private var stepContent: some View {
-        switch currentStep {
-        case .language:
-            languageSelectionContent
-        case .welcome:
-            welcomeContent
-        case .login:
-            loginContent
-        case .permissions:
-            permissionsContent
-        case .testRecording:
-            testRecordingContent
-        case .languages:
-            languagesContent
-        case .ready:
-            readyContent
-        }
-    }
-
-    // MARK: - Language Selection Step
-
-    private var languageSelectionContent: some View {
-        VStack(spacing: 32) {
-            // Header
-            VStack(spacing: 12) {
-                Image(systemName: "globe")
-                    .font(.system(size: 60))
-                    .foregroundStyle(VoxTheme.accent)
-                
-                Text(L10n.chooseLanguage)
-                    .font(.system(size: 28, weight: .bold))
-                
-                Text(L10n.interfaceLanguageDesc)
-                    .font(.system(size: 15))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            
-            // Language cards
-            VStack(spacing: 16) {
-                ForEach(AppLanguage.allCases) { language in
-                    Button(action: {
-                        selectedLanguage = language
-                        UserDefaults.standard.set(language.rawValue, forKey: "appLanguage")
-                    }) {
-                        HStack(spacing: 16) {
-                            Text(language.flag)
-                                .font(.system(size: 40))
-                            
-                            Text(language.displayName)
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundStyle(.primary)
-                            
-                            Spacer()
-                            
-                            if selectedLanguage == language {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 24))
-                                    .foregroundStyle(VoxTheme.accent)
-                            }
-                        }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedLanguage == language ? VoxTheme.accent.opacity(0.1) : VoxTheme.surface)
-                        )
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(selectedLanguage == language ? VoxTheme.accent : Color.clear, lineWidth: 2)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 40)
-        }
-    }
-
-    // MARK: - Welcome Step
-
-    private var welcomeContent: some View {
-        VStack(spacing: 24) {
-            // Logo
-            VoxAiGoLogo(size: 80)
-                .padding(.bottom, 8)
-
-            Text("VoxAiGo")
-                .font(.system(size: 32, weight: .bold))
-
-            Text(L10n.vibeFlowTagline)
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-
-            // Features grid
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                FeatureCard3(icon: "mic.fill", title: L10n.speakNaturally, description: L10n.speakNaturallyDesc)
-                FeatureCard3(icon: "bolt.fill", title: L10n.ultraFast, description: L10n.ultraFastDesc)
-                FeatureCard3(icon: "keyboard", title: L10n.simpleShortcut, description: L10n.simpleShortcutDesc)
-                FeatureCard3(icon: "doc.on.clipboard", title: L10n.autoPaste, description: L10n.autoPasteDesc)
-            }
-            .padding(.top, 16)
-        }
-    }
-
-    // MARK: - Login Step
-
-    private var loginContent: some View {
-        VStack(spacing: 20) {
-            if auth.isAuthenticated {
-                // Already logged in
-                VStack(spacing: 16) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 50))
-                        .foregroundStyle(VoxTheme.accent)
-
-                    Text(L10n.loggedIn)
-                        .font(.system(size: 18, weight: .semibold))
-
-                    if let email = auth.userEmail {
-                        Text(email)
-                            .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .padding(.vertical, 40)
-            } else {
-                LoginView()
-            }
-        }
-    }
-
-    // MARK: - Permissions Step
-
-    private var permissionsContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Permissoes Necessarias")
-                    .font(.system(size: 18, weight: .semibold))
-
-                Text("O VoxAiGo precisa de 3 permissoes para funcionar. Cada uma tem um papel importante:")
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-
-            // Permissions list
-            VStack(spacing: 12) {
-                // 1. Microfone
-                PermissionCard(
-                    icon: "mic.fill",
-                    title: "🎤 " + L10n.microphone,
-                    description: L10n.microphonePermDesc,
-                    isGranted: microphonePermission == .authorized,
-                    buttonText: "Permitir Microfone",
-                    helpSteps: [
-                        "Clique em \"Permitir Microfone\" acima",
-                        "Na janela do macOS, clique em \"OK\" para autorizar"
-                    ],
-                    action: requestMicrophonePermission
-                )
-
-                // 2. Acessibilidade
-                PermissionCard(
-                    icon: "accessibility",
-                    title: L10n.accessibilityTitle,
-                    description: L10n.accessibilityDesc,
-                    isGranted: accessibilityPermission,
-                    buttonText: "Abrir Preferencias",
-                    helpSteps: [
-                        "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
-                        "Arraste o icone do VoxAiGo do Finder para a lista de permissoes",
-                        "Ative o toggle (chave) ao lado de \"VoxAiGo\"",
-                        "Volte aqui — sera detectado automaticamente"
-                    ],
-                    action: openAccessibilitySettings
-                )
-
-                // 3. Input Monitoring
-                PermissionCard(
-                    icon: "keyboard",
-                    title: L10n.inputMonitoringTitle,
-                    description: L10n.inputMonitoringDesc,
-                    isGranted: inputMonitoringPermission,
-                    buttonText: "Abrir Preferencias",
-                    helpSteps: [
-                        "Clique em \"Abrir Preferencias\" — ira abrir as Preferencias e o Finder",
-                        "Arraste o icone do VoxAiGo do Finder para a lista de permissoes",
-                        "Ative o toggle (chave) ao lado de \"VoxAiGo\""
-                    ],
-                    action: openInputMonitoringSettings
-                )
-            }
-
-            // Status summary
-            if allPermissionsGranted {
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(VoxTheme.accent)
-                    Text(L10n.allPermissionsGranted)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(VoxTheme.accent)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(VoxTheme.accent.opacity(0.1))
-                .cornerRadius(10)
-            } else {
-                let grantedCount = [microphonePermission == .authorized, accessibilityPermission, inputMonitoringPermission].filter { $0 }.count
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.white)
-                    Text(L10n.permissionsGranted(grantedCount, 3))
-                        .font(.system(size: 14))
-                        .foregroundStyle(.white)
-                }
-                .padding()
-                .frame(maxWidth: .infinity)
-                .background(VoxTheme.surface)
-                .cornerRadius(10)
-            }
-
-            // General note
-            if !allPermissionsGranted {
-                HStack(spacing: 8) {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundStyle(VoxTheme.accent)
-                    Text(L10n.permissionsSecurityNote)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(12)
-                .background(VoxTheme.accent.opacity(0.05))
-                .cornerRadius(8)
-            }
-        }
-        .onAppear {
-            startPermissionChecking()
-        }
-        .onDisappear {
-            permissionTimer?.invalidate()
-        }
-    }
-
-    // MARK: - Test Recording Step
-
-    private var testRecordingContent: some View {
-        VStack(spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.testVoxAiGo)
-                    .font(.system(size: 24, weight: .bold))
-
-                Text(L10n.testInstructions)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            // Shortcut test
-            VStack(spacing: 16) {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(shortcutTestPassed ? VoxTheme.accent.opacity(0.15) : VoxTheme.accent.opacity(0.15))
-                            .frame(width: 50, height: 50)
-
-                        if shortcutTestPassed {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(VoxTheme.accent)
-                        } else {
-                            Text("⌥⌘")
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundStyle(VoxTheme.accent)
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(shortcutTestPassed ? "Atalho funcionando!" : "Teste o atalho de gravacao")
-                            .font(.system(size: 15, weight: .medium))
-
-                        Text(shortcutTestPassed ? "O atalho ⌥⌘ esta configurado corretamente" : "Segure ⌥⌘ (Option + Command) por 2 segundos")
-                            .font(.system(size: 13))
-                            .foregroundStyle(.secondary)
-                    }
-
-                    Spacer()
-
-                    if shortcutTestPassed {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundStyle(VoxTheme.accent)
-                    }
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(shortcutTestPassed ? VoxTheme.accent.opacity(0.05) : VoxTheme.accent.opacity(0.05))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(VoxTheme.accent.opacity(0.3), lineWidth: 1)
-                        )
-                )
-
-                // Audio level indicator
-                if isTestRecording {
-                    VStack(spacing: 8) {
-                        Text(L10n.recordingSpeakSomething)
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(VoxTheme.accent)
-
-                        // Animated waveform
-                        HStack(spacing: 4) {
-                            ForEach(0..<12, id: \.self) { i in
-                                RoundedRectangle(cornerRadius: 2)
-                                    .fill(VoxTheme.accent)
-                                    .frame(width: 4, height: waveBarHeight(index: i))
-                                    .animation(.easeInOut(duration: 0.15), value: testAudioLevel)
-                            }
-                        }
-                        .frame(height: 40)
-                    }
-                    .padding()
-                    .frame(maxWidth: .infinity)
-                    .background(VoxTheme.accent.opacity(0.1))
-                    .cornerRadius(10)
-                }
-
-                // Transcription result
-                if let result = testTranscriptionResult {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Image(systemName: "text.bubble.fill")
-                                .foregroundStyle(VoxTheme.accent)
-                            Text(L10n.transcriptionResult)
-                                .font(.system(size: 13, weight: .medium))
-                        }
-
-                        Text(result)
-                            .font(.system(size: 14))
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(VoxTheme.surface)
-                            .cornerRadius(8)
-
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(VoxTheme.accent)
-                            Text(L10n.transcriptionWorking)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(VoxTheme.accent)
-                        }
-                    }
-                    .padding()
-                    .background(VoxTheme.accent.opacity(0.05))
-                    .cornerRadius(10)
-                }
-            }
-
-            // Manual test button (fallback)
-            if !shortcutTestPassed {
-                Button(action: simulateShortcutTest) {
-                    HStack {
-                        Image(systemName: "play.fill")
-                        Text(L10n.simulateTest)
-                    }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-            }
-
-            // Tips
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.tips)
-                    .font(.system(size: 13, weight: .medium))
-
-                Text(L10n.shortcutTipsBody)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(VoxTheme.surface)
-            .cornerRadius(8)
-        }
-        .onAppear {
-            listenForShortcutTest()
-        }
-        .onDisappear {
-            testRecordingTimer?.invalidate()
-        }
-    }
-
-    // MARK: - Languages Step
-
-    private var languagesContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.languagesAndQuickSwitch)
-                    .font(.system(size: 24, weight: .bold))
-
-                Text(L10n.languagesDesc)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-            }
-
-            // Current language display
-            VStack(spacing: 16) {
-                HStack {
-                    Text(L10n.currentLanguage)
-                        .font(.system(size: 14))
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
-                    HStack(spacing: 8) {
-                        Text(settings.outputLanguage.flag)
-                            .font(.system(size: 24))
-                        Text(settings.outputLanguage.displayName)
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(VoxTheme.accent.opacity(0.1))
-                    .cornerRadius(8)
-                }
-
-                // Cycle shortcut demo
-                VStack(spacing: 12) {
-                    HStack(spacing: 12) {
-                        Text("⌃⇧L")
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundStyle(VoxTheme.accent)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(VoxTheme.accent.opacity(0.1))
-                            .cornerRadius(8)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(L10n.switchLanguage)
-                                .font(.system(size: 16, weight: .semibold))
-                            Text(L10n.pressToSwitchLanguages)
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        Button("Testar") {
-                            cycleLanguageDemo()
-                        }
-                        .buttonStyle(.bordered)
-                    }
-                }
-                .padding()
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(VoxTheme.surface)
-                )
-            }
-
-            // Favorite languages
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.favoriteLangsForQuickSwitch)
-                    .font(.system(size: 14, weight: .medium))
-
-                // Current favorites
-                HStack(spacing: 8) {
-                    ForEach(settings.favoriteLanguages) { lang in
-                        HStack(spacing: 6) {
-                            Text(lang.flag)
-                            Text(lang.rawValue.uppercased())
-                                .font(.system(size: 12, weight: .medium))
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(VoxTheme.surface)
-                        .cornerRadius(6)
-                    }
-                }
-
-                Text(L10n.addRemoveFavoritesInSettings)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-
-            // All languages preview
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.supportedLanguages)
-                    .font(.system(size: 14, weight: .medium))
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(Array(SpeechLanguage.allCases.prefix(15))) { lang in
-                            HStack(spacing: 4) {
-                                Text(lang.flag)
-                                Text(lang.rawValue.uppercased())
-                                    .font(.system(size: 11))
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(VoxTheme.surface)
-                            .cornerRadius(4)
-                        }
-
-                        Text("+\(SpeechLanguage.allCases.count - 15) mais")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-
-            // Where to change
-            HStack(spacing: 8) {
-                Image(systemName: "info.circle.fill")
-                    .foregroundStyle(VoxTheme.accent)
-                Text(L10n.manageLanguagesHint)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            .padding()
-            .background(VoxTheme.accent.opacity(0.05))
-            .cornerRadius(8)
-        }
-    }
-
-    // MARK: - Ready Step
-
-    private var readyContent: some View {
-        VStack(spacing: 24) {
-            // Success icon
-            ZStack {
-                Circle()
-                    .fill(VoxTheme.accent.opacity(0.15))
-                    .frame(width: 100, height: 100)
-
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 50))
-                    .foregroundStyle(VoxTheme.accent)
-            }
-
-            Text(L10n.startUsing)
-                .font(.system(size: 28, weight: .bold))
-
-            Text(L10n.vibeFlowTagline)
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
-
-            // Quick reference card
-            VStack(alignment: .leading, spacing: 16) {
-                Text(L10n.helpAndDocs)
-                    .font(.system(size: 15, weight: .semibold))
-
-                VStack(spacing: 12) {
-                    QuickRefRow(keys: "⌥⌘", action: L10n.record, description: L10n.holdToRecord)
-                    QuickRefRow(keys: "⌃⇧L", action: L10n.switchLanguage, description: L10n.pressToSwitchLanguages)
-                    QuickRefRow(keys: "⌘⇧V", action: L10n.showHideShort, description: L10n.showHide)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(VoxTheme.surface)
-            )
-
-            // Where to find settings
-            HStack(spacing: 12) {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.secondary)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Configuracoes")
-                        .font(.system(size: 14, weight: .medium))
-                    Text("Clique no icone do VoxAiGo na barra de menu > Abrir VoxAiGo")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(VoxTheme.surface)
-            .cornerRadius(8)
-        }
-    }
-
-    // MARK: - Helper Methods
+    // MARK: - Navigation
 
     private var canProceed: Bool {
         switch currentStep {
-        case .language:
-            return true
-        case .welcome:
-            return true
-        case .login:
-            return auth.isAuthenticated
-        case .permissions:
-            return allPermissionsGranted
-        case .testRecording:
-            return true // Optional step
-        case .languages:
-            return true
-        case .ready:
-            return true
+        case .login:          return auth.isAuthenticated
+        case .permissions:    return allPermissionsGranted
+        case .testRecording:  return transcriptionResult != nil
+        case .modesTraining:  return modeChangedCount >= requiredModeCycles
+        case .wakeWordTest:   return wakeWordDetected  // also skippable
+        case .languageSwitch: return languageChanged    // also skippable
+        case .ready:          return true
         }
     }
 
-    private var allPermissionsGranted: Bool {
-        microphonePermission == .authorized && accessibilityPermission && inputMonitoringPermission
-    }
-
-    private func goBack() {
-        if var previous = WizardStep(rawValue: currentStep.rawValue - 1) {
-            // Skip login step going back if already authenticated (came from login window)
-            if previous == .login && auth.isAuthenticated {
-                previous = WizardStep(rawValue: previous.rawValue - 1) ?? previous
-            }
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentStep = previous
-            }
-        }
+    private var canSkip: Bool {
+        currentStep == .wakeWordTest || currentStep == .languageSwitch
     }
 
     private func goNext() {
-        if currentStep == .ready {
-            settings.completeOnboarding()
-            dismiss()
-        } else if var next = WizardStep(rawValue: currentStep.rawValue + 1) {
-            // Skip login step going forward if already authenticated (came from login window)
-            if next == .login && auth.isAuthenticated {
-                next = WizardStep(rawValue: next.rawValue + 1) ?? next
-            }
-            withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.easeInOut) {
+            if currentStep == .ready {
+                completeWizard()
+            } else if let next = WizardStep(rawValue: currentStep.rawValue + 1) {
                 currentStep = next
             }
         }
     }
 
-    private func checkPermissions() {
-        microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio)
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
-        accessibilityPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
-        
-        // Check input monitoring by testing if CGEvent.tapCreate works
-        // This is the most reliable proxy for Input Monitoring permission
-        let testMask = CGEventMask(1 << CGEventType.keyDown.rawValue)
-        if let testTap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .listenOnly,
-            eventsOfInterest: testMask,
-            callback: { _, _, event, _ in Unmanaged.passUnretained(event) },
-            userInfo: nil
-        ) {
-            inputMonitoringPermission = true
-            // Clean up test tap immediately
-            CFMachPortInvalidate(testTap)
-        } else {
-            inputMonitoringPermission = false
-        }
-    }
-
-    private func startPermissionChecking() {
-        checkPermissions()
-        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in
-            DispatchQueue.main.async {
-                self.checkPermissions()
+    private func goBack() {
+        withAnimation(.easeInOut) {
+            if let prev = WizardStep(rawValue: currentStep.rawValue - 1) {
+                currentStep = prev
             }
         }
     }
 
+    private func completeWizard() {
+        settings.onboardingCompleted = true
+        dismiss()
+    }
+
+    // MARK: - Real Notification Observers
+
+    private func registerObservers() {
+        let nc = NotificationCenter.default
+
+        // Real transcription result
+        let t = nc.addObserver(forName: .transcriptionComplete, object: nil, queue: .main) { notif in
+            if let text = notif.object as? String, !text.isEmpty {
+                self.transcriptionResult = text
+            } else if let text = notif.userInfo?["text"] as? String, !text.isEmpty {
+                self.transcriptionResult = text
+            }
+        }
+
+        // Real mode change (for training step)
+        let m = nc.addObserver(forName: .modeChanged, object: nil, queue: .main) { notif in
+            if let mode = notif.object as? TranscriptionMode {
+                self.currentDemoMode = mode
+            } else {
+                self.currentDemoMode = SettingsManager.shared.selectedMode
+            }
+            if self.currentStep == .modesTraining {
+                self.modeChangedCount = min(self.modeChangedCount + 1, 10)
+            }
+        }
+
+        // Real wake word command
+        let w = nc.addObserver(forName: .wakeWordCommand, object: nil, queue: .main) { notif in
+            self.wakeWordDetected = true
+            if let text = notif.object as? String {
+                self.detectedWakeCommand = text
+            } else if let info = notif.userInfo,
+                      let modeRaw = info["mode"] as? String {
+                self.detectedWakeCommand = "→ Modo: \(modeRaw)"
+            } else if let info = notif.userInfo,
+                      let langRaw = info["language"] as? String {
+                self.detectedWakeCommand = "→ Idioma: \(langRaw)"
+            }
+        }
+
+        // Real language change
+        let l = nc.addObserver(forName: .languageChanged, object: nil, queue: .main) { _ in
+            if self.currentStep == .languageSwitch {
+                self.languageChanged = true
+            }
+        }
+
+        observers = [t, m, w, l]
+    }
+
+    private func removeObservers() {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers = []
+    }
+
+    // MARK: - Permissions Helpers
+
+    private var allPermissionsGranted: Bool {
+        microphonePermission == .authorized && accessibilityPermission && inputMonitoringPermission
+    }
+
+    private func checkPermissions() {
+        microphonePermission = AVCaptureDevice.authorizationStatus(for: .audio)
+        accessibilityPermission = AXIsProcessTrusted()
+        inputMonitoringPermission = CGRequestPostEventAccess()
+    }
+
+    private func startPermissionChecking() {
+        permissionTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            checkPermissions()
+        }
+    }
+
     private func requestMicrophonePermission() {
-        AVCaptureDevice.requestAccess(for: .audio) { _ in
+        AVCaptureDevice.requestAccess(for: .audio) { granted in
             DispatchQueue.main.async {
-                checkPermissions()
+                self.microphonePermission = granted ? .authorized : .denied
             }
         }
     }
 
     private func openAccessibilitySettings() {
-        // Open System Preferences at Accessibility
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-        NSWorkspace.shared.open(url)
-        
-        // Also reveal VoxAiGo.app in Finder so user can drag it
-        revealVoxAiGoInFinder()
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!)
     }
 
     private func openInputMonitoringSettings() {
-        // Open System Preferences at Input Monitoring
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!
-        NSWorkspace.shared.open(url)
-        
-        // Also reveal VoxAiGo.app in Finder so user can drag it
-        revealVoxAiGoInFinder()
-    }
-    
-    private func revealVoxAiGoInFinder() {
-        let appPath = "/Applications/VoxAiGo.app"
-        let appURL = URL(fileURLWithPath: appPath)
-        if FileManager.default.fileExists(atPath: appPath) {
-            NSWorkspace.shared.activateFileViewerSelecting([appURL])
-        }
-    }
-
-    // Reusable help card for permission instructions
-    private func permissionHelpCard(title: String, steps: String, note: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.system(size: 13, weight: .medium))
-
-            Text(steps)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 6) {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(VoxTheme.accent)
-                Text(note)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 4)
-        }
-        .padding()
-        .background(VoxTheme.surface)
-        .cornerRadius(8)
-    }
-
-    private func listenForShortcutTest() {
-        // Simplified test - user can use the button or the actual shortcut
-        testRecordingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            // Check if recording started
-            // This would integrate with the actual recording state
-        }
-    }
-
-    private func simulateShortcutTest() {
-        withAnimation {
-            isTestRecording = true
-        }
-
-        // Simulate recording for 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            withAnimation {
-                isTestRecording = false
-                shortcutTestPassed = true
-                testTranscriptionResult = "Este e um exemplo de transcricao. O VoxAiGo esta funcionando corretamente!"
-            }
-        }
-
-        // Animate audio level
-        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
-            if !isTestRecording {
-                timer.invalidate()
-                return
-            }
-            testAudioLevel = CGFloat.random(in: 0.2...0.9)
-        }
-    }
-
-    private func waveBarHeight(index: Int) -> CGFloat {
-        let baseHeight: CGFloat = 8
-        let maxAdd: CGFloat = 30
-        let variation = sin(Double(index) * 0.8 + Date().timeIntervalSince1970 * 8) * 0.5 + 0.5
-        return baseHeight + maxAdd * testAudioLevel * CGFloat(variation)
-    }
-
-    private func cycleLanguageDemo() {
-        settings.cycleToNextLanguage()
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")!)
     }
 }
 
 // MARK: - Helper Views
 
-struct StepIndicator: View {
-    let step: WizardStep
-    let currentStep: WizardStep
-    let isCompleted: Bool
-
-    private var isActive: Bool {
-        step == currentStep
-    }
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .fill(isCompleted ? VoxTheme.accent : (isActive ? VoxTheme.accent.opacity(0.2) : VoxTheme.surface))
-                .frame(width: 32, height: 32)
-
-            if isCompleted {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-            } else {
-                Text("\(step.rawValue + 1)")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isActive ? VoxTheme.accent : .secondary)
-            }
-        }
-    }
-}
-
-struct FeatureCard3: View {
-    let icon: String
-    let title: String
-    let description: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20))
-                .foregroundStyle(VoxTheme.accent)
-                .frame(width: 32)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 14, weight: .medium))
-                Text(description)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-
-            Spacer()
-        }
-        .padding(12)
-        .background(VoxTheme.surface)
-        .cornerRadius(10)
-    }
-}
-
-struct InstructionRow: View {
-    let number: Int
+private struct WizardInstructionRow: View {
+    let number: String
     let text: String
 
     var body: some View {
-        HStack(spacing: 10) {
-            Text("\(number)")
+        HStack(alignment: .top, spacing: 10) {
+            Text(number)
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 20, height: 20)
-                .background(Circle().fill(VoxTheme.accent))
-
+                .background(VoxTheme.accent)
+                .clipShape(Circle())
             Text(text)
                 .font(.system(size: 13))
+                .foregroundStyle(.primary)
         }
     }
 }
+
+private func stepHeader(title: String, subtitle: String) -> some View {
+    VStack(alignment: .leading, spacing: 6) {
+        Text(title)
+            .font(.system(size: 22, weight: .bold))
+        Text(subtitle)
+            .font(.system(size: 14))
+            .foregroundStyle(.secondary)
+    }
+}
+
+// MARK: - Shared Helper Components
 
 struct PermissionCard: View {
     let icon: String
@@ -1041,81 +930,49 @@ struct PermissionCard: View {
     let action: () -> Void
 
     init(icon: String, title: String, description: String, isGranted: Bool, buttonText: String, helpSteps: [String] = [], action: @escaping () -> Void) {
-        self.icon = icon
-        self.title = title
-        self.description = description
-        self.isGranted = isGranted
-        self.buttonText = buttonText
-        self.helpSteps = helpSteps
-        self.action = action
+        self.icon = icon; self.title = title; self.description = description
+        self.isGranted = isGranted; self.buttonText = buttonText
+        self.helpSteps = helpSteps; self.action = action
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Main row
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
                         .fill(isGranted ? VoxTheme.accent.opacity(0.15) : VoxTheme.surface)
                         .frame(width: 44, height: 44)
-
                     Image(systemName: isGranted ? "checkmark" : icon)
                         .font(.system(size: 18))
                         .foregroundStyle(isGranted ? VoxTheme.accent : .white)
                 }
-
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(title)
-                        .font(.system(size: 14, weight: .medium))
-                    Text(description)
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                    Text(title).font(.system(size: 14, weight: .medium))
+                    Text(description).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(2)
                 }
-
                 Spacer()
-
                 if isGranted {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundStyle(VoxTheme.accent)
+                    Image(systemName: "checkmark.circle.fill").font(.system(size: 24)).foregroundStyle(VoxTheme.accent)
                 } else {
-                    Button(buttonText, action: action)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.small)
+                    Button(buttonText, action: action).buttonStyle(.borderedProminent).controlSize(.small)
                 }
             }
-
-            // Inline instructions when not granted
             if !isGranted && !helpSteps.isEmpty {
-                Divider()
-                    .padding(.vertical, 8)
-
+                Divider().padding(.vertical, 8)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("Como fazer:")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(VoxTheme.accent)
-
+                    Text("Como fazer:").font(.system(size: 11, weight: .semibold)).foregroundStyle(VoxTheme.accent)
                     ForEach(Array(helpSteps.enumerated()), id: \.offset) { index, step in
                         HStack(alignment: .top, spacing: 6) {
-                            Text("\(index + 1).")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundStyle(VoxTheme.accent.opacity(0.8))
-                                .frame(width: 16, alignment: .trailing)
-                            Text(step)
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
+                            Text("\(index + 1).").font(.system(size: 11, weight: .bold, design: .monospaced)).foregroundStyle(VoxTheme.accent.opacity(0.8)).frame(width: 16, alignment: .trailing)
+                            Text(step).font(.system(size: 11)).foregroundStyle(.secondary)
                         }
                     }
                 }
-                .padding(.leading, 60) // align with text, past the icon
+                .padding(.leading, 60)
             }
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isGranted ? VoxTheme.accent.opacity(0.05) : VoxTheme.surface)
-        )
+        .background(RoundedRectangle(cornerRadius: 12).fill(isGranted ? VoxTheme.accent.opacity(0.05) : VoxTheme.surface))
     }
 }
 
@@ -1127,21 +984,14 @@ struct QuickRefRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(keys)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundStyle(VoxTheme.accent)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(VoxTheme.accent.opacity(0.1))
-                .cornerRadius(6)
-
+                .padding(.horizontal, 8).padding(.vertical, 5)
+                .background(VoxTheme.accent.opacity(0.1)).cornerRadius(6)
             VStack(alignment: .leading, spacing: 2) {
-                Text(action)
-                    .font(.system(size: 13, weight: .medium))
-                Text(description)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                Text(action).font(.system(size: 13, weight: .medium))
+                Text(description).font(.system(size: 12)).foregroundStyle(.secondary)
             }
-
             Spacer()
         }
     }

@@ -340,14 +340,15 @@ Distribution/output/*.dmg         # Installer (after create_dmg.sh)
 
 ## Version History
 
-- **2.3.0** (Current) - Gemini 2.5 Flash migration, version standardization
+- **3.0.0** (Current) — VoxAiGo rebrand, Supabase backend, wake word system, 15 modes, 30 languages
+- **2.3.0** - Gemini 2.5 Flash migration, version standardization
 - **2.1.0** - Email mode, Setup Wizard, History, Snippets, Sound effects
 - **2.0.0** - Dynamic temperature, UI refresh
 - **1.0.0** - Initial release
 
 ---
 
-**Last Updated:** 2026-02-17
+**Last Updated:** 2026-02-21
 **Maintained by:** AI Assistant based on codebase analysis
 
 ---
@@ -386,3 +387,46 @@ Distribution/output/*.dmg         # Installer (after create_dmg.sh)
 - Termos técnicos preservados com formatação (ex: `` `useEffect` ``)
 
 > Documento completo: `brain/vibe_coder_benchmark.md`
+
+---
+
+## Sessão 21/02/2026 — Mudanças Implementadas (VoxAiGo 3.0)
+
+### Wake Word System
+- `SpeechLanguage.voiceAliases` — 30 idiomas com aliases PT/EN/nativo
+- `TranscriptionMode.voiceAliases` — aliases por modo (`.translation` exclúido — só UI)
+- `WakeWordResult` enum — `.mode(TranscriptionMode)` ou `.language(SpeechLanguage)`
+- `detectWakeWordCommand()` — prioridade: modo > idioma; fillers limpos antes do match
+- Comandos especiais: *"próximo idioma"/"next language"* e *"idioma anterior"/"previous language"*
+- Wake word só ativa no INÍCIO da frase (hasPrefix)
+
+### Fix Arquitetural (crítico)
+- `systemPrompt()` em `TranscriptionMode` recebe `wakeWord: String` e adiciona
+  **HIGHEST PRIORITY passthrough rule** ao final de TODOS os prompts.
+  Instrução: se transcrição começa com wake word → retornar verbatim, SEM tradução,
+  sobrescrevendo inclusive o OUTPUT LANGUAGE.
+- Callers (`SupabaseService`, `GeminiService`) passam `SettingsManager.shared.wakeWord`
+
+### Vibe Coder Fix (tom imperativo)
+- Prompt reformulado: pergunta → pergunta, instrução → instrução, observação → observação
+- Regra explícita: NUNCA converta pergunta em imperativo
+
+### Paste Fix
+- `ClipboardHelper.savePreviousApp()` nunca sobrescreve `previousApp` com VoxAiGo
+- Se frontmost for VoxAiGo (HUD visível), mantém o app anterior valid
+
+### Command Language Setting
+- `SettingsManager.commandLanguage: SpeechLanguage` (UserDefaults, default: português)
+- Picker "Idioma dos comandos" em Settings → Comandos de Voz
+- Permite falante PT usar "Hey Vox, inglês" mesmo com output em turco
+
+### Commits
+- `a1b268e` — wake word system + HUD + paste fix + Vibe Coder tone
+- `ce63fc6` — filler cleanup, command language, voice cycle, passthrough fix
+
+### Próximo: Setup Wizard Redesign
+- 9 steps com testes interativos reais
+- Novos steps: Modes Tour (⌃⇧M), Wake Word Test, Language Switch
+- Step 5 (gravação) passa a ser obrigatório
+- Step 9: cheat-sheet de atalhos + celebração
+- Ver: `brain/implementation_plan.md`
