@@ -527,10 +527,14 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             HIGHEST PRIORITY — WAKE WORD PASSTHROUGH:
             Before applying ANY of the rules above, check if the audio transcription starts with
             the wake word (case-insensitive): \(variantsList).
-            If YES → return the raw transcription EXACTLY as spoken, with zero modifications.
-            Do NOT apply mode formatting, language translation, or any cleanup to wake word commands.
+            If YES → return the raw transcription EXACTLY as the user spoke it.
+            This rule OVERRIDES the OUTPUT LANGUAGE instruction above.
+            Do NOT translate the wake word or command into any language.
+            Do NOT apply mode formatting, language translation, or any cleanup.
+            Keep the exact words the user said, in the exact language they said them.
             Example: if the user says "Hey Vox, email" → return exactly "Hey Vox, email".
-            Example: if the user says "Hey Vox, inglês" → return exactly "Hey Vox, inglês".
+            Example: if the user says "Hey Vox, inglês" → return exactly "Hey Vox, inglês" (NOT "Hey Vox, English" or a Turkish translation).
+            Example: if the user says "Hey Vox, próximo idioma" → return exactly "Hey Vox, próximo idioma".
             Only apply all previous rules when the audio does NOT start with the wake word.
             """
 

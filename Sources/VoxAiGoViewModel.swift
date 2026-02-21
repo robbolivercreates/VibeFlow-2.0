@@ -502,6 +502,41 @@ class VoxAiGoViewModel: ObservableObject {
 
         guard !commandPart.isEmpty else { return nil }
 
+        // ── Strip filler sounds between wake word and the actual command ──
+        // e.g. "hey vox, ãh, email" → commandPart becomes "email"
+        let fillers = ["ãh", "ah", "uh", "um", "hmm", "hm", "né", "tipo", "então", "er", "bem", "sabe"]
+        var cleanedCommand = commandPart
+        for filler in fillers {
+            cleanedCommand = cleanedCommand
+                .replacingOccurrences(of: filler + " ", with: "")
+                .replacingOccurrences(of: " " + filler + " ", with: " ")
+        }
+        // Strip leading/trailing filler
+        for filler in fillers where cleanedCommand == filler {
+            cleanedCommand = ""
+        }
+        cleanedCommand = cleanedCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanedCommand.isEmpty else { return nil }
+
+        // ── Special: "próximo idioma" / "next language" → cycle forward ──
+        let nextAliases = ["próximo idioma", "proximo idioma", "next language", "próximo", "next"]
+        let prevAliases = ["idioma anterior", "previous language", "anterior", "previous", "volta idioma", "back language"]
+        if nextAliases.contains(where: { cleanedCommand.hasPrefix($0) }) {
+            // Cycle to next language among all SpeechLanguage cases
+            let all = SpeechLanguage.allCases
+            let current = SettingsManager.shared.outputLanguage
+            let idx = all.firstIndex(of: current) ?? 0
+            let next = all[(idx + 1) % all.count]
+            return .language(next)
+        }
+        if prevAliases.contains(where: { cleanedCommand.hasPrefix($0) }) {
+            let all = SpeechLanguage.allCases
+            let current = SettingsManager.shared.outputLanguage
+            let idx = all.firstIndex(of: current) ?? 0
+            let prev = all[(idx - 1 + all.count) % all.count]
+            return .language(prev)
+        }
+
         // ── 1. Try mode match first (sorted by alias length — most specific first) ──
         let sortedModes = TranscriptionMode.allCases.sorted { a, b in
             let maxA = a.voiceAliases.map(\.count).max() ?? 0
@@ -510,7 +545,7 @@ class VoxAiGoViewModel: ObservableObject {
         }
         for mode in sortedModes {
             for alias in mode.voiceAliases where !alias.isEmpty {
-                if commandPart.hasPrefix(alias) || commandPart == alias {
+                if cleanedCommand.hasPrefix(alias) || cleanedCommand == alias {
                     return .mode(mode)
                 }
             }
@@ -524,7 +559,7 @@ class VoxAiGoViewModel: ObservableObject {
         }
         for lang in sortedLanguages {
             for alias in lang.voiceAliases {
-                if commandPart.hasPrefix(alias) || commandPart == alias {
+                if cleanedCommand.hasPrefix(alias) || cleanedCommand == alias {
                     return .language(lang)
                 }
             }

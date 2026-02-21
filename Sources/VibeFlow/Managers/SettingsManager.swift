@@ -35,6 +35,7 @@ class SettingsManager: ObservableObject {
         static let customModePrompt = "custom_mode_prompt"
         static let wakeWord = "wake_word"
         static let wakeWordEnabled = "wake_word_enabled"
+        static let commandLanguage = "command_language"
     }
     
     // MARK: - Published Properties
@@ -113,6 +114,13 @@ class SettingsManager: ObservableObject {
     /// Whether wake word mode switching is enabled
     @Published var wakeWordEnabled: Bool {
         didSet { defaults.set(wakeWordEnabled, forKey: Keys.wakeWordEnabled) }
+    }
+
+    /// Language the user speaks for wake word commands (default: Portuguese).
+    /// Independent from outputLanguage — so a PT speaker can always say "Hey Vox, inglês"
+    /// even when output language is Turkish.
+    @Published var commandLanguage: SpeechLanguage {
+        didSet { defaults.set(commandLanguage.rawValue, forKey: Keys.commandLanguage) }
     }
 
     @Published var launchAtLogin: Bool {
@@ -269,6 +277,8 @@ class SettingsManager: ObservableObject {
 
         self.wakeWord = defaults.string(forKey: Keys.wakeWord) ?? "Hey Vox"
         self.wakeWordEnabled = defaults.object(forKey: Keys.wakeWordEnabled) as? Bool ?? true
+        let cmdLangRaw = defaults.string(forKey: Keys.commandLanguage) ?? SpeechLanguage.portuguese.rawValue
+        self.commandLanguage = SpeechLanguage(rawValue: cmdLangRaw) ?? .portuguese
 
         // Initialize favorite index based on current language
         if let index = self.favoriteLanguages.firstIndex(of: self.outputLanguage) {

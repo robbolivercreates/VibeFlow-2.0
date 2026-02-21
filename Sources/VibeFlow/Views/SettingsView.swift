@@ -395,6 +395,31 @@ struct SettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     .padding(.top, 2)
+
+                    // Command language (native language for voice commands)
+                    HStack {
+                        Label("Idioma dos comandos", systemImage: "person.wave.2")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Picker("", selection: $settings.commandLanguage) {
+                            ForEach(SpeechLanguage.allCases, id: \.self) { lang in
+                                Text("\(lang.flag) \(lang.displayName)").tag(lang)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 180)
+                    }
+
+                    // Command language explanation
+                    HStack(spacing: 4) {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                        Text("Use seu idioma nativo para os comandos \"Hey Vox\", independente do idioma de saída.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 2)
                 }
             } header: {
                 Text(L10n.voiceCommandsTitle)
