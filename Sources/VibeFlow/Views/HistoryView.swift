@@ -69,7 +69,7 @@ struct HistoryView: View {
                 }
             }
             .padding(8)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(VoxTheme.surface)
             .cornerRadius(8)
             .padding(.horizontal)
             .padding(.bottom, 8)
@@ -196,7 +196,7 @@ struct HistoryView: View {
             }
             .padding()
         }
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
     }
 }
 
@@ -251,18 +251,7 @@ struct HistoryItemRow: View {
     }
     
     private var modeColor: Color {
-        switch item.mode {
-        case .code:
-            return .blue
-        case .text:
-            return .green
-        case .email:
-            return .orange
-        case .uxDesign:
-            return .purple
-        case .command:
-            return .yellow
-        }
+        return VoxTheme.accent
     }
     
     private var previewText: String {

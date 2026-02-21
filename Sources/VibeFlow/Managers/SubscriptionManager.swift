@@ -11,7 +11,7 @@ class SubscriptionManager: ObservableObject {
 
     // Free tier limits
     static let freeMonthlyLimit = 100
-    static let freeModes: [TranscriptionMode] = [.text, .code]
+    static let freeModes: [TranscriptionMode] = [.text, .chat]
     static let freeLanguages: [SpeechLanguage] = [.portuguese, .english]
 
     @Published var plan: String = "free"
@@ -20,7 +20,16 @@ class SubscriptionManager: ObservableObject {
     @Published var freeTranscriptionsResetAt: String? = nil
     @Published var profile: UserProfile? = nil
 
+    // Dev mode: local override that grants full Pro access (easter egg)
+    @Published private(set) var devModeActive: Bool = UserDefaults.standard.bool(forKey: "devModeActive")
+
+    func activateDevMode() {
+        devModeActive = true
+        UserDefaults.standard.set(true, forKey: "devModeActive")
+    }
+
     private var cancellables = Set<AnyCancellable>()
+    private var refreshTimer: Timer?
 
     private init() {
         // Observe auth changes to fetch profile
@@ -29,8 +38,10 @@ class SubscriptionManager: ObservableObject {
             .sink { [weak self] isAuth in
                 if isAuth {
                     Task { await self?.fetchProfile() }
+                    self?.startPeriodicRefresh()
                 } else {
                     self?.resetToFree()
+                    self?.stopPeriodicRefresh()
                 }
             }
             .store(in: &cancellables)
@@ -38,23 +49,39 @@ class SubscriptionManager: ObservableObject {
         // Fetch on init if already authenticated
         if AuthManager.shared.isAuthenticated {
             Task { await fetchProfile() }
+            startPeriodicRefresh()
         }
+    }
+
+    private func startPeriodicRefresh() {
+        stopPeriodicRefresh()
+        // Refresh profile every 5 minutes to keep counter in sync
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
+            Task { await self?.fetchProfile() }
+        }
+    }
+
+    private func stopPeriodicRefresh() {
+        refreshTimer?.invalidate()
+        refreshTimer = nil
     }
 
     // MARK: - Feature Gating
 
     func canUseMode(_ mode: TranscriptionMode) -> Bool {
-        if plan == "pro" { return true }
-        return Self.freeModes.contains(mode)
+        let result = isPro || Self.freeModes.contains(mode)
+        print("[SubscriptionManager] canUseMode(\(mode.rawValue)) → isPro=\(isPro) devMode=\(devModeActive) plan=\(plan) → \(result)")
+        return result
     }
 
     func canUseLanguage(_ language: SpeechLanguage) -> Bool {
-        if plan == "pro" { return true }
-        return Self.freeLanguages.contains(language)
+        let result = isPro || Self.freeLanguages.contains(language)
+        print("[SubscriptionManager] canUseLanguage(\(language.rawValue)) → isPro=\(isPro) → \(result)")
+        return result
     }
 
     var hasReachedFreeLimit: Bool {
-        guard plan == "free" else { return false }
+        guard !isPro else { return false }
         return freeTranscriptionsUsed >= Self.freeMonthlyLimit
     }
 
@@ -62,7 +89,7 @@ class SubscriptionManager: ObservableObject {
         max(0, Self.freeMonthlyLimit - freeTranscriptionsUsed)
     }
 
-    var isPro: Bool { plan == "pro" }
+    var isPro: Bool { devModeActive || plan == "pro" }
 
     // MARK: - Profile Fetch
 
@@ -131,7 +158,15 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Upgrade
 
     func openUpgradeURL(annual: Bool = false) {
-        let urlString = annual ? Self.proAnnualCheckoutURL : Self.proMonthlyCheckoutURL
+        var urlString = annual ? Self.proAnnualCheckoutURL : Self.proMonthlyCheckoutURL
+
+        // Pre-fill email on Eduzz checkout so purchase email matches VoxAiGo account
+        if let email = AuthManager.shared.userEmail,
+           let encoded = email.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+            let name = profile?.email != nil ? "" : "" // Eduzz uses email as identifier
+            urlString += "?email=\(encoded)&skip=1"
+        }
+
         if let url = URL(string: urlString) {
             NSWorkspace.shared.open(url)
         }

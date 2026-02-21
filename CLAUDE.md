@@ -349,3 +349,40 @@ Distribution/output/*.dmg         # Installer (after create_dmg.sh)
 
 **Last Updated:** 2026-02-17
 **Maintained by:** AI Assistant based on codebase analysis
+
+---
+
+## Vibe Coder — Benchmark de Economia de Tokens (dados reais)
+
+> Teste ao vivo realizado em 21/02/2026. Usar na landing page como prova social.
+
+### Resultados PT → PT
+
+| Tipo | Economia |
+|---|---|
+| Instrução (ex: login + error handling) | **62%** |
+| Pergunta (ex: useEffect) | **46%** |
+| Observação (ex: bug de segurança) | **10%** |
+| **Média** | **~39%** |
+
+### Resultados PT → EN (fala PT, output EN — para uso no Cursor/Claude)
+
+| Tipo | Economia |
+|---|---|
+| Instrução | **58%** |
+| Pergunta | **46%** |
+| Observação | **31%** |
+| **Média** | **~45%** |
+
+### Headlines validados para landing page
+- *"Fale do jeito que você pensa. Economize até 62% de tokens."*
+- *"Seu pensamento é prolixo. Seus prompts não precisam ser."*
+- Economia máxima: **62%** | Média: **39–45%** | Perda de informação técnica: **0%**
+
+### Comportamento confirmado (fix de fevereiro 2026)
+- Perguntas → permanecem perguntas (não viram imperativo)
+- Instruções → instrução concisa
+- Observações → observação técnica limpa
+- Termos técnicos preservados com formatação (ex: `` `useEffect` ``)
+
+> Documento completo: `brain/vibe_coder_benchmark.md`

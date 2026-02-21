@@ -72,6 +72,7 @@ class AuthManager: ObservableObject {
             self.isAuthenticated = true
             self.userId = response.user.id
             self.userEmail = response.user.email
+            NotificationCenter.default.post(name: .authStateChanged, object: nil)
         }
 
         let expiresIn = expiresAt - Int(Date().timeIntervalSince1970)
@@ -92,6 +93,7 @@ class AuthManager: ObservableObject {
             self.isAuthenticated = false
             self.userId = nil
             self.userEmail = nil
+            NotificationCenter.default.post(name: .authStateChanged, object: nil)
         }
     }
 
@@ -106,12 +108,21 @@ class AuthManager: ObservableObject {
 
     // MARK: - Auth API
 
-    func signUp(email: String, password: String) async throws {
+    func signUp(email: String, password: String, firstName: String? = nil, lastName: String? = nil) async throws {
         await MainActor.run { isLoading = true }
         defer { Task { @MainActor in isLoading = false } }
 
         let url = URL(string: "\(Self.supabaseURL)/auth/v1/signup")!
-        let body: [String: Any] = ["email": email, "password": password]
+        var body: [String: Any] = ["email": email, "password": password]
+
+        // Pass name metadata if provided
+        let fullName = [firstName, lastName].compactMap { $0?.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }.joined(separator: " ")
+        if !fullName.isEmpty {
+            var data: [String: String] = ["full_name": fullName]
+            if let fn = firstName, !fn.isEmpty { data["first_name"] = fn }
+            if let ln = lastName, !ln.isEmpty { data["last_name"] = ln }
+            body["data"] = data
+        }
 
         let response: SupabaseAuthResponse = try await postJSON(url: url, body: body)
 
@@ -121,6 +132,29 @@ class AuthManager: ObservableObject {
         }
 
         saveSession(response)
+    }
+
+    func sendMagicLink(email: String) async throws {
+        await MainActor.run { isLoading = true }
+        defer { Task { @MainActor in isLoading = false } }
+
+        // redirect_to must be whitelisted in Supabase → Authentication → URL Configuration
+        let redirectTo = "voxaigo://auth/callback"
+        let urlString = "\(Self.supabaseURL)/auth/v1/magiclink?redirect_to=\(redirectTo)"
+        var request = URLRequest(url: URL(string: urlString)!)
+        request.httpMethod = "POST"
+        request.setValue(Self.supabaseAnonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["email": email])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            if let errorResponse = try? JSONDecoder().decode(SupabaseErrorResponse.self, from: data) {
+                throw AuthError.serverError(errorResponse.displayMessage)
+            }
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw AuthError.serverError("HTTP \(code)")
+        }
     }
 
     func signIn(email: String, password: String) async throws {

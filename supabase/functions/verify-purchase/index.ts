@@ -155,8 +155,61 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     } else {
-      // 4b. No active purchase found
-      // Check if user had a previous active subscription that should be deactivated
+      // 4b. No active purchase on Eduzz API — check pending_purchases table as fallback
+      const { data: pending } = await adminClient
+        .from("pending_purchases")
+        .select("*")
+        .eq("email", user.email!.toLowerCase())
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pending) {
+        // Claim the pending purchase
+        const planInfo = getProductPlan(pending.eduzz_product_id || "");
+        const subPlan = planInfo?.subPlan || pending.plan || "pro_monthly";
+        const daysValid = subPlan === "pro_annual" ? 365 : 30;
+
+        // Delete existing subs + create new one
+        await adminClient.from("subscriptions").delete().eq("user_id", user.id);
+        await adminClient.from("subscriptions").insert({
+          user_id: user.id,
+          plan: subPlan,
+          status: "active",
+          eduzz_transaction_id: pending.eduzz_transaction_id,
+          eduzz_product_id: pending.eduzz_product_id,
+          started_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + daysValid * 24 * 60 * 60 * 1000).toISOString(),
+        });
+
+        // Update profile
+        await adminClient.from("profiles").update({
+          plan: "pro",
+          subscription_status: "active",
+        }).eq("id", user.id);
+
+        // Mark pending as claimed
+        await adminClient.from("pending_purchases").update({
+          status: "claimed",
+          claimed_at: new Date().toISOString(),
+          claimed_by: user.id,
+        }).eq("id", pending.id);
+
+        console.log(`Claimed pending purchase for ${user.email}: ${subPlan}`);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            plan: "pro",
+            subscription: subPlan,
+            message: "Assinatura ativada com sucesso!",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // No purchase found anywhere — check if user had a previous active subscription
       const { data: existingSub } = await adminClient
         .from("subscriptions")
         .select("*")
@@ -165,7 +218,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (existingSub) {
-        // Deactivate subscription
         await adminClient
           .from("subscriptions")
           .update({ status: "cancelled", cancelled_at: new Date().toISOString() })

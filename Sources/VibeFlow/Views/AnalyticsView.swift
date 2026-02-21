@@ -61,28 +61,28 @@ struct AnalyticsView: View {
                     title: L10n.timeSavedHeader,
                     value: analytics.getFormattedTimeSaved(),
                     icon: "clock.arrow.circlepath",
-                    color: .green
+                    color: VoxTheme.accent
                 )
 
                 StatCard2(
                     title: L10n.transcriptions,
                     value: "\(analytics.totalTranscriptions)",
                     icon: "mic.fill",
-                    color: .blue
+                    color: VoxTheme.accent
                 )
 
                 StatCard2(
                     title: L10n.words,
                     value: formatNumber(analytics.totalWords),
                     icon: "text.word.spacing",
-                    color: .purple
+                    color: VoxTheme.accent
                 )
 
                 StatCard2(
                     title: L10n.recordedTimeHeader,
                     value: analytics.getFormattedRecordingTime(),
                     icon: "waveform",
-                    color: .orange
+                    color: VoxTheme.accent
                 )
             }
             .padding(.horizontal)
@@ -146,7 +146,7 @@ struct AnalyticsView: View {
                     Text(L10n.maxLevel)
                         .font(.subheadline)
                         .fontWeight(.bold)
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(VoxTheme.accent)
                 }
             }
 
@@ -165,21 +165,13 @@ struct AnalyticsView: View {
             .frame(height: 8)
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(16)
     }
 
     private var levelColor: Color {
-        switch analytics.currentLevel.color {
-        case "gray": return .gray
-        case "green": return .green
-        case "blue": return .blue
-        case "purple": return .purple
-        case "orange": return .orange
-        case "red": return .red
-        case "yellow": return .yellow
-        default: return .blue
-        }
+        // All levels use gold accent for cohesive B&W&Gold design
+        return VoxTheme.accent
     }
 
     // MARK: - Streak Card
@@ -190,7 +182,7 @@ struct AnalyticsView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill")
-                        .foregroundStyle(analytics.currentStreak > 0 ? .orange : .gray)
+                        .foregroundStyle(analytics.currentStreak > 0 ? VoxTheme.accent : .gray)
                     Text("\(analytics.currentStreak)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
@@ -207,7 +199,7 @@ struct AnalyticsView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: "trophy.fill")
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(VoxTheme.accent)
                     Text("\(analytics.longestStreak)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
@@ -224,7 +216,7 @@ struct AnalyticsView: View {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: "calendar")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                     Text("\(analytics.todayTranscriptions)")
                         .font(.system(size: 24, weight: .bold, design: .rounded))
                 }
@@ -235,7 +227,7 @@ struct AnalyticsView: View {
             .frame(maxWidth: .infinity)
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(16)
     }
 
@@ -251,7 +243,7 @@ struct AnalyticsView: View {
                 VStack(spacing: 4) {
                     Text(String(format: "%.0f", analytics.averageSpeakingWPM))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                     Text(L10n.wpmSpeaking)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -273,7 +265,7 @@ struct AnalyticsView: View {
                 VStack(spacing: 4) {
                     Text(String(format: "%.1fx", analytics.efficiencyMultiplier))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(VoxTheme.accent)
                     Text(L10n.faster)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -282,7 +274,7 @@ struct AnalyticsView: View {
             }
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(16)
     }
 
@@ -291,7 +283,7 @@ struct AnalyticsView: View {
     private var efficiencyMessage: some View {
         HStack {
             Image(systemName: "lightbulb.fill")
-                .foregroundStyle(.yellow)
+                .foregroundStyle(VoxTheme.accent)
 
             if analytics.timeSavedMinutes > 60 {
                 let hours = Int(analytics.timeSavedMinutes / 60)
@@ -309,7 +301,7 @@ struct AnalyticsView: View {
             Spacer()
         }
         .padding()
-        .background(Color.yellow.opacity(0.1))
+        .background(VoxTheme.accent.opacity(0.1))
         .cornerRadius(12)
     }
 
@@ -320,7 +312,7 @@ struct AnalyticsView: View {
             // Achievement Counter
             HStack {
                 Image(systemName: "medal.fill")
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(VoxTheme.accent)
                 Text("\(analytics.unlockedAchievementCount) de \(analytics.totalAchievementCount) conquistas")
                     .font(.headline)
                 Spacer()
@@ -364,7 +356,7 @@ struct AchievementCard: View {
         VStack(spacing: 8) {
             Image(systemName: achievement.icon)
                 .font(.system(size: 24))
-                .foregroundStyle(isUnlocked ? .yellow : .gray.opacity(0.4))
+                .foregroundStyle(isUnlocked ? VoxTheme.accent : .gray.opacity(0.4))
 
             Text(achievement.name)
                 .font(.system(size: 12, weight: .semibold))
@@ -381,11 +373,11 @@ struct AchievementCard: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isUnlocked ? Color.yellow.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                .fill(isUnlocked ? VoxTheme.accent.opacity(0.1) : VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isUnlocked ? Color.yellow.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(isUnlocked ? VoxTheme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .opacity(isUnlocked ? 1 : 0.6)
     }
@@ -421,7 +413,7 @@ struct StatCard2: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(16)
     }
 }
@@ -447,7 +439,7 @@ struct MonthlyChart: View {
 
                         // Bar
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.green.gradient)
+                            .fill(VoxTheme.accent.gradient)
                             .frame(width: 36, height: max(20, CGFloat(stat.timeSavedMinutes / maxValue) * 100))
 
                         // Month label
@@ -459,7 +451,7 @@ struct MonthlyChart: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
             .padding()
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(VoxTheme.surface)
             .cornerRadius(12)
         }
     }

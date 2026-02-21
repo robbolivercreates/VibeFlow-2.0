@@ -63,10 +63,31 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!profile) {
-      // User hasn't signed up yet — store for later verification
-      console.log(`Webhook for unknown user: ${cus_email}, status: ${trans_status}`);
+      // User hasn't signed up yet — save as pending purchase for auto-activation on signup
+      const statusStr = String(trans_status);
+      const subPlan = getSubPlan(String(product_id));
+
+      if (STATUS_ACTIVE.includes(statusStr) && subPlan) {
+        const { error: pendingError } = await adminClient
+          .from("pending_purchases")
+          .insert({
+            email: cus_email.toLowerCase(),
+            eduzz_transaction_id: String(trans_cod || ""),
+            eduzz_product_id: String(product_id || ""),
+            plan: subPlan,
+            status: "pending",
+            raw_payload: payload,
+          });
+
+        if (pendingError) {
+          console.error("Failed to save pending purchase:", pendingError);
+        } else {
+          console.log(`Pending purchase saved for ${cus_email}: ${subPlan} (txn: ${trans_cod})`);
+        }
+      }
+
       return new Response(
-        JSON.stringify({ received: true, user_found: false }),
+        JSON.stringify({ received: true, user_found: false, pending_saved: true }),
         { headers: { "Content-Type": "application/json" } },
       );
     }

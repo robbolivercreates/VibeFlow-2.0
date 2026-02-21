@@ -18,19 +18,19 @@ enum ToastType {
     
     var color: Color {
         switch self {
-        case .success: return .green
+        case .success: return VoxTheme.accent
         case .error: return .red
-        case .info: return .blue
-        case .warning: return .orange
+        case .info: return .white
+        case .warning: return VoxTheme.accent
         }
     }
-    
+
     var backgroundColor: Color {
         switch self {
-        case .success: return Color.green.opacity(0.15)
+        case .success: return VoxTheme.accent.opacity(0.15)
         case .error: return Color.red.opacity(0.15)
-        case .info: return Color.blue.opacity(0.15)
-        case .warning: return Color.orange.opacity(0.15)
+        case .info: return Color.white.opacity(0.15)
+        case .warning: return VoxTheme.accent.opacity(0.15)
         }
     }
 }

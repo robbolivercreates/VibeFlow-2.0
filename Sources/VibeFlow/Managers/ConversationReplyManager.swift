@@ -46,7 +46,7 @@ class ConversationReplyManager: ObservableObject {
     }
 
     private var progressTimer: Timer?
-    let timeoutDuration: TimeInterval = 15.0
+    let timeoutDuration: TimeInterval = 25.0
 
     private init() {}
 

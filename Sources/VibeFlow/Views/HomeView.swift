@@ -7,20 +7,29 @@ struct HomeView: View {
     @StateObject private var settings = SettingsManager.shared
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Header
-                headerSection
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header
+            headerSection
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.background)
+                .zIndex(1)
 
-                // MARK: - Stats Cards
-                statsSection
+            Divider()
 
-                // MARK: - Recent Transcriptions
-                recentSection
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    statsSection
+                    recentSection
+                }
+                .padding(32)
             }
-            .padding(32)
+            .clipped()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
     }
 
     // MARK: - Header
@@ -56,7 +65,7 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(nsColor: .controlBackgroundColor))
+                    .background(VoxTheme.surface)
                     .cornerRadius(4)
             }
         }
@@ -87,7 +96,7 @@ struct HomeView: View {
                 value: "\(analytics.totalTranscriptions)",
                 subtitle: subtitleForTranscriptions,
                 icon: "waveform",
-                color: .purple
+                color: VoxTheme.accent
             )
 
             StatCard(
@@ -95,7 +104,7 @@ struct HomeView: View {
                 value: formatRecordingTime(analytics.totalRecordingTime),
                 subtitle: "total acumulado",
                 icon: "clock",
-                color: .blue
+                color: VoxTheme.accent
             )
 
             StatCard(
@@ -103,7 +112,7 @@ struct HomeView: View {
                 value: analytics.mostUsedMode?.localizedName ?? "-",
                 subtitle: "mais utilizado",
                 icon: "star",
-                color: .orange
+                color: VoxTheme.accent
             )
 
             StatCard(
@@ -111,7 +120,7 @@ struct HomeView: View {
                 value: "\(settings.favoriteLanguages.count)",
                 subtitle: "configurados",
                 icon: "globe",
-                color: .green
+                color: VoxTheme.accent
             )
         }
     }
@@ -162,7 +171,7 @@ struct HomeView: View {
                         NotificationCenter.default.post(name: .init("showHistory"), object: nil)
                     }
                     .buttonStyle(.plain)
-                    .foregroundStyle(.purple)
+                    .foregroundStyle(VoxTheme.accent)
                     .font(.system(size: 13))
                 }
             }
@@ -195,10 +204,10 @@ struct HomeView: View {
         .padding(.vertical, 40)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
                 )
         )
     }
@@ -249,7 +258,7 @@ struct StatCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -309,7 +318,7 @@ struct RecentTranscriptionRow: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color.clear)
+                .fill(isHovered ? VoxTheme.surface.opacity(0.5) : Color.clear)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {

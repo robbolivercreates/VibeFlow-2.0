@@ -16,23 +16,30 @@ struct LanguagesView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Header
-                headerSection
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header
+            headerSection
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.background)
+                .zIndex(1)
 
-                // MARK: - Current Language
-                currentLanguageSection
+            Divider()
 
-                // MARK: - Favorites
-                favoritesSection
-
-                // MARK: - All Languages
-                allLanguagesSection
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    currentLanguageSection
+                    favoritesSection
+                    allLanguagesSection
+                }
+                .padding(32)
             }
-            .padding(32)
+            .clipped()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
     }
 
     // MARK: - Header
@@ -83,21 +90,21 @@ struct LanguagesView: View {
 
                     Text("⌃⇧L")
                         .font(.system(size: 14, weight: .medium, design: .monospaced))
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(VoxTheme.accent)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Color.purple.opacity(0.1))
+                        .background(VoxTheme.accent.opacity(0.1))
                         .cornerRadius(6)
                 }
             }
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.purple.opacity(0.3), lineWidth: 1)
+                    .stroke(VoxTheme.accent.opacity(0.3), lineWidth: 1)
             )
         }
     }
@@ -136,7 +143,7 @@ struct LanguagesView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
         }
     }
@@ -165,7 +172,7 @@ struct LanguagesView: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color(nsColor: .controlBackgroundColor))
+                .background(VoxTheme.surface)
                 .cornerRadius(6)
             }
 
@@ -188,7 +195,7 @@ struct LanguagesView: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
         }
     }
@@ -247,11 +254,11 @@ struct FavoriteLanguageChip: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.purple.opacity(0.15) : Color(nsColor: .controlBackgroundColor))
+                .fill(isSelected ? VoxTheme.accent.opacity(0.15) : VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(isSelected ? Color.purple.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(isSelected ? VoxTheme.accent.opacity(0.3) : Color.clear, lineWidth: 1)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -280,7 +287,7 @@ struct LanguageRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(language.displayName)
                     .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? .purple : .primary)
+                    .foregroundStyle(isSelected ? VoxTheme.accent : .primary)
 
                 Text(language.rawValue.uppercased())
                     .font(.system(size: 10, design: .monospaced))
@@ -293,7 +300,7 @@ struct LanguageRow: View {
             Button(action: onToggleFavorite) {
                 Image(systemName: isFavorite ? "star.fill" : "star")
                     .font(.system(size: 12))
-                    .foregroundStyle(isFavorite ? .yellow : .secondary)
+                    .foregroundStyle(isFavorite ? VoxTheme.accent : .secondary)
             }
             .buttonStyle(.plain)
             .opacity(isHovered || isFavorite ? 1 : 0)
@@ -302,7 +309,7 @@ struct LanguageRow: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.purple.opacity(0.1) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color.clear))
+                .fill(isSelected ? VoxTheme.accent.opacity(0.1) : (isHovered ? VoxTheme.surface.opacity(0.1) : Color.clear))
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onSelect)

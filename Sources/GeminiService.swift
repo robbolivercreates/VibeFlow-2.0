@@ -14,7 +14,7 @@ class GeminiService: ObservableObject {
     /// Inicializa o serviço com a API key, modo, idioma de saída e clareza
     init(apiKey: String, mode: TranscriptionMode, outputLanguage: SpeechLanguage, clarifyText: Bool) {
         self.apiKey = apiKey
-        self.systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText)
+        self.systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText, wakeWord: SettingsManager.shared.wakeWord)
         self.temperature = mode.temperature
         self.maxOutputTokens = mode.maxOutputTokens
     }

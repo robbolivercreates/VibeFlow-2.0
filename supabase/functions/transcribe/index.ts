@@ -5,8 +5,8 @@ import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.t
 const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Free tier mode restrictions
-const FREE_MODES = ["text", "code"];
+// Free tier mode restrictions (lowercase). App sends lowercase apiName values.
+const FREE_MODES = ["text", "chat"];
 
 // Max distinct accounts allowed per device in 30 days before abuse flag
 const DEVICE_ABUSE_THRESHOLD = 2;
@@ -103,17 +103,12 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 5. Feature gating: check mode restrictions for free users
-    if (effectivePlan === "free" && mode && !FREE_MODES.includes(mode)) {
-      return new Response(
-        JSON.stringify({
-          error: "Modo disponível apenas no plano Pro",
-          code: "pro_feature",
-          mode,
-          allowed_modes: FREE_MODES,
-        }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+    // 5. Feature gating: mode restrictions logged but enforced client-side.
+    // Server-side enforcement removed because dev mode is client-only
+    // and the real protection is the usage limit, not mode gating.
+    const normalizedMode = (mode || "text").toLowerCase();
+    if (effectivePlan === "free" && !FREE_MODES.includes(normalizedMode)) {
+      console.warn(`Free user using pro mode: user=${user.id} mode=${normalizedMode}`);
     }
 
     // 6. Call Gemini API

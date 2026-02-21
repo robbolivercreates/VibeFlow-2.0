@@ -3,43 +3,25 @@ import Combine
 
 // MARK: - Color Constants
 private enum VoiceColors {
-    static let accent = Color(red: 0.4, green: 0.4, blue: 1.0) // Indigo
-    static let accentGlow = Color(red: 0.4, green: 0.4, blue: 1.0).opacity(0.3)
+    static let accent = Color.white  // White for idle waveform/mic
+    static let accentGlow = Color.white.opacity(0.3)
     static let speechActive = Color(red: 0.95, green: 0.25, blue: 0.25) // Red for active speech
     static let speechActiveGlow = Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.3)
-    static let processing = Color(red: 0.6, green: 0.4, blue: 1.0) // Purple
+    static let processing = VoxTheme.accent  // Gold for processing state
     static let background = Color.black.opacity(0.75)
     static let backgroundIdle = Color.black.opacity(0.6)
     static let border = Color.white.opacity(0.1)
     static let textPrimary = Color.white.opacity(0.9)
     static let textSecondary = Color.white.opacity(0.5)
 
-    // Language colors (elegant, no emoji)
+    // Language color — unified gold for all
     static func languageColor(for code: String) -> Color {
-        switch code.lowercased() {
-        case "pt": return Color(red: 0.0, green: 0.53, blue: 0.35) // Emerald
-        case "en": return Color(red: 0.15, green: 0.39, blue: 0.92) // Royal Blue
-        case "es": return Color(red: 0.92, green: 0.35, blue: 0.05) // Orange
-        case "fr": return Color(red: 0.23, green: 0.51, blue: 0.96) // French Blue
-        case "de": return Color(red: 0.79, green: 0.54, blue: 0.02) // Gold
-        case "it": return Color(red: 0.13, green: 0.55, blue: 0.13) // Italian Green
-        case "ja": return Color(red: 0.86, green: 0.15, blue: 0.15) // Red
-        case "ko": return Color(red: 0.0, green: 0.47, blue: 0.75) // Korean Blue
-        case "zh": return Color(red: 0.86, green: 0.08, blue: 0.24) // Chinese Red
-        case "ru": return Color(red: 0.0, green: 0.24, blue: 0.55) // Russian Blue
-        default: return Color(red: 0.4, green: 0.4, blue: 0.6) // Default purple-ish
-        }
+        return VoxTheme.accent
     }
 
-    // Mode colors
+    // Mode color — unified gold for all
     static func modeColor(for mode: TranscriptionMode) -> Color {
-        switch mode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)
-        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)
-        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2)
-        }
+        return VoxTheme.accent
     }
 }
 
@@ -84,16 +66,6 @@ struct ModernVoiceOverlay: View {
 
     var body: some View {
         ZStack {
-            // Subtle glow behind (only when active)
-            if currentState == .listening {
-                Ellipse()
-                    .fill(isSpeechActive ? VoiceColors.speechActiveGlow : VoiceColors.accentGlow)
-                    .frame(width: 350, height: 80)
-                    .blur(radius: 40)
-                    .opacity(glowOpacity)
-                    .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
-            }
-
             // Main container
             mainContainer
         }
@@ -143,33 +115,33 @@ struct ModernVoiceOverlay: View {
                     .transition(.opacity.combined(with: .move(edge: .trailing)))
             }
         }
-        .padding(.horizontal, isExpanded ? 20 : 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, isExpanded ? 22 : 18)
+        .padding(.vertical, 14)
         .frame(
             width: containerWidth,
             height: containerHeight
         )
         .background(
-            // Clean dark background with no glassmorphism artifacts
-            RoundedRectangle(cornerRadius: 24)
-                .fill(
+            Capsule()
+                .fill(Color(white: 0.12, opacity: 0.85))
+        )
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .stroke(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.12, green: 0.12, blue: 0.15),
-                            Color(red: 0.08, green: 0.08, blue: 0.10)
+                            Color.white.opacity(0.15),
+                            Color.white.opacity(0.02)
                         ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
                 )
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .animation(.spring(response: 0.45, dampingFraction: 0.78), value: isExpanded)
-        .animation(.spring(response: 0.45, dampingFraction: 0.78), value: currentState)
+        .animation(.spring(response: 0.45, dampingFraction: 0.75, blendDuration: 0.1), value: isExpanded)
+        .animation(.spring(response: 0.45, dampingFraction: 0.75, blendDuration: 0.1), value: currentState)
     }
 
     private var containerWidth: CGFloat {
@@ -192,25 +164,31 @@ struct ModernVoiceOverlay: View {
         HStack(spacing: 10) {
             // Microphone icon
             ZStack {
-                // Glow circle when active
-                if currentState == .listening {
+                if currentState == .listening && isSpeechActive {
+                    // Speaking: red circle with pulse
                     Circle()
-                        .fill(isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent)
+                        .fill(VoiceColors.speechActive)
                         .frame(width: 32, height: 32)
-                        .shadow(color: (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent).opacity(0.4), radius: 8)
                         .opacity(micPulse ? 0.6 : 1.0)
-                }
 
-                Circle()
-                    .fill(currentState == .listening
-                          ? (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent)
-                          : Color.clear)
-                    .frame(width: 28, height: 28)
-                    .opacity(micPulse ? 0.7 : 1.0)
+                    Circle()
+                        .fill(VoiceColors.speechActive)
+                        .frame(width: 28, height: 28)
+                        .opacity(micPulse ? 0.7 : 1.0)
+                } else if currentState != .processing {
+                    // Idle or listening-quiet: white dot behind gold mic
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 28, height: 28)
+                }
 
                 Image(systemName: micIcon)
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(currentState == .listening ? .white : VoiceColors.textSecondary)
+                    .foregroundColor(
+                        currentState == .listening && isSpeechActive
+                            ? .white  // White mic on red circle
+                            : (currentState == .processing ? VoiceColors.processing : VoxTheme.accent)  // Gold mic
+                    )
             }
             .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
             .onChange(of: isSpeechActive) { active in
@@ -327,11 +305,9 @@ private enum OverlayState {
     case processing
 }
 
-// MARK: - Sound Wave View
+// MARK: - Organic Sound Wave View
 struct SoundWaveView: View {
     let audioLevel: CGFloat
-
-    private let barCount = 6
 
     /// Audio level threshold for visual speech detection feedback
     private let speechVisualThreshold: CGFloat = 0.05
@@ -341,57 +317,90 @@ struct SoundWaveView: View {
     }
 
     var body: some View {
-        HStack(spacing: 3) {
-            ForEach(0..<barCount, id: \.self) { index in
-                SoundWaveBar(
-                    index: index,
-                    audioLevel: audioLevel,
-                    isSpeechActive: isSpeechActive,
-                    totalBars: barCount
+        ZStack {
+            // Background ambient wave (wider, softer)
+            OrganicWaveShape(level: audioLevel, frequency: 1.5, phase: isSpeechActive ? .random(in: 0...2) : 0)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent).opacity(0.4),
+                            Color.clear
+                        ],
+                        startPoint: .center,
+                        endPoint: .trailing
+                    )
                 )
-            }
+                .frame(width: 90, height: 36)
+                .blur(radius: 2)
+
+            // Foreground sharp wave
+            OrganicWaveShape(level: audioLevel, frequency: 2.0, phase: isSpeechActive ? .random(in: 0...4) : 0)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent,
+                            (isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent).opacity(0.6)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .frame(width: 80, height: 28)
         }
-        .frame(width: 50, height: 20)
+        .animation(.spring(response: 0.15, dampingFraction: 0.5, blendDuration: 0.1), value: audioLevel)
+        .animation(.easeInOut(duration: 0.3), value: isSpeechActive)
     }
 }
 
-// MARK: - Sound Wave Bar
-struct SoundWaveBar: View {
-    let index: Int
-    let audioLevel: CGFloat
-    let isSpeechActive: Bool
-    let totalBars: Int
+// MARK: - Organic Wave Shape
+struct OrganicWaveShape: Shape {
+    var level: CGFloat
+    var frequency: CGFloat
+    var phase: CGFloat
 
-    private var barColor: Color {
-        isSpeechActive ? VoiceColors.speechActive : VoiceColors.accent
+    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>> {
+        get { AnimatablePair(level, AnimatablePair(frequency, phase)) }
+        set {
+            level = newValue.first
+            frequency = newValue.second.first
+            phase = newValue.second.second
+        }
     }
 
-    var body: some View {
-        RoundedRectangle(cornerRadius: 1.5)
-            .fill(barColor.opacity(0.8 + Double(audioLevel) * 0.2))
-            .frame(width: 3, height: barHeight)
-            .animation(
-                .easeInOut(duration: 0.15)
-                .delay(Double(index) * 0.05),
-                value: audioLevel
-            )
-            .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
-    }
-
-    private var barHeight: CGFloat {
-        let minHeight: CGFloat = 4
-        let maxHeight: CGFloat = 18
-
-        // Create wave pattern based on index
-        let centerOffset = abs(CGFloat(index) - CGFloat(totalBars - 1) / 2)
-        let positionMultiplier = 1.0 - (centerOffset / CGFloat(totalBars) * 0.5)
-
-        // Apply audio level with some variation per bar
-        let variation = sin(Double(index) * 1.2) * 0.3 + 0.7
-        let effectiveLevel = max(audioLevel, 0.1) * CGFloat(variation) * positionMultiplier
-
-        let height = minHeight + (maxHeight - minHeight) * effectiveLevel
-        return min(max(height, minHeight), maxHeight)
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.width
+        let midY = rect.height / 2
+        
+        let minAmplitude: CGFloat = 2.0
+        let maxAmplitude = rect.height / 2
+        
+        // Effective amplitude based on audio level
+        let amplitude = minAmplitude + (maxAmplitude - minAmplitude) * max(0, min(level * 1.5, 1.0))
+        
+        path.move(to: CGPoint(x: 0, y: midY))
+        
+        // Draw top curve
+        for x in stride(from: 0, through: width, by: 1) {
+            let relativeX = x / width
+            // Bell curve to taper edges
+            let taper = sin(relativeX * .pi)
+            
+            let yOffset = sin((relativeX * .pi * frequency) + phase) * amplitude * taper
+            path.addLine(to: CGPoint(x: x, y: midY - yOffset))
+        }
+        
+        // Draw bottom curve (mirrored usually, but add slight phase shift for organic feel)
+        for x in stride(from: width, through: 0, by: -1) {
+            let relativeX = x / width
+            let taper = sin(relativeX * .pi)
+            
+            let yOffset = sin((relativeX * .pi * frequency) + phase + 0.5) * amplitude * taper
+            path.addLine(to: CGPoint(x: x, y: midY + yOffset))
+        }
+        
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -437,7 +446,7 @@ struct ModePill: View {
             Image(systemName: mode.icon)
                 .font(.system(size: 9, weight: .semibold))
 
-            Text(mode.shortDescription)
+            Text(mode.localizedName)
                 .font(.system(size: 10, weight: .semibold))
         }
         .foregroundColor(.white)
@@ -446,7 +455,6 @@ struct ModePill: View {
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(modeColor)
-                .shadow(color: modeColor.opacity(0.4), radius: 4, y: 2)
         )
     }
 }
@@ -483,7 +491,7 @@ struct LanguageSelectorView3: View {
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(settings.outputLanguage == language
                                           ? VoiceColors.languageColor(for: language.rawValue)
-                                          : Color(nsColor: .controlBackgroundColor))
+                                          : VoxTheme.surface)
                             )
                         }
                         .buttonStyle(.plain)

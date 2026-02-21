@@ -12,6 +12,7 @@ class VoxAiGoViewModel: ObservableObject {
         set { settings.clarifyText = newValue }
     }
     @Published var needsAuth = false
+    @Published var showUpgradePrompt = false
     @Published var audioLevel: CGFloat = 0.0
 
     private let settings = SettingsManager.shared
@@ -20,10 +21,6 @@ class VoxAiGoViewModel: ObservableObject {
     private let subscription = SubscriptionManager.shared
     let audioRecorder = AudioRecorder()
     private var cancellables = Set<AnyCancellable>()
-
-    // Command mode: stores selected text before recording
-    // Internal access so AppDelegate can pre-capture text before window activation
-    var commandModeSelectedText: String?
 
     // Conversation Reply mode: set by AppDelegate when ⌥⌘ is pressed during conversation HUD
     var isConversationReplyMode = false
@@ -107,8 +104,10 @@ class VoxAiGoViewModel: ObservableObject {
         }
 
         // Feature gating: mode restriction (only for Supabase users, not BYOK)
+        print("[ViewModel] toggleRecording: mode=\(selectedMode.rawValue) service=\(service) isPro=\(subscription.isPro) devMode=\(subscription.devModeActive)")
         if case .supabase = service, !subscription.canUseMode(selectedMode) {
             error = L10n.proModeRequired
+            print("[ViewModel] BLOCKED: proModeRequired for \(selectedMode.rawValue)")
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             return
         }
@@ -116,6 +115,7 @@ class VoxAiGoViewModel: ObservableObject {
         // Feature gating: language restriction (only for Supabase users, not BYOK)
         if case .supabase = service, !subscription.canUseLanguage(settings.outputLanguage) {
             error = L10n.proLanguageRequired
+            print("[ViewModel] BLOCKED: proLanguageRequired for \(settings.outputLanguage.rawValue)")
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             return
         }
@@ -123,7 +123,12 @@ class VoxAiGoViewModel: ObservableObject {
         // Feature gating: free limit (only for Supabase users, not BYOK)
         if case .supabase = service, subscription.hasReachedFreeLimit {
             error = L10n.freeLimitReached
+            showUpgradePrompt = true
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+            // Show upgrade window after HUD closes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
+            }
             return
         }
 
@@ -137,23 +142,6 @@ class VoxAiGoViewModel: ObservableObject {
     private func startRecording() {
         error = nil
         statusText = L10n.listening
-
-        // In command mode, check if text was already pre-captured by AppDelegate
-        // (text is captured BEFORE window activation for correct focus)
-        if selectedMode == .command {
-            // Only try to capture if not already set by AppDelegate
-            if commandModeSelectedText == nil {
-                commandModeSelectedText = ClipboardHelper.getSelectedText()
-            }
-
-            if commandModeSelectedText != nil {
-                print("[VoxAiGo] Command mode: using selected text (\(commandModeSelectedText!.count) chars)")
-            } else {
-                print("[VoxAiGo] Command mode: no text selected, will transcribe as normal")
-            }
-        } else {
-            commandModeSelectedText = nil
-        }
 
         audioRecorder.startRecording()
     }
@@ -169,6 +157,10 @@ class VoxAiGoViewModel: ObservableObject {
               let audioData = audioRecorder.getRecordingData() else {
             error = L10n.recordingError
             statusText = L10n.error
+            // Post after a delay so the error is visible before the HUD closes
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+            }
             return
         }
 
@@ -262,8 +254,6 @@ class VoxAiGoViewModel: ObservableObject {
         let currentMode = self.selectedMode
         let currentLanguage = self.settings.outputLanguage
         let currentClarify = self.clarifyText
-        let selectedText = self.commandModeSelectedText
-
         Task {
             await MainActor.run {
                 self.isProcessing = true
@@ -278,8 +268,7 @@ class VoxAiGoViewModel: ObservableObject {
                         audioData: audioData,
                         mode: currentMode,
                         language: currentLanguage,
-                        clarifyText: currentClarify,
-                        selectedText: selectedText
+                        clarifyText: currentClarify
                     )
 
                 case .byok(let apiKey):
@@ -288,8 +277,7 @@ class VoxAiGoViewModel: ObservableObject {
                         apiKey: apiKey,
                         mode: currentMode,
                         language: currentLanguage,
-                        clarifyText: currentClarify,
-                        selectedText: selectedText
+                        clarifyText: currentClarify
                     )
 
                 case .none:
@@ -318,8 +306,7 @@ class VoxAiGoViewModel: ObservableObject {
                             apiKey: self.settings.byokApiKey,
                             mode: currentMode,
                             language: currentLanguage,
-                            clarifyText: currentClarify,
-                            selectedText: selectedText
+                            clarifyText: currentClarify
                         )
                         await handleTranscriptionSuccess(
                             text: fallbackText,
@@ -333,10 +320,25 @@ class VoxAiGoViewModel: ObservableObject {
                 }
 
                 await MainActor.run {
-                    self.commandModeSelectedText = nil
                     self.isProcessing = false
-                    self.error = "\(L10n.error): \(error.localizedDescription)"
-                    self.statusText = L10n.error
+
+                    // Special handling for free limit reached — show upgrade prompt
+                    if case SupabaseTranscriptionError.freeLimitReached = error {
+                        self.error = L10n.freeLimitReached
+                        self.statusText = L10n.error
+                        self.showUpgradePrompt = true
+                        // Refresh profile to sync counter
+                        Task { await SubscriptionManager.shared.fetchProfile() }
+                        // Show upgrade window after HUD closes
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
+                        }
+                    } else {
+                        self.error = "\(L10n.error): \(error.localizedDescription)"
+                        self.statusText = L10n.error
+                    }
+                    // Close the HUD window — without this, it stays stuck showing "Segure"
+                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
                 }
             }
         }
@@ -348,16 +350,10 @@ class VoxAiGoViewModel: ObservableObject {
         audioData: Data,
         mode: TranscriptionMode,
         language: SpeechLanguage,
-        clarifyText: Bool,
-        selectedText: String?
+        clarifyText: Bool
     ) async throws -> String {
         let service = SupabaseService(mode: mode, outputLanguage: language, clarifyText: clarifyText)
-
-        if mode == .command, let selectedText = selectedText {
-            return try await service.transcribeWithSelectedText(audioData: audioData, selectedText: selectedText)
-        } else {
-            return try await service.transcribeAudio(audioData: audioData)
-        }
+        return try await service.transcribeAudio(audioData: audioData)
     }
 
     private func transcribeViaBYOK(
@@ -365,8 +361,7 @@ class VoxAiGoViewModel: ObservableObject {
         apiKey: String,
         mode: TranscriptionMode,
         language: SpeechLanguage,
-        clarifyText: Bool,
-        selectedText: String?
+        clarifyText: Bool
     ) async throws -> String {
         let service = GeminiService(
             apiKey: apiKey,
@@ -374,12 +369,7 @@ class VoxAiGoViewModel: ObservableObject {
             outputLanguage: language,
             clarifyText: clarifyText
         )
-
-        if mode == .command, let selectedText = selectedText {
-            return try await service.transcribeWithSelectedText(audioData: audioData, selectedText: selectedText)
-        } else {
-            return try await service.transcribeAudio(audioData: audioData)
-        }
+        return try await service.transcribeAudio(audioData: audioData)
     }
 
     private func handleTranscriptionSuccess(
@@ -388,7 +378,6 @@ class VoxAiGoViewModel: ObservableObject {
         recordingDuration: TimeInterval
     ) async {
         await MainActor.run {
-            self.commandModeSelectedText = nil
             self.isProcessing = false
 
             if text.isEmpty {
@@ -397,6 +386,52 @@ class VoxAiGoViewModel: ObservableObject {
             } else {
                 // Expandir snippets
                 let finalText = self.snippets.expand(text)
+
+                // ── Wake word detection ─────────────────────────────────────────
+                // Only activates if text STARTS with the configured wake word.
+                // Tries mode match first, language match second.
+                // Does NOT paste — fires a notification for the AppDelegate HUD.
+                if self.settings.wakeWordEnabled {
+                    let result = VoxAiGoViewModel.detectWakeWordCommand(
+                        in: finalText,
+                        wakeWord: self.settings.wakeWord
+                    )
+
+                    if let result = result {
+                        switch result {
+                        case .mode(let newMode):
+                            self.updateMode(newMode)
+                            print("[WakeWord] Mode → \(newMode.rawValue)")
+                            NotificationCenter.default.post(
+                                name: .wakeWordCommand,
+                                object: nil,
+                                userInfo: [
+                                    "label": newMode.rawValue,
+                                    "icon": newMode.icon,
+                                    "type": "mode"
+                                ]
+                            )
+
+                        case .language(let newLang):
+                            self.settings.outputLanguage = newLang
+                            print("[WakeWord] Language → \(newLang.displayName)")
+                            NotificationCenter.default.post(
+                                name: .wakeWordCommand,
+                                object: nil,
+                                userInfo: [
+                                    "label": "\(newLang.flag) \(newLang.displayName)",
+                                    "icon": "globe",
+                                    "type": "language"
+                                ]
+                            )
+                        }
+
+                        // Close the recording HUD immediately — AppDelegate shows a dedicated toast
+                        NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        return
+                    }
+                }
+                // ───────────────────────────────────────────────────────────────
 
                 // Copiar e colar
                 ClipboardHelper.copyAndPaste(finalText)
@@ -425,6 +460,78 @@ class VoxAiGoViewModel: ObservableObject {
             }
         }
     }
+
+    // MARK: - Wake Word Detection
+
+    /// Result of a wake word command — either a mode switch or a language switch
+    enum WakeWordResult {
+        case mode(TranscriptionMode)
+        case language(SpeechLanguage)
+    }
+
+    /// Parses transcribed text for a wake word command at the BEGINNING of the string.
+    /// Returns a `WakeWordResult` (mode or language) if matched, nil otherwise.
+    /// Tries mode aliases first, language aliases second to avoid ambiguity.
+    static func detectWakeWordCommand(in text: String, wakeWord: String = "Hey Vox") -> WakeWordResult? {
+        let normalized = text
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: " ")
+            .replacingOccurrences(of: ".", with: " ")
+            .replacingOccurrences(of: "!", with: " ")
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }.joined(separator: " ")
+
+        // Build wake word candidate list
+        let base = wakeWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        var candidates: [String] = [base]
+        if base == "hey vox" {
+            candidates += ["ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
+        } else {
+            let stripped = base.folding(options: .diacriticInsensitive, locale: .current)
+            if stripped != base { candidates.append(stripped) }
+        }
+
+        // Must start with wake word (not appear in the middle of a sentence)
+        guard let wake = candidates.first(where: { normalized.hasPrefix($0) }) else {
+            return nil
+        }
+
+        let commandPart = normalized
+            .dropFirst(wake.count)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !commandPart.isEmpty else { return nil }
+
+        // ── 1. Try mode match first (sorted by alias length — most specific first) ──
+        let sortedModes = TranscriptionMode.allCases.sorted { a, b in
+            let maxA = a.voiceAliases.map(\.count).max() ?? 0
+            let maxB = b.voiceAliases.map(\.count).max() ?? 0
+            return maxA > maxB
+        }
+        for mode in sortedModes {
+            for alias in mode.voiceAliases where !alias.isEmpty {
+                if commandPart.hasPrefix(alias) || commandPart == alias {
+                    return .mode(mode)
+                }
+            }
+        }
+
+        // ── 2. Try language match (sorted by alias length too) ──
+        let sortedLanguages = SpeechLanguage.allCases.sorted { a, b in
+            let maxA = a.voiceAliases.map(\.count).max() ?? 0
+            let maxB = b.voiceAliases.map(\.count).max() ?? 0
+            return maxA > maxB
+        }
+        for lang in sortedLanguages {
+            for alias in lang.voiceAliases {
+                if commandPart.hasPrefix(alias) || commandPart == alias {
+                    return .language(lang)
+                }
+            }
+        }
+
+        return nil
+    }
 }
 
 // MARK: - Localization
@@ -434,3 +541,5 @@ extension L10n {
     static var proModeRequired: String { t("This mode requires Pro plan", "Este modo requer plano Pro", "Este modo requiere plan Pro") }
     static var proLanguageRequired: String { t("This language requires Pro plan", "Este idioma requer plano Pro", "Este idioma requiere plan Pro") }
 }
+
+

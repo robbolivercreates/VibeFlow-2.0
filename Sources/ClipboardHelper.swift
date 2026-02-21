@@ -16,11 +16,30 @@ class ClipboardHelper {
 
     /// Salva qual app estava ativo antes do VoxAiGo
     static func savePreviousApp() {
-        // Pega o app que está na frente (exceto o próprio VoxAiGo)
-        let apps = NSWorkspace.shared.runningApplications.filter {
-            $0.isActive && $0.bundleIdentifier != Bundle.main.bundleIdentifier
+        // Filter out VoxAiGo itself — we only want the external app the user was working in
+        let voxBundleId = Bundle.main.bundleIdentifier
+
+        // First: look for a non-VoxAiGo app that is currently active
+        let externalActive = NSWorkspace.shared.runningApplications.first {
+            $0.isActive && $0.bundleIdentifier != voxBundleId
         }
-        previousApp = apps.first ?? NSWorkspace.shared.frontmostApplication
+
+        if let app = externalActive {
+            // Found a clearly external active app — save it
+            previousApp = app
+        } else {
+            // No external app is active right now (VoxAiGo or a HUD has focus).
+            // Check the frontmost app; if it's external, save it.
+            // If it's VoxAiGo, keep the EXISTING previousApp to avoid overwriting
+            // with VoxAiGo when a mode-change HUD is on screen.
+            let frontmost = NSWorkspace.shared.frontmostApplication
+            if frontmost?.bundleIdentifier != voxBundleId {
+                previousApp = frontmost
+            }
+            // else: previousApp stays unchanged — it still points to the real target app
+        }
+
+        print("[ClipboardHelper] previousApp = \(previousApp?.localizedName ?? "nil")")
     }
 
     // MARK: - Clipboard Save/Restore
@@ -86,9 +105,11 @@ class ClipboardHelper {
         return NSPasteboard.general.string(forType: .string)
     }
 
-    /// Simula Cmd+C para copiar texto selecionado
+    /// Simula Cmd+C para copiar texto selecionado.
+    /// Uses .privateState to avoid interference from physically held modifier keys
+    /// (e.g., when triggered by ⌃⇧R, Ctrl+Shift are still held and would pollute .combinedSessionState).
     private static func simulateCopy() {
-        guard let source = CGEventSource(stateID: .combinedSessionState) else {
+        guard let source = CGEventSource(stateID: .privateState) else {
             return
         }
 
@@ -138,9 +159,11 @@ class ClipboardHelper {
     }
 
     /// Simula Cmd+V usando CGEvent
+    /// Uses .privateState to avoid interference from physically held modifier keys
+    /// (e.g., when triggered by ⌥⌘, Option+Command are still held and would pollute .combinedSessionState).
     private static func simulatePaste() {
         // Criar source de eventos
-        guard let source = CGEventSource(stateID: .combinedSessionState) else {
+        guard let source = CGEventSource(stateID: .privateState) else {
             print("Não foi possível criar CGEventSource")
             return
         }

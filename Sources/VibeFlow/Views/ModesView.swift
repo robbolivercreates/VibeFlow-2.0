@@ -8,26 +8,31 @@ struct ModesView: View {
     @State private var showUpgradeModal = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Header
-                headerSection
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header
+            headerSection
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.background)
+                .zIndex(1)
 
-                // MARK: - Current Mode
-                currentModeSection
+            Divider()
 
-                // MARK: - All Modes
-                allModesSection
-
-                // MARK: - Conversation Reply Feature
-                conversationReplyModeSection
-
-                // MARK: - Mode Tips
-                tipSection
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    currentModeSection
+                    allModesSection
+                    conversationReplyModeSection
+                    tipSection
+                }
+                .padding(32)
             }
-            .padding(32)
+            .clipped()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
         .sheet(isPresented: $showUpgradeModal) {
             UpgradeModalView(isPresented: $showUpgradeModal)
         }
@@ -87,7 +92,7 @@ struct ModesView: View {
                     HStack(spacing: 4) {
                         ForEach(0..<5) { i in
                             Circle()
-                                .fill(i < temperatureLevel ? settings.selectedMode.color : Color(nsColor: .controlColor).opacity(0.1))
+                                .fill(i < temperatureLevel ? settings.selectedMode.color : VoxTheme.surface.opacity(0.1))
                                 .frame(width: 6, height: 6)
                         }
                     }
@@ -96,7 +101,7 @@ struct ModesView: View {
             .padding(20)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -160,7 +165,7 @@ struct ModesView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 8) {
                 Image(systemName: "lightbulb")
-                    .foregroundStyle(.yellow)
+                    .foregroundStyle(VoxTheme.accent)
                 Text("Dica")
                     .font(.system(size: 13, weight: .medium))
             }
@@ -173,7 +178,7 @@ struct ModesView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.yellow.opacity(0.08))
+                .fill(VoxTheme.accent.opacity(0.08))
         )
     }
 }
@@ -212,7 +217,7 @@ struct ModeCard2: View {
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundStyle(.white)
                                 .padding(3)
-                                .background(Color.orange)
+                                .background(VoxTheme.accent)
                                 .clipShape(Circle())
                                 .offset(x: 13, y: 13)
                         }
@@ -237,7 +242,7 @@ struct ModeCard2: View {
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(
-                                    LinearGradient(colors: [Color.orange, Color.pink], startPoint: .leading, endPoint: .trailing)
+                                    VoxTheme.goldGradient
                                 )
                                 .cornerRadius(4)
                             } else if isSelected {
@@ -303,11 +308,11 @@ struct ModeCard2: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isPro ? Color(nsColor: .controlBackgroundColor).opacity(0.5) : (isSelected ? mode.color.opacity(0.06) : (isHovered ? Color(nsColor: .controlColor).opacity(0.1) : Color(nsColor: .controlBackgroundColor))))
+                .fill(isPro ? VoxTheme.surface.opacity(0.5) : (isSelected ? mode.color.opacity(0.06) : (isHovered ? VoxTheme.surface.opacity(0.1) : VoxTheme.surface)))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(isPro ? Color.orange.opacity(0.25) : (isSelected ? mode.color.opacity(0.25) : Color(nsColor: .separatorColor)), lineWidth: 1)
+                .stroke(isPro ? VoxTheme.accent.opacity(0.25) : (isSelected ? mode.color.opacity(0.25) : VoxTheme.surfaceBorder), lineWidth: 1)
         )
         .onHover { hovering in
             withAnimation(.easeInOut(duration: 0.15)) {
@@ -328,7 +333,7 @@ struct UpgradeModalView: View {
             VStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(LinearGradient(colors: [.orange, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .fill(VoxTheme.goldGradient)
                         .frame(width: 64, height: 64)
                     Image(systemName: "diamond.fill")
                         .font(.system(size: 28, weight: .bold))
@@ -350,7 +355,7 @@ struct UpgradeModalView: View {
             // Features list
             VStack(alignment: .leading, spacing: 10) {
                 ModeProFeatureRow(icon: "infinity", text: "Transcrições ilimitadas por mês")
-                ModeProFeatureRow(icon: "waveform.and.mic", text: "Todos os 5 modos (Email, UX Design, Comando)")
+                ModeProFeatureRow(icon: "waveform.and.mic", text: "Todos os 15 modos (Vibe Coder, Social, Reunião...)")
                 ModeProFeatureRow(icon: "globe", text: "15+ idiomas disponíveis")
                 ModeProFeatureRow(icon: "sparkles", text: "Aprendizado de estilo pessoal")
                 ModeProFeatureRow(icon: "text.badge.plus", text: "Snippets personalizados")
@@ -358,7 +363,7 @@ struct UpgradeModalView: View {
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.orange.opacity(0.06))
+                    .fill(VoxTheme.accentMuted)
             )
             .padding(.horizontal, 24)
             .padding(.top, 20)
@@ -395,7 +400,7 @@ struct UpgradeModalView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(
-                        LinearGradient(colors: [.orange, .pink], startPoint: .leading, endPoint: .trailing)
+                        VoxTheme.goldGradient
                     )
                     .foregroundStyle(.white)
                     .cornerRadius(10)
@@ -408,7 +413,7 @@ struct UpgradeModalView: View {
                 }) {
                     Text("Plano Anual — R$14,90/mês (economize 25%)")
                         .font(.system(size: 13))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(VoxTheme.accent)
                 }
                 .buttonStyle(.borderless)
 
@@ -422,7 +427,7 @@ struct UpgradeModalView: View {
             .padding(.bottom, 28)
         }
         .frame(width: 380)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
     }
 }
 
@@ -434,7 +439,7 @@ private struct ModeProFeatureRow: View {
         HStack(spacing: 10) {
             Image(systemName: icon)
                 .font(.system(size: 13))
-                .foregroundStyle(.orange)
+                .foregroundStyle(VoxTheme.accent)
                 .frame(width: 20)
             Text(text)
                 .font(.system(size: 13))
@@ -486,7 +491,7 @@ struct ConversationReplyFeatureCard: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(
-                                LinearGradient(colors: [Color.orange, Color.pink], startPoint: .leading, endPoint: .trailing)
+                                VoxTheme.goldGradient
                             )
                             .cornerRadius(4)
                         } else if settings.enableConversationReply {
@@ -517,7 +522,7 @@ struct ConversationReplyFeatureCard: View {
                     Button("Ativar Pro") { showUpgrade = true }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
-                        .tint(.orange)
+                        .tint(VoxTheme.accent)
                 }
 
                 // Expand button
@@ -566,7 +571,7 @@ struct ConversationReplyFeatureCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(isHovered ? featureColor.opacity(0.04) : Color(nsColor: .controlBackgroundColor))
+                .fill(isHovered ? featureColor.opacity(0.04) : VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)

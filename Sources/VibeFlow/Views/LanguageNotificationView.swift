@@ -13,30 +13,32 @@ struct HUDNotificationContainer<Content: View>: View {
     
     var body: some View {
         content
-            .padding(.horizontal, 20)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(
+                Capsule()
+                    .fill(VoxTheme.surface.opacity(0.85))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.12, green: 0.12, blue: 0.15).opacity(0.95),
-                                Color(red: 0.08, green: 0.08, blue: 0.10).opacity(0.95)
+                                Color.white.opacity(0.15),
+                                Color.white.opacity(0.02)
                             ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
                     )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.4), radius: 20, x: 0, y: 8)
             )
-            .scaleEffect(isVisible ? 1.0 : 0.8)
+            .clipShape(Capsule())
+            .scaleEffect(isVisible ? 1.0 : 0.7, anchor: .center)
+            .offset(y: isVisible ? 0 : 15)
             .opacity(isVisible ? 1.0 : 0.0)
             .onAppear {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.65, blendDuration: 0.1)) {
                     isVisible = true
                 }
             }
@@ -126,15 +128,7 @@ struct LanguageNotificationView: View {
 struct ModeNotificationView: View {
     let mode: TranscriptionMode
 
-    private var modeColor: Color {
-        switch mode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)
-        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)
-        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2)
-        }
-    }
+    private var modeColor: Color { mode.color }
 
     var body: some View {
         HUDNotificationContainer {
@@ -144,11 +138,11 @@ struct ModeNotificationView: View {
                     Circle()
                         .fill(modeColor.opacity(0.2))
                         .frame(width: 36, height: 36)
-                    
+
                     Circle()
                         .stroke(modeColor.opacity(0.4), lineWidth: 1.5)
                         .frame(width: 36, height: 36)
-                    
+
                     Image(systemName: mode.icon)
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundStyle(modeColor)
@@ -182,15 +176,7 @@ struct PasteLastNotificationView: View {
     let text: String
     let mode: TranscriptionMode
 
-    private var modeColor: Color {
-        switch mode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)
-        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)
-        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2)
-        }
-    }
+    private var modeColor: Color { mode.color }
 
     var body: some View {
         HUDNotificationContainer {
@@ -198,16 +184,16 @@ struct PasteLastNotificationView: View {
                 // Clipboard icon
                 ZStack {
                     Circle()
-                        .fill(Color.green.opacity(0.2))
+                        .fill(VoxTheme.accent.opacity(0.2))
                         .frame(width: 36, height: 36)
-                    
+
                     Circle()
-                        .stroke(Color.green.opacity(0.4), lineWidth: 1.5)
+                        .stroke(VoxTheme.accent.opacity(0.4), lineWidth: 1.5)
                         .frame(width: 36, height: 36)
-                    
+
                     Image(systemName: "doc.on.clipboard.fill")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Color.green)
+                        .foregroundStyle(VoxTheme.accent)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -218,7 +204,7 @@ struct PasteLastNotificationView: View {
                         
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 10))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(VoxTheme.accent)
                     }
 
                     Text(text.prefix(30) + (text.count > 30 ? "…" : ""))
@@ -242,16 +228,16 @@ struct NoHistoryNotificationView: View {
                 // Empty tray icon
                 ZStack {
                     Circle()
-                        .fill(Color.orange.opacity(0.2))
+                        .fill(VoxTheme.accent.opacity(0.2))
                         .frame(width: 36, height: 36)
-                    
+
                     Circle()
-                        .stroke(Color.orange.opacity(0.4), lineWidth: 1.5)
+                        .stroke(VoxTheme.accent.opacity(0.4), lineWidth: 1.5)
                         .frame(width: 36, height: 36)
-                    
+
                     Image(systemName: "tray")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(VoxTheme.accent)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {

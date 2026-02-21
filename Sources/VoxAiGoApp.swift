@@ -34,6 +34,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var languageNotificationWindow: NSWindow?
     var modeNotificationWindow: NSWindow?
     var pasteLastNotificationWindow: NSWindow?
+    var wakeWordNotificationWindow: NSWindow?
     var lastLanguageCycleTime: Date = .distantPast
     var lastModeCycleTime: Date = .distantPast
     var lastPasteLastTime: Date = .distantPast
@@ -49,7 +50,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
-        
+
+        // Force dark mode globally — ensures all system controls match the matte black theme
+        NSApp.appearance = NSAppearance(named: .darkAqua)
+
         // Create status item in .regular policy (ONLY mode where it works).
         // .accessory mode and LSUIElement both move status items off-screen on this system.
         AppDelegate.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -106,7 +110,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         setupObservers()
         
         // Mostrar wizard ou ativação se necessário
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in
+        // Delay reduzido: 0.3s suficiente para app inicializar sem deixar menu acessível
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.checkFirstLaunch()
         }
     }
@@ -258,13 +263,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     // MARK: - Menu
     
+    @objc func showLoginOnboardingFromMenu() {
+        showLoginOnboarding()
+    }
+
     @objc func updateMenu() {
         let menu = NSMenu()
-        
+
         // Título
         let titleItem = NSMenuItem(title: "VoxAiGo \(AppVersion.current)", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
+
+        // Se não autenticado: menu mínimo — apenas Login e Sair
+        if !AuthManager.shared.isAuthenticated {
+            menu.addItem(NSMenuItem.separator())
+            let loginItem = NSMenuItem(title: "Fazer Login...", action: #selector(showLoginOnboardingFromMenu), keyEquivalent: "")
+            loginItem.target = self
+            menu.addItem(loginItem)
+            menu.addItem(NSMenuItem.separator())
+            menu.addItem(NSMenuItem(title: L10n.quit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+            AppDelegate.statusItem?.menu = menu
+            return
+        }
 
         // Account info
         if AuthManager.shared.isAuthenticated {
@@ -468,6 +489,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func showMainWindow() {
+        // Block access to main window if not authenticated
+        guard AuthManager.shared.isAuthenticated else {
+            showLoginOnboarding()
+            return
+        }
+
         // If window exists, just show it
         if let existingWindow = mainAppWindow {
             existingWindow.makeKeyAndOrderFront(nil)
@@ -628,8 +655,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Local keyDown monitor (shortcuts work when VoxAiGo window is active)
+        // Returns nil for matched shortcuts to consume the event and prevent macOS "bonk" sound
         localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            self?.handleGlobalKeyEvent(event)
+            guard let self = self else { return event }
+            if self.localKeyEventMatchesShortcut(event) {
+                self.handleGlobalKeyEvent(event)
+                return nil  // Consume event — prevents macOS error sound
+            }
+            self.handleGlobalKeyEvent(event)
             return event
         }
     }
@@ -753,6 +786,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Handle key events from the CGEvent tap (works globally)
     func handleCGKeyEvent(keyCode: UInt16, flags: CGEventFlags) {
+        // Yield to ShortcutEditor when it is actively capturing a new key combo
+        guard !ShortcutEditor.isCapturing else { return }
+
         let keyChar = keyCodeToChar(keyCode)
 
         // Convert CGEventFlags to NSEvent.ModifierFlags for matchesShortcut
@@ -796,6 +832,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Conversation Reply shortcut (default: ⌃⇧R)
         if matchesShortcut(settings.conversationReplyShortcut, modifiers: modifiers, keyChar: keyChar) {
+            appendDiag("[VoxAiGo \(Date())] CGEvent matched conversation reply shortcut (\(settings.conversationReplyShortcut))\n")
             DispatchQueue.main.async { [weak self] in
                 self?.activateConversationReply()
             }
@@ -804,6 +841,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func handleGlobalKeyEvent(_ event: NSEvent) {
+        // Yield to ShortcutEditor when it is actively capturing a new key combo
+        guard !ShortcutEditor.isCapturing else { return }
+
         // Strip device-dependent bits for reliable matching
         let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let keyCode = event.keyCode
@@ -854,6 +894,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+    }
+
+    /// Returns true if the NSEvent matches any of our registered shortcuts.
+    /// Used by the local keyDown monitor to decide whether to consume the event.
+    private func localKeyEventMatchesShortcut(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let keyChar = keyCodeToChar(event.keyCode)
+
+        let shortcuts = [
+            settings.shortcutToggleKey,
+            settings.cycleLanguageShortcut,
+            settings.cycleModeShortcut,
+            settings.pasteLastShortcut,
+            settings.conversationReplyShortcut
+        ]
+        return shortcuts.contains { matchesShortcut($0, modifiers: modifiers, keyChar: keyChar) }
     }
 
     /// Convert key code to character (macOS virtual key codes, layout-independent)
@@ -951,6 +1007,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             } else {
                 // This window was already replaced — force close it
+                window.orderOut(nil)
+            }
+        }
+    }
+
+    func showWakeWordNotification(label: String, icon: String) {
+        wakeWordNotificationWindow?.orderOut(nil)
+        wakeWordNotificationWindow = nil
+
+        // Audio feedback
+        sounds.playSuccess()
+
+        let contentView = WakeWordNotificationView(label: label, icon: icon)
+        let notificationWindow = createHUDWindow(
+            contentView: contentView,
+            width: 280,
+            height: 64
+        )
+
+        self.wakeWordNotificationWindow = notificationWindow
+        notificationWindow.orderFrontRegardless()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self, weak notificationWindow] in
+            guard let self = self, let window = notificationWindow else { return }
+            if self.wakeWordNotificationWindow === window {
+                self.fadeOutAndClose(window: window) {
+                    if self.wakeWordNotificationWindow === window {
+                        self.wakeWordNotificationWindow = nil
+                    }
+                }
+            } else {
                 window.orderOut(nil)
             }
         }
@@ -1125,11 +1212,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         notificationWindow.ignoresMouseEvents = true  // Click-through
         notificationWindow.collectionBehavior = [.canJoinAllSpaces, .stationary]
 
-        // Position at top center of screen (30px below menu bar)
+        // Position in lower portion of screen (25% from bottom) exactly like recording HUD
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let x = screenFrame.midX - width / 2
-            let y = screenFrame.maxY - height - 30
+            let y = screenFrame.minY + (screenFrame.height * 0.25)
             notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
         }
 
@@ -1219,25 +1306,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Salvar app anterior
             ClipboardHelper.savePreviousApp()
 
-            // IMPORTANT: Capture selected text BEFORE activating VoxAiGo window
-            // This must happen while the previous app still has focus
-            var capturedText: String? = nil
-            if viewModel?.selectedMode == .command {
-                capturedText = ClipboardHelper.getSelectedText()
-                if let text = capturedText {
-                    print("[VoxAiGo] Command mode: pre-captured selected text (\(text.count) chars)")
-                } else {
-                    print("[VoxAiGo] Command mode: no text selected (captured before window activation)")
-                }
-            }
-
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-
-                // Pass the pre-captured text to viewModel
-                if let text = capturedText {
-                    self.viewModel?.commandModeSelectedText = text
-                }
 
                 // Mostrar janela
                 if !(self.window?.isVisible ?? false) {
@@ -1312,6 +1382,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        // Atualizar menu quando auth muda (login/logout)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateMenu),
+            name: .authStateChanged,
+            object: nil
+        )
+
+        // Handle wake word commands (mode or language switch via voice)
+        NotificationCenter.default.addObserver(
+            forName: .wakeWordCommand,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let info = notification.userInfo,
+                  let label = info["label"] as? String,
+                  let icon = info["icon"] as? String else { return }
+            self?.showWakeWordNotification(label: label, icon: icon)
+        }
+
+        // Mostrar login quando usuário faz logout
+        NotificationCenter.default.addObserver(
+            forName: .authStateChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            if !AuthManager.shared.isAuthenticated {
+                self?.mainAppWindow?.close()
+                self?.mainAppWindow = nil
+                self?.showLoginOnboarding()
+            }
+        }
+
         // Observar pedido para mostrar historico (from HomeView)
         NotificationCenter.default.addObserver(
             self,
@@ -1335,12 +1438,74 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .conversationReplyTimedOut,
             object: nil
         )
+
+        // Show upgrade prompt when free limit is reached
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowUpgradePrompt),
+            name: .showUpgradePrompt,
+            object: nil
+        )
+    }
+
+    var upgradeWindow: NSWindow?
+
+    @objc func handleShowUpgradePrompt() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            // Close existing if any
+            self.upgradeWindow?.close()
+            self.upgradeWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.upgradeWindow?.close()
+                    self.upgradeWindow = nil
+                }
+            })
+
+            let upgradeView = UpgradeModalView(isPresented: binding)
+            let hostingView = NSHostingView(rootView: upgradeView)
+
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = "Upgrade para Pro"
+            window.isReleasedWhenClosed = false
+            window.center()
+            window.level = .floating
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.upgradeWindow = window
+        }
     }
     
     @objc func handleRecordingCancelled() {
-        // Fechar janela se não houve fala
         DispatchQueue.main.async { [weak self] in
-            self?.window?.orderOut(nil)
+            guard let self = self else { return }
+            // If there is an error or mic-denied message, keep HUD open briefly so user can read it
+            let hasError = self.viewModel?.error != nil
+            let hasMicError = self.viewModel?.audioRecorder.recordingError != nil
+            if hasError || hasMicError {
+                // Show the mic error in the viewModel so ContentView renders it
+                if let micErr = self.viewModel?.audioRecorder.recordingError {
+                    self.viewModel?.error = micErr
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+                    self?.viewModel?.error = nil
+                    self?.window?.orderOut(nil)
+                }
+            } else {
+                self.window?.orderOut(nil)
+            }
         }
     }
     
@@ -1374,34 +1539,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Called when ⌃⇧R is pressed. Reads selected text, translates it, shows the HUD.
     @objc func activateConversationReply() {
+        appendDiag("[VoxAiGo \(Date())] activateConversationReply() called\n")
+
         // Check if feature is enabled
-        guard SettingsManager.shared.enableConversationReply else { return }
+        guard SettingsManager.shared.enableConversationReply else {
+            appendDiag("  ❌ enableConversationReply is false\n")
+            return
+        }
 
         // Debounce
         let now = Date()
-        guard now.timeIntervalSince(lastConversationReplyTime) >= conversationReplyDebounceInterval else { return }
+        guard now.timeIntervalSince(lastConversationReplyTime) >= conversationReplyDebounceInterval else {
+            appendDiag("  ❌ debounced\n")
+            return
+        }
         lastConversationReplyTime = now
 
         // If already active: dismiss
         if ConversationReplyManager.shared.isActive {
+            appendDiag("  Already active → dismissing\n")
             ConversationReplyManager.shared.dismiss()
             dismissConversationReplyHUD()
             return
         }
 
         // Read selected text BEFORE showing the HUD (clipboard trick needs app focus on source)
-        guard let selectedText = ClipboardHelper.getSelectedText(), !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        let selectedText = ClipboardHelper.getSelectedText()
+        appendDiag("  getSelectedText returned: \(selectedText == nil ? "nil" : "'\(selectedText!.prefix(50))'") (\(selectedText?.count ?? 0) chars)\n")
+
+        guard let selectedText = selectedText, !selectedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             sounds.playError()
-            showLanguageNotification(language: settings.outputLanguage)  // Reuse HUD to show feedback
-            print("[VoxAiGo] Conversation Reply: no text selected")
+            appendDiag("  ❌ No text selected\n")
             return
         }
 
         guard AuthManager.shared.isAuthenticated || settings.hasByokKey else {
             sounds.playError()
+            appendDiag("  ❌ Not authenticated\n")
             showMainWindow()
             return
         }
+        appendDiag("  ✅ Starting translation for text: '\(selectedText.prefix(50))'\n")
 
         sounds.playStart()
         ConversationReplyManager.shared.beginTranslating()
@@ -1451,9 +1629,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
             } catch {
                 await MainActor.run {
+                    self.appendDiag("[VoxAiGo \(Date())] Conversation Reply translation ERROR: \(error.localizedDescription)\n")
                     ConversationReplyManager.shared.dismiss()
                     self.dismissConversationReplyHUD()
-                    print("[VoxAiGo] Conversation Reply error: \(error.localizedDescription)")
                 }
             }
         }
@@ -1494,8 +1672,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let x = screenFrame.midX - width / 2
-            let y = screenFrame.maxY - height - 30
-            window.setFrameOrigin(NSPoint(x: x, y: y - 20))  // Start 20pt above final position
+            // Same vertical position as the speech HUD (25% from bottom)
+            let y = screenFrame.minY + (screenFrame.height * 0.25)
+            window.setFrameOrigin(NSPoint(x: x, y: y - 20))  // Start 20pt below, slides up
         }
 
         conversationReplyWindow = window
@@ -1511,7 +1690,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let screen = NSScreen.main {
                 let screenFrame = screen.visibleFrame
                 let x = screenFrame.midX - width / 2
-                let y = screenFrame.maxY - height - 30
+                let y = screenFrame.minY + (screenFrame.height * 0.25)
                 window.animator().setFrameOrigin(NSPoint(x: x, y: y))
             }
         }
@@ -1526,7 +1705,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let height: CGFloat = forRecording ? 68 : 160
         let screenFrame = screen.visibleFrame
         let x = screenFrame.midX - width / 2
-        let y = screenFrame.maxY - height - 30
+        // Keep same vertical anchor as speech HUD (25% from bottom)
+        let y = screenFrame.minY + (screenFrame.height * 0.25)
 
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.22

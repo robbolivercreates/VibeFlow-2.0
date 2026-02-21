@@ -3,115 +3,208 @@ import SwiftUI
 
 /// Modos de transcrição disponíveis
 enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
-    case code = "Código"
     case text = "Texto"
+    case chat = "Chat"
+    case code = "Código"
+    case vibeCoder = "Vibe Coder"
     case email = "Email"
+    case formal = "Formal"
+    case social = "Social"
+    case xTweet = "X"
+    case summary = "Resumo"
+    case topics = "Tópicos"
+    case meeting = "Reunião"
     case uxDesign = "UX Design"
-    case command = "Command"
+    case translation = "Tradução"
+    case creative = "Criativo"
+    case custom = "Meu Modo"
 
     var id: String { rawValue }
-    
+
+    /// Voice keywords that trigger this mode via wake word ("Hey Vox, <keyword>")
+    /// Supports Portuguese, English and common speech variations
+    var voiceAliases: [String] {
+        switch self {
+        case .text:        return ["texto", "text", "transcrição", "transcricao", "transcription", "normal"]
+        case .chat:        return ["chat", "conversa", "conversation", "reply"]
+        case .code:        return ["código", "codigo", "code", "programação", "programacao", "programming"]
+        case .vibeCoder:   return ["vibe coder", "vibe", "vibe coding", "vibecoder"]
+        case .email:       return ["email", "e-mail", "emails", "mensagem", "message"]
+        case .formal:      return ["formal", "profissional", "professional", "corporativo", "corporate"]
+        case .social:      return ["social", "post", "instagram", "redes sociais"]
+        case .xTweet:      return ["tweet", "x", "twitter"]
+        case .summary:     return ["resumo", "summary", "resumir", "summarize", "sintetizar"]
+        case .topics:      return ["tópicos", "topicos", "topics", "bullet points", "bullets", "lista", "list"]
+        case .meeting:     return ["reunião", "reuniao", "meeting", "ata", "minutes"]
+        case .uxDesign:    return ["ux", "ux design", "design", "ui", "interface"]
+        case .translation: return []  // Translation mode is triggered via UI button, not voice
+        case .creative:    return ["criativo", "creative", "criatividade", "creativity", "storytelling"]
+        case .custom:      return ["meu modo", "custom", "personalizado", "personal"]
+        }
+    }
+
+    /// Lowercase English name sent to the edge function (must match FREE_MODES on server)
+    var apiName: String {
+        switch self {
+        case .text:        return "text"
+        case .chat:        return "chat"
+        case .code:        return "code"
+        case .vibeCoder:   return "vibe_coder"
+        case .email:       return "email"
+        case .formal:      return "formal"
+        case .social:      return "social"
+        case .xTweet:      return "x"
+        case .summary:     return "summary"
+        case .topics:      return "topics"
+        case .meeting:     return "meeting"
+        case .uxDesign:    return "ux_design"
+        case .translation: return "translation"
+        case .creative:    return "creative"
+        case .custom:      return "custom"
+        }
+    }
+
     /// Ícone SF Symbol para o modo
     var icon: String {
         switch self {
-        case .code:
-            return "chevron.left.forwardslash.chevron.right"
-        case .text:
-            return "text.alignleft"
-        case .email:
-            return "envelope.fill"
-        case .uxDesign:
-            return "paintbrush.pointed"
-        case .command:
-            return "wand.and.stars"
+        case .text:        return "text.alignleft"
+        case .chat:        return "bubble.fill"
+        case .code:        return "chevron.left.forwardslash.chevron.right"
+        case .vibeCoder:   return "wand.and.stars"
+        case .email:       return "envelope.fill"
+        case .formal:      return "building.2.fill"
+        case .social:      return "megaphone.fill"
+        case .xTweet:      return "at"
+        case .summary:     return "doc.text"
+        case .topics:      return "list.bullet"
+        case .meeting:     return "person.3.fill"
+        case .uxDesign:    return "paintbrush.pointed"
+        case .translation: return "bubble.left.and.bubble.right.fill"
+        case .creative:    return "paintpalette.fill"
+        case .custom:      return "slider.horizontal.3"
         }
     }
 
     /// Cor do modo
     var color: Color {
         switch self {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)      // Blue
-        case .text: return Color(red: 0.3, green: 0.75, blue: 0.45)    // Green
-        case .email: return Color(red: 1.0, green: 0.55, blue: 0.2)    // Orange
-        case .uxDesign: return Color(red: 0.75, green: 0.4, blue: 0.9) // Purple
-        case .command: return Color(red: 0.95, green: 0.75, blue: 0.2) // Gold
+        case .text:        return Color(red: 0.3, green: 0.75, blue: 0.45)    // Green
+        case .chat:        return Color(red: 0.35, green: 0.82, blue: 0.65)   // Mint
+        case .code:        return Color(red: 0.2, green: 0.6, blue: 1.0)      // Blue
+        case .vibeCoder:   return Color(red: 0.0, green: 0.8, blue: 0.85)     // Cyan
+        case .email:       return Color(red: 1.0, green: 0.55, blue: 0.2)     // Orange
+        case .formal:      return Color(red: 0.25, green: 0.35, blue: 0.65)   // Navy
+        case .social:      return Color(red: 0.9, green: 0.3, blue: 0.55)     // Pink
+        case .xTweet:      return Color(red: 0.45, green: 0.65, blue: 0.95)   // Sky blue
+        case .summary:     return Color(red: 0.45, green: 0.35, blue: 0.85)   // Indigo
+        case .topics:      return Color(red: 0.2, green: 0.7, blue: 0.7)      // Teal
+        case .meeting:     return Color(red: 0.5, green: 0.5, blue: 0.7)      // Slate
+        case .uxDesign:    return Color(red: 0.75, green: 0.4, blue: 0.9)     // Purple
+        case .translation: return Color(red: 0.98, green: 0.2, blue: 0.4)     // Rose
+        case .creative:    return Color(red: 0.95, green: 0.45, blue: 0.35)   // Coral
+        case .custom:      return Color(red: 0.6, green: 0.6, blue: 0.65)     // Silver
         }
     }
 
     /// Descrição curta do modo
     var shortDescription: String {
         switch self {
-        case .code:
-            return "Otimizado para codigo e termos tecnicos"
-        case .text:
-            return "Texto limpo e bem formatado"
-        case .email:
-            return "Emails profissionais e estruturados"
-        case .uxDesign:
-            return "Design de interfaces e fluxos de usuario"
-        case .command:
-            return "Comandos de voz para transformar texto"
+        case .text:        return L10n.textModeShort
+        case .chat:        return L10n.chatModeShort
+        case .code:        return L10n.codeModeShort
+        case .vibeCoder:   return L10n.vibeCoderModeShort
+        case .email:       return L10n.emailModeShort
+        case .formal:      return L10n.formalModeShort
+        case .social:      return L10n.socialModeShort
+        case .xTweet:      return L10n.xTweetModeShort
+        case .summary:     return L10n.summaryModeShort
+        case .topics:      return L10n.topicsModeShort
+        case .meeting:     return L10n.meetingModeShort
+        case .uxDesign:    return L10n.uxModeShort
+        case .translation: return L10n.translationModeShort
+        case .creative:    return L10n.creativeModeShort
+        case .custom:      return L10n.customModeShort
         }
     }
-    
+
     /// Nome localizado
     var localizedName: String {
         switch self {
-        case .code:
-            return L10n.codeMode
-        case .text:
-            return L10n.textMode
-        case .email:
-            return "Email"
-        case .uxDesign:
-            return L10n.uxMode
-        case .command:
-            return "Command"
+        case .text:        return L10n.textMode
+        case .chat:        return "Chat"
+        case .code:        return L10n.codeMode
+        case .vibeCoder:   return "Vibe Coder"
+        case .email:       return "Email"
+        case .formal:      return L10n.formalMode
+        case .social:      return "Social"
+        case .xTweet:      return "X"
+        case .summary:     return L10n.summaryMode
+        case .topics:      return L10n.topicsMode
+        case .meeting:     return L10n.meetingMode
+        case .uxDesign:    return L10n.uxMode
+        case .translation: return L10n.translationMode ?? "Tradução"
+        case .creative:    return L10n.creativeMode
+        case .custom:      return L10n.customMode
         }
     }
-    
+
     /// Descrição detalhada do modo para exibir ao usuário
     var detailedDescription: String {
         switch self {
-        case .code:
-            return L10n.codeModeDetail
-        case .text:
-            return L10n.textModeDetail
-        case .email:
-            return L10n.emailModeDetail
-        case .uxDesign:
-            return L10n.uxModeDetail
-        case .command:
-            return L10n.commandModeDetail
+        case .text:        return L10n.textModeDetail
+        case .chat:        return L10n.chatModeDetail
+        case .code:        return L10n.codeModeDetail
+        case .vibeCoder:   return L10n.vibeCoderModeDetail
+        case .email:       return L10n.emailModeDetail
+        case .formal:      return L10n.formalModeDetail
+        case .social:      return L10n.socialModeDetail
+        case .xTweet:      return L10n.xTweetModeDetail
+        case .summary:     return L10n.summaryModeDetail
+        case .topics:      return L10n.topicsModeDetail
+        case .meeting:     return L10n.meetingModeDetail
+        case .uxDesign:    return L10n.uxModeDetail
+        case .translation: return L10n.translationModeDetail ?? "Traduz automaticamente para o idioma de saída."
+        case .creative:    return L10n.creativeModeDetail
+        case .custom:      return L10n.customModeDetail
         }
     }
 
     /// Temperatura ideal para cada modo
     var temperature: Float {
         switch self {
-        case .code:     return 0.1
-        case .text:     return 0.3
-        case .email:    return 0.2
-        case .uxDesign: return 0.5
-        case .command:  return 0.3
+        case .text:        return 0.3
+        case .chat:        return 0.4
+        case .code:        return 0.1
+        case .vibeCoder:   return 0.3
+        case .email:       return 0.2
+        case .formal:      return 0.2
+        case .social:      return 0.5
+        case .xTweet:      return 0.5
+        case .summary:     return 0.3
+        case .topics:      return 0.2
+        case .meeting:     return 0.3
+        case .uxDesign:    return 0.5
+        case .translation: return 0.2
+        case .creative:    return 0.7
+        case .custom:      return 0.4
         }
     }
 
     /// Tokens máximos por modo
     var maxOutputTokens: Int {
         switch self {
-        case .code:     return 4096
-        case .text:     return 2048
-        case .email:    return 2048
-        case .uxDesign: return 2048
-        case .command:  return 4096
+        case .code:        return 4096
+        case .translation: return 4096
+        case .xTweet:      return 512
+        case .vibeCoder:   return 1024
+        default:           return 2048
         }
     }
-    
+
     /// Prompt do sistema para o Gemini
-    func systemPrompt(outputLanguage: SpeechLanguage, clarifyText: Bool) -> String {
+    func systemPrompt(outputLanguage: SpeechLanguage, clarifyText: Bool, wakeWord: String = "Hey Vox") -> String {
         let basePrompt: String
-        
+
         // Common speech cleanup rules applied to all modes
         let speechCleanupRules = """
             SPEECH CLEANUP (CRITICAL):
@@ -130,15 +223,42 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             - "X, I mean Y" → Y
             - "X, actually Y" → Y
             - "X, sorry, Y" → Y
-            - "X, correction, Y" → Y
             - "não, espera" / "quer dizer" / "na verdade" / "desculpa" (Portuguese)
-            - "X, or rather Y" → Y
             Example: "create function foo, no wait, bar" → function named "bar"
 
             Output ONLY the clean, final intended message.
             """
 
         switch self {
+        case .text:
+            basePrompt = """
+            Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
+
+            \(speechCleanupRules)
+
+            REGRAS ESTRITAS:
+            1. Transcreva o áudio em texto limpo e bem formatado
+            2. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
+            3. Corrija gramática, pontuação e estrutura
+            4. Mantenha o significado e intenção original
+            5. Use parágrafos quando apropriado
+            6. Retorne APENAS o texto final, sem explicações
+            """
+
+        case .chat:
+            basePrompt = """
+            Transcrição para mensagens rápidas de chat.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Curto e natural, como WhatsApp ou Slack
+            2. Mantenha o tom casual, NÃO formalize
+            3. NÃO corrija gírias intencionais
+            4. Pontuação mínima
+            5. APENAS a mensagem pronta para enviar
+            """
+
         case .code:
             basePrompt = """
             Você é um assistente de codificação por voz especializado em CONCISÃO e EFICIÊNCIA. O usuário está ditando código ou descrevendo lógica de programação.
@@ -156,42 +276,34 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
                - "se x maior que 10" → if x > 10
             6. Use a linguagem mencionada, ou Swift como padrão
             7. Siga convenções e boas práticas da linguagem
-
-            OTIMIZAÇÃO DE TOKENS - REDUÇÃO INTELIGENTE:
-            1. ELIMINE código redundante e desnecessário
-            2. Use nomes de variáveis curtos mas claros (i, j, k para loops; err para erros)
-            3. Remova parênteses desnecessários em condições simples
-            4. Use operadores ternários quando apropriado: condition ? a : b
-            5. Combine declarações quando possível: let a = 1, b = 2
-            6. Use sintaxe curta: [].map { $0 } em vez de [].map { item in item }
-            7. Remova imports desnecessários
-            8. Use type inference: let x = 5 em vez de let x: Int = 5
-            9. Elimine espaços em branco excessivos
-            10. Mantenha APENAS o código essencial para funcionar
-
-            PRESERVAÇÃO DE CONTEXTO:
-            - Mantenha a lógica e algoritmo originais intactos
-            - Preserve nomes de funções públicas/APIs
-            - Mantenha a estrutura de dados quando relevante
-            - Não altere a semântica do código
-            - Reduza tokens sem perder funcionalidade
+            8. Use type inference, sintaxe curta, elimine redundância
             """
-            
-        case .text:
+
+        case .vibeCoder:
             basePrompt = """
-            Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
+            Você é um assistente que extrai a ESSÊNCIA do que o usuário comunicou, preservando a intenção original.
 
             \(speechCleanupRules)
 
-            REGRAS ESTRITAS:
-            1. Transcreva o áudio em texto limpo e bem formatado
-            2. NUNCA cumprimente ou diga "olá", "aqui está", "claro"
-            3. Corrija gramática, pontuação e estrutura
-            4. Mantenha o significado e intenção original
-            5. Use parágrafos quando apropriado
-            6. Retorne APENAS o texto final, sem explicações
+            REGRAS DE INTENÇÃO (CRÍTICO):
+            - Se o usuário fez uma PERGUNTA → reformule como pergunta clara e direta
+              Exemplo: "como eu posso fazer isso funcionar?" → "Como fazer isso funcionar?"
+            - Se o usuário deu uma INSTRUÇÃO ou PEDIDO → reformule como instrução concisa
+              Exemplo: "eu quero que você mude o botão pra azul" → "Mude o botão para azul"
+            - Se o usuário fez uma OBSERVAÇÃO → mantenha como observação
+              Exemplo: "isso tá quebrando quando abre" → "Isso quebra na abertura"
+            - NUNCA converta uma pergunta em um comando imperativo
+            - NUNCA converta uma observação em uma instrução
+
+            REGRAS GERAIS:
+            1. Remova repetições, explicações e contexto desnecessário
+            2. Mantenha TODOS os termos técnicos e requisitos específicos
+            3. Preserve direções (posição, local, cor, tamanho, nome de arquivo)
+            4. Use a ÚLTIMA correção como decisão final
+            5. Frase curta e direta, pronta para colar em um AI assistant
+            6. APENAS a essência, sem prefácios nem explicações
             """
-            
+
         case .email:
             basePrompt = """
             Você é um assistente especializado em formatação de emails profissionais. O usuário está ditando o conteúdo de um email em linguagem natural.
@@ -208,12 +320,102 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             7. NÃO adicione saudações genéricas se o usuário já começou direto
             8. NÃO adicione despedidas automáticas - só se o usuário indicar
             9. Preserve nomes próprios, datas, números e dados específicos exatamente como ditos
-
-            EXEMPLOS DE FORMATAÇÃO:
-            - "prezado senhor joão vim falar sobre a proposta" → "Prezado Senhor João,\n\nVim falar sobre a proposta..."
-            - "agradeço desde já atenciosamente maria" → "Agradeço desde já.\n\nAtenciosamente,\nMaria"
             """
-            
+
+        case .formal:
+            basePrompt = """
+            Transforme a fala em texto formal e profissional.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Tom FORMAL e CORPORATIVO
+            2. "a gente" → "nós", "pra" → "para", "tá" → "está"
+            3. Conectivos formais: "portanto", "ademais", "conforme"
+            4. Parágrafos bem organizados
+            5. Mantenha o significado original intacto
+            6. APENAS o texto formal
+            """
+
+        case .social:
+            basePrompt = """
+            Transforme em post social engajante (IMC: Impact, Method, Call).
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Comece com pergunta forte ou frase de impacto
+            2. Conteúdo claro em frases curtas, uma ideia por linha
+            3. Feche com convite ao engajamento
+            4. Máximo 2 emojis estratégicos. Sem hashtags
+            5. APENAS o post final
+            """
+
+        case .xTweet:
+            basePrompt = """
+            Transforme em tweet de MÁXIMO 280 caracteres.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Hook forte + valor em 1-2 frases + fechamento sutil
+            2. Direto, punchy, sem enrolação
+            3. Máximo 1 emoji ou nenhum. Sem hashtags
+            4. APENAS o tweet
+            """
+
+        case .summary:
+            basePrompt = """
+            Crie um RESUMO conciso do que foi dito.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Reduza para 20-30% do conteúdo original
+            2. APENAS pontos essenciais e conclusões
+            3. Frases curtas e objetivas, máximo 2-3 parágrafos
+            4. Priorize: decisões, números, datas, ações
+            5. NUNCA adicione informações não ditas
+            6. Retorne direto o resumo, sem "Resumo:" ou similar
+            """
+
+        case .topics:
+            basePrompt = """
+            Transforme em lista organizada com bullet points.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Use "•" como marcador principal
+            2. Um tópico por ideia/item mencionado
+            3. Frases curtas e diretas
+            4. Sub-itens com "  ◦" (indentado)
+            5. Comece direto nos tópicos, sem título
+            6. APENAS a lista
+            """
+
+        case .meeting:
+            basePrompt = """
+            Organize como ATA DE REUNIÃO estruturada.
+
+            \(speechCleanupRules)
+
+            FORMATO:
+            PARTICIPANTES: (se mencionados)
+            ASSUNTOS DISCUTIDOS:
+            • [tópico]
+            DECISÕES:
+            • [decisão]
+            AÇÕES / PRÓXIMOS PASSOS:
+            • [ação] — Responsável: [nome se mencionado]
+
+            REGRAS:
+            1. Omita seções sem informação
+            2. Priorize DECISÕES e AÇÕES
+            3. NUNCA invente dados não mencionados
+            4. Frases curtas e objetivas
+            """
+
         case .uxDesign:
             basePrompt = """
             Você é um assistente especializado em UX Design. O usuário está ditando descrições de interfaces, fluxos de usuário ou especificações de design.
@@ -230,45 +432,61 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             7. Se for descrição de fluxo, organize em passos numerados
             """
 
-        case .command:
+        case .translation:
             basePrompt = """
-            You are a text transformation assistant. The user will provide:
-            1. Selected text (marked as [SELECTED TEXT])
-            2. A voice command describing how to transform it
+            Você é um tradutor simultâneo nativo e especialista em transcrição multilíngue.
+            O usuário vai falar em QUALQUER idioma (você deve detectar o idioma falado automaticamente).
+            A sua tarefa é transcrever e traduzir o que foi dito EXATAMENTE para o idioma de saída.
 
             \(speechCleanupRules)
 
-            COMMON COMMANDS AND RESPONSES:
-            - "make it professional" / "mais profissional" → Rewrite in formal business tone
-            - "make it friendly" / "mais informal" → Rewrite in casual, friendly tone
-            - "summarize" / "resumir" → Create concise summary
-            - "expand" / "expandir" → Add more detail and context
-            - "fix grammar" / "corrigir" → Fix grammar and spelling only
-            - "simplify" / "simplificar" → Use simpler words and shorter sentences
-            - "make it shorter" / "encurtar" → Reduce length while keeping meaning
-            - "make it longer" / "alongar" → Expand with more detail
-            - "add bullet points" / "adicionar tópicos" → Format as bullet list
-            - "translate to X" / "traduzir para X" → Translate to specified language
-            - "rewrite" / "reescrever" → Completely rewrite maintaining meaning
-            - "make it persuasive" / "mais persuasivo" → Add persuasive elements
+            REGRAS ESTRITAS DE TRADUÇÃO:
+            1. Traduza o áudio capturado direta e precisamente para o idioma de destino.
+            2. NÃO forneça a transcrição original antes da tradução. Apenas o resultado final.
+            3. A tradução deve soar natural, como se pensada no idioma de destino.
+            4. Se o usuário já estiver falando no idioma de destino, transcreva normalmente corrigindo pequenos erros.
+            5. NUNCA diga "Aqui está", "Tradução:", "Olá" ou explique o que fez. Retorne APENAS a tradução.
+            6. Mantenha os mesmos parágrafos e o tom original do locutor.
+            """
 
-            STRICT RULES:
-            1. Return ONLY the transformed text
-            2. NEVER include explanations, introductions, or commentary
-            3. NEVER say "Here is", "Sure", "Okay" or similar
-            4. Preserve the original meaning unless translation is requested
-            5. If no selected text is provided, just transcribe the voice command as text
-            6. Match the format of the original (code stays code, prose stays prose)
+        case .creative:
+            basePrompt = """
+            Transforme a fala em texto CRIATIVO e envolvente.
+
+            \(speechCleanupRules)
+
+            REGRAS:
+            1. Linguagem rica, descritiva e narrativa
+            2. Ritmo e fluidez, figuras de linguagem quando natural
+            3. Mantenha a essência e mensagem original
+            4. Parágrafos com boa cadência de leitura
+            5. APENAS o texto criativo
+            """
+
+        case .custom:
+            let userInstruction = SettingsManager.shared.customModePrompt
+            basePrompt = """
+            Você é um assistente de transcrição inteligente.
+
+            \(speechCleanupRules)
+
+            REGRAS BASE:
+            1. NUNCA cumprimente ou faça introduções
+            2. Retorne APENAS o resultado final
+            3. Mantenha o significado original
+
+            INSTRUÇÃO DO USUÁRIO:
+            \(userInstruction.isEmpty ? "Transcreva o áudio de forma limpa e organizada." : userInstruction)
             """
         }
 
         var finalPrompt = basePrompt
-        
+
         // Adicionar instruções de clareza
         if clarifyText {
             finalPrompt += """
-            
-            
+
+
             CLAREZA E ORGANIZAÇÃO:
             - Reorganize frases confusas para ficarem claras e lógicas
             - Corrija erros de concordância e gramática
@@ -278,20 +496,42 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             - Transforme ideias desorganizadas em texto bem estruturado
             """
         }
-        
-        // Adicionar aprendizado de estilo (exceto para command mode)
-        if self != .command, let stylePrompt = WritingStyleManager.shared.getStylePrompt(for: self) {
+
+        // Adicionar aprendizado de estilo (exceto para custom e vibeCoder)
+        if self != .custom && self != .vibeCoder,
+           let stylePrompt = WritingStyleManager.shared.getStylePrompt(for: self) {
             finalPrompt += stylePrompt
         }
 
         // Adicionar idioma de saída
         finalPrompt += """
 
-
             OUTPUT LANGUAGE (CRITICAL):
             You MUST output the result in \(outputLanguage.fullName).
             The user may speak in any language, but your response MUST be in \(outputLanguage.fullName).
             Translate naturally and professionally if the input is in a different language.
+            """
+
+        // ── Wake word passthrough (MUST be the very last rule, highest priority) ──
+        // If the audio starts with the wake word, Gemini must NOT apply mode processing.
+        // It must return the raw transcription verbatim so the app can route the command.
+        let base = wakeWord.lowercased()
+        var wakeVariants = [base]
+        if base == "hey vox" {
+            wakeVariants += ["ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
+        }
+        let variantsList = wakeVariants.map { "\'\($0)\'" }.joined(separator: ", ")
+        finalPrompt += """
+
+
+            HIGHEST PRIORITY — WAKE WORD PASSTHROUGH:
+            Before applying ANY of the rules above, check if the audio transcription starts with
+            the wake word (case-insensitive): \(variantsList).
+            If YES → return the raw transcription EXACTLY as spoken, with zero modifications.
+            Do NOT apply mode formatting, language translation, or any cleanup to wake word commands.
+            Example: if the user says "Hey Vox, email" → return exactly "Hey Vox, email".
+            Example: if the user says "Hey Vox, inglês" → return exactly "Hey Vox, inglês".
+            Only apply all previous rules when the audio does NOT start with the wake word.
             """
 
         return finalPrompt

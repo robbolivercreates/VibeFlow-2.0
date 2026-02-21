@@ -1,62 +1,62 @@
 import AppKit
 import SwiftUI
 
-/// Gera o ícone do app programaticamente - Design minimalista inspirado na Apple
+/// Gera o ícone do app programaticamente - Design matte black com barras douradas
 class AppIconGenerator {
 
     // MARK: - Brand Colors
 
-    /// Cores da marca VoxAiGo
-    private static let brandPurple = NSColor(red: 0.42, green: 0.35, blue: 0.85, alpha: 1.0)
-    private static let brandIndigo = NSColor(red: 0.35, green: 0.30, blue: 0.75, alpha: 1.0)
-    private static let brandViolet = NSColor(red: 0.55, green: 0.40, blue: 0.90, alpha: 1.0)
+    /// Cores da marca VoxAiGo — Matte Black & Gold
+    private static let brandGold = VoxTheme.nsAccent
+    private static let brandGoldDark = VoxTheme.nsGoldDark
+    private static let brandGoldLight = VoxTheme.nsAccentLight
 
     // MARK: - App Icon
 
-    /// Cria o ícone principal do VoxAiGo - Design minimalista e elegante
+    /// Cria o ícone principal do VoxAiGo - Fundo preto com barras douradas
     static func createAppIcon(size: CGFloat = 512) -> NSImage {
         let image = NSImage(size: NSSize(width: size, height: size))
 
         image.lockFocus()
 
-        // Background gradient - Tons de roxo/indigo suaves
-        let gradient = NSGradient(colors: [
-            NSColor(red: 0.38, green: 0.32, blue: 0.82, alpha: 1.0),  // Deep purple
-            NSColor(red: 0.50, green: 0.38, blue: 0.88, alpha: 1.0),  // Violet
-            NSColor(red: 0.45, green: 0.35, blue: 0.85, alpha: 1.0)   // Purple
-        ])
-
-        // Rounded rectangle background (Apple style)
+        // Background — Matte Black
         let rect = NSRect(x: 0, y: 0, width: size, height: size)
         let cornerRadius = size * 0.22
         let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
-        gradient?.draw(in: path, angle: -45)
 
-        // Subtle inner glow
+        NSColor(red: 0.04, green: 0.04, blue: 0.04, alpha: 1.0).setFill()
+        path.fill()
+
+        // Subtle gold border
+        let borderPath = NSBezierPath(roundedRect: rect.insetBy(dx: 1, dy: 1), xRadius: cornerRadius - 1, yRadius: cornerRadius - 1)
+        borderPath.lineWidth = max(1.5, size * 0.004)
+        VoxTheme.nsAccent.withAlphaComponent(0.3).setStroke()
+        borderPath.stroke()
+
+        // Subtle inner highlight at top
         let innerGlow = NSGradient(colors: [
-            NSColor.white.withAlphaComponent(0.15),
+            NSColor.white.withAlphaComponent(0.05),
             NSColor.clear
         ])
-        let innerRect = rect.insetBy(dx: size * 0.02, dy: size * 0.02)
-        let innerPath = NSBezierPath(roundedRect: innerRect, xRadius: cornerRadius * 0.9, yRadius: cornerRadius * 0.9)
+        let innerRect = rect.insetBy(dx: size * 0.04, dy: size * 0.04)
+        let innerPath = NSBezierPath(roundedRect: innerRect, xRadius: cornerRadius * 0.85, yRadius: cornerRadius * 0.85)
         innerGlow?.draw(in: innerPath, angle: 90)
 
-        // Draw elegant "V" letterform with integrated waveform
-        drawElegantLogo(in: rect, size: size)
+        // Draw gold waveform bars
+        drawGoldWaveform(in: rect, size: size)
 
         image.unlockFocus()
 
         return image
     }
 
-    /// Desenha o logo elegante - "V" estilizado com ondas integradas
-    private static func drawElegantLogo(in rect: NSRect, size: CGFloat) {
+    /// Desenha barras de onda douradas no centro do ícone
+    private static func drawGoldWaveform(in rect: NSRect, size: CGFloat) {
         let centerX = size / 2
         let centerY = size / 2
 
-        // Draw stylized sound waves emanating from center
-        let waveColor = NSColor.white
-        let shadowColor = NSColor.black.withAlphaComponent(0.15)
+        // Gold glow shadow behind bars
+        let glowColor = VoxTheme.nsAccent.withAlphaComponent(0.2)
 
         // Wave bars - asymmetric for visual interest
         let barData: [(offset: CGFloat, height: CGFloat)] = [
@@ -76,41 +76,22 @@ class AppIconGenerator {
             let x = centerX + (size * offset) - (barWidth / 2)
             let y = centerY - (barHeight / 2)
 
-            // Shadow
-            shadowColor.setFill()
-            let shadowRect = NSRect(x: x + 2, y: y - 2, width: barWidth, height: barHeight)
-            let shadowPath = NSBezierPath(roundedRect: shadowRect, xRadius: barWidth / 2, yRadius: barWidth / 2)
-            shadowPath.fill()
+            // Gold glow behind bar
+            glowColor.setFill()
+            let glowRect = NSRect(x: x - 2, y: y - 2, width: barWidth + 4, height: barHeight + 4)
+            let glowPath = NSBezierPath(roundedRect: glowRect, xRadius: (barWidth + 4) / 2, yRadius: (barWidth + 4) / 2)
+            glowPath.fill()
 
-            // Bar with subtle gradient
+            // Gold gradient bar
             let barGradient = NSGradient(colors: [
-                NSColor.white,
-                NSColor.white.withAlphaComponent(0.9)
+                VoxTheme.nsGoldDark,
+                VoxTheme.nsAccent,
+                VoxTheme.nsAccentLight
             ])
             let barRect = NSRect(x: x, y: y, width: barWidth, height: barHeight)
             let barPath = NSBezierPath(roundedRect: barRect, xRadius: barWidth / 2, yRadius: barWidth / 2)
             barGradient?.draw(in: barPath, angle: 90)
         }
-
-        // Optional: Add subtle "V" shape overlay (very subtle)
-        let vPath = NSBezierPath()
-        let vWidth = size * 0.35
-        let vHeight = size * 0.25
-        let vTop = centerY + vHeight * 0.3
-        let vBottom = centerY - vHeight * 0.7
-        let vLeft = centerX - vWidth / 2
-        let vRight = centerX + vWidth / 2
-        let vCenter = centerX
-
-        vPath.move(to: NSPoint(x: vLeft, y: vTop))
-        vPath.line(to: NSPoint(x: vCenter, y: vBottom))
-        vPath.line(to: NSPoint(x: vRight, y: vTop))
-
-        vPath.lineWidth = size * 0.025
-        vPath.lineCapStyle = .round
-        vPath.lineJoinStyle = .round
-        NSColor.white.withAlphaComponent(0.08).setStroke()
-        vPath.stroke()
     }
 
     // MARK: - Menu Bar Icon
@@ -164,16 +145,19 @@ class AppIconGenerator {
 
         image.lockFocus()
 
-        // Subtle purple circle background
-        let bgColor = NSColor(red: 0.45, green: 0.38, blue: 0.85, alpha: 1.0)
-        bgColor.setFill()
-
+        // Black circle background with gold border
         let bgRect = NSRect(x: 1, y: 1, width: size - 2, height: size - 2)
+        NSColor.black.setFill()
         let bgPath = NSBezierPath(ovalIn: bgRect)
         bgPath.fill()
 
-        // White wave bars
-        NSColor.white.setFill()
+        // Gold border
+        VoxTheme.nsAccent.withAlphaComponent(0.4).setStroke()
+        bgPath.lineWidth = 0.5
+        bgPath.stroke()
+
+        // Gold wave bars
+        VoxTheme.nsAccent.setFill()
 
         let centerY = size / 2
 

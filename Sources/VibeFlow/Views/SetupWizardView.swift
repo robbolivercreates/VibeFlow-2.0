@@ -84,7 +84,7 @@ struct SetupWizardView: View {
             wizardFooter
         }
         .frame(width: 680, height: 580)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
         .onAppear {
             checkPermissions()
         }
@@ -109,7 +109,7 @@ struct SetupWizardView: View {
 
                     if step != .ready {
                         Rectangle()
-                            .fill(step.rawValue < currentStep.rawValue ? Color.purple : Color(nsColor: .separatorColor))
+                            .fill(step.rawValue < currentStep.rawValue ? VoxTheme.accent : VoxTheme.surfaceBorder)
                             .frame(height: 2)
                             .frame(maxWidth: 30)
                     }
@@ -122,7 +122,7 @@ struct SetupWizardView: View {
             HStack(spacing: 10) {
                 Image(systemName: currentStep.icon)
                     .font(.system(size: 20))
-                    .foregroundStyle(.purple)
+                    .foregroundStyle(VoxTheme.accent)
 
                 Text(currentStep.title)
                     .font(.system(size: 18, weight: .semibold))
@@ -170,7 +170,7 @@ struct SetupWizardView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(.purple)
+                .tint(VoxTheme.accent)
                 .disabled(!canProceed)
             }
             .padding(.horizontal, 30)
@@ -208,7 +208,7 @@ struct SetupWizardView: View {
             VStack(spacing: 12) {
                 Image(systemName: "globe")
                     .font(.system(size: 60))
-                    .foregroundStyle(.purple)
+                    .foregroundStyle(VoxTheme.accent)
                 
                 Text(L10n.chooseLanguage)
                     .font(.system(size: 28, weight: .bold))
@@ -239,17 +239,17 @@ struct SetupWizardView: View {
                             if selectedLanguage == language {
                                 Image(systemName: "checkmark.circle.fill")
                                     .font(.system(size: 24))
-                                    .foregroundStyle(.purple)
+                                    .foregroundStyle(VoxTheme.accent)
                             }
                         }
                         .padding(20)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedLanguage == language ? Color.purple.opacity(0.1) : Color(nsColor: .controlBackgroundColor))
+                                .fill(selectedLanguage == language ? VoxTheme.accent.opacity(0.1) : VoxTheme.surface)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .strokeBorder(selectedLanguage == language ? Color.purple : Color.clear, lineWidth: 2)
+                                .strokeBorder(selectedLanguage == language ? VoxTheme.accent : Color.clear, lineWidth: 2)
                         )
                     }
                     .buttonStyle(.plain)
@@ -295,7 +295,7 @@ struct SetupWizardView: View {
                 VStack(spacing: 16) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 50))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(VoxTheme.accent)
 
                     Text(L10n.loggedIn)
                         .font(.system(size: 18, weight: .semibold))
@@ -378,27 +378,27 @@ struct SetupWizardView: View {
             if allPermissionsGranted {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(VoxTheme.accent)
                     Text(L10n.allPermissionsGranted)
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(VoxTheme.accent)
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.green.opacity(0.1))
+                .background(VoxTheme.accent.opacity(0.1))
                 .cornerRadius(10)
             } else {
                 let grantedCount = [microphonePermission == .authorized, accessibilityPermission, inputMonitoringPermission].filter { $0 }.count
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.white)
                     Text(L10n.permissionsGranted(grantedCount, 3))
                         .font(.system(size: 14))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(.white)
                 }
                 .padding()
                 .frame(maxWidth: .infinity)
-                .background(Color.orange.opacity(0.1))
+                .background(VoxTheme.surface)
                 .cornerRadius(10)
             }
 
@@ -406,13 +406,13 @@ struct SetupWizardView: View {
             if !allPermissionsGranted {
                 HStack(spacing: 8) {
                     Image(systemName: "lock.shield.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                     Text(L10n.permissionsSecurityNote)
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
                 }
                 .padding(12)
-                .background(Color.blue.opacity(0.05))
+                .background(VoxTheme.accent.opacity(0.05))
                 .cornerRadius(8)
             }
         }
@@ -443,17 +443,17 @@ struct SetupWizardView: View {
                 HStack(spacing: 12) {
                     ZStack {
                         Circle()
-                            .fill(shortcutTestPassed ? Color.green.opacity(0.15) : Color.purple.opacity(0.15))
+                            .fill(shortcutTestPassed ? VoxTheme.accent.opacity(0.15) : VoxTheme.accent.opacity(0.15))
                             .frame(width: 50, height: 50)
 
                         if shortcutTestPassed {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 20, weight: .semibold))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(VoxTheme.accent)
                         } else {
                             Text("⌥⌘")
                                 .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.purple)
+                                .foregroundStyle(VoxTheme.accent)
                         }
                     }
 
@@ -471,16 +471,16 @@ struct SetupWizardView: View {
                     if shortcutTestPassed {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.system(size: 24))
-                            .foregroundStyle(.green)
+                            .foregroundStyle(VoxTheme.accent)
                     }
                 }
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(shortcutTestPassed ? Color.green.opacity(0.05) : Color.purple.opacity(0.05))
+                        .fill(shortcutTestPassed ? VoxTheme.accent.opacity(0.05) : VoxTheme.accent.opacity(0.05))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(shortcutTestPassed ? Color.green.opacity(0.3) : Color.purple.opacity(0.3), lineWidth: 1)
+                                .stroke(VoxTheme.accent.opacity(0.3), lineWidth: 1)
                         )
                 )
 
@@ -489,13 +489,13 @@ struct SetupWizardView: View {
                     VStack(spacing: 8) {
                         Text(L10n.recordingSpeakSomething)
                             .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(VoxTheme.accent)
 
                         // Animated waveform
                         HStack(spacing: 4) {
                             ForEach(0..<12, id: \.self) { i in
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color.purple)
+                                    .fill(VoxTheme.accent)
                                     .frame(width: 4, height: waveBarHeight(index: i))
                                     .animation(.easeInOut(duration: 0.15), value: testAudioLevel)
                             }
@@ -504,7 +504,7 @@ struct SetupWizardView: View {
                     }
                     .padding()
                     .frame(maxWidth: .infinity)
-                    .background(Color.purple.opacity(0.1))
+                    .background(VoxTheme.accent.opacity(0.1))
                     .cornerRadius(10)
                 }
 
@@ -513,7 +513,7 @@ struct SetupWizardView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "text.bubble.fill")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(VoxTheme.accent)
                             Text(L10n.transcriptionResult)
                                 .font(.system(size: 13, weight: .medium))
                         }
@@ -522,19 +522,19 @@ struct SetupWizardView: View {
                             .font(.system(size: 14))
                             .padding()
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(nsColor: .textBackgroundColor))
+                            .background(VoxTheme.surface)
                             .cornerRadius(8)
 
                         HStack(spacing: 8) {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(VoxTheme.accent)
                             Text(L10n.transcriptionWorking)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.green)
+                                .foregroundStyle(VoxTheme.accent)
                         }
                     }
                     .padding()
-                    .background(Color.green.opacity(0.05))
+                    .background(VoxTheme.accent.opacity(0.05))
                     .cornerRadius(10)
                 }
             }
@@ -562,7 +562,7 @@ struct SetupWizardView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(VoxTheme.surface)
             .cornerRadius(8)
         }
         .onAppear {
@@ -603,7 +603,7 @@ struct SetupWizardView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                    .background(Color.purple.opacity(0.1))
+                    .background(VoxTheme.accent.opacity(0.1))
                     .cornerRadius(8)
                 }
 
@@ -612,10 +612,10 @@ struct SetupWizardView: View {
                     HStack(spacing: 12) {
                         Text("⌃⇧L")
                             .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(VoxTheme.accent)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.purple.opacity(0.1))
+                            .background(VoxTheme.accent.opacity(0.1))
                             .cornerRadius(8)
 
                         VStack(alignment: .leading, spacing: 2) {
@@ -637,7 +637,7 @@ struct SetupWizardView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(nsColor: .controlBackgroundColor))
+                        .fill(VoxTheme.surface)
                 )
             }
 
@@ -656,7 +656,7 @@ struct SetupWizardView: View {
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color(nsColor: .controlBackgroundColor))
+                        .background(VoxTheme.surface)
                         .cornerRadius(6)
                     }
                 }
@@ -681,7 +681,7 @@ struct SetupWizardView: View {
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color(nsColor: .controlBackgroundColor))
+                            .background(VoxTheme.surface)
                             .cornerRadius(4)
                         }
 
@@ -695,13 +695,13 @@ struct SetupWizardView: View {
             // Where to change
             HStack(spacing: 8) {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(VoxTheme.accent)
                 Text(L10n.manageLanguagesHint)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color.blue.opacity(0.05))
+            .background(VoxTheme.accent.opacity(0.05))
             .cornerRadius(8)
         }
     }
@@ -713,12 +713,12 @@ struct SetupWizardView: View {
             // Success icon
             ZStack {
                 Circle()
-                    .fill(Color.green.opacity(0.15))
+                    .fill(VoxTheme.accent.opacity(0.15))
                     .frame(width: 100, height: 100)
 
                 Image(systemName: "checkmark.seal.fill")
                     .font(.system(size: 50))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(VoxTheme.accent)
             }
 
             Text(L10n.startUsing)
@@ -743,7 +743,7 @@ struct SetupWizardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
 
             // Where to find settings
@@ -762,7 +762,7 @@ struct SetupWizardView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(VoxTheme.surface)
             .cornerRadius(8)
         }
     }
@@ -898,15 +898,15 @@ struct SetupWizardView: View {
 
             HStack(spacing: 6) {
                 Image(systemName: "info.circle")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(VoxTheme.accent)
                 Text(note)
                     .font(.system(size: 11))
-                    .foregroundStyle(.orange.opacity(0.8))
+                    .foregroundStyle(.secondary)
             }
             .padding(.top, 4)
         }
         .padding()
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(8)
     }
 
@@ -968,7 +968,7 @@ struct StepIndicator: View {
     var body: some View {
         ZStack {
             Circle()
-                .fill(isCompleted ? Color.purple : (isActive ? Color.purple.opacity(0.2) : Color(nsColor: .controlBackgroundColor)))
+                .fill(isCompleted ? VoxTheme.accent : (isActive ? VoxTheme.accent.opacity(0.2) : VoxTheme.surface))
                 .frame(width: 32, height: 32)
 
             if isCompleted {
@@ -978,7 +978,7 @@ struct StepIndicator: View {
             } else {
                 Text("\(step.rawValue + 1)")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isActive ? .purple : .secondary)
+                    .foregroundStyle(isActive ? VoxTheme.accent : .secondary)
             }
         }
     }
@@ -993,7 +993,7 @@ struct FeatureCard3: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 20))
-                .foregroundStyle(.purple)
+                .foregroundStyle(VoxTheme.accent)
                 .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -1008,7 +1008,7 @@ struct FeatureCard3: View {
             Spacer()
         }
         .padding(12)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(VoxTheme.surface)
         .cornerRadius(10)
     }
 }
@@ -1023,7 +1023,7 @@ struct InstructionRow: View {
                 .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 20, height: 20)
-                .background(Circle().fill(Color.purple))
+                .background(Circle().fill(VoxTheme.accent))
 
             Text(text)
                 .font(.system(size: 13))
@@ -1056,12 +1056,12 @@ struct PermissionCard: View {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(isGranted ? Color.green.opacity(0.15) : Color.orange.opacity(0.15))
+                        .fill(isGranted ? VoxTheme.accent.opacity(0.15) : VoxTheme.surface)
                         .frame(width: 44, height: 44)
 
                     Image(systemName: isGranted ? "checkmark" : icon)
                         .font(.system(size: 18))
-                        .foregroundStyle(isGranted ? .green : .orange)
+                        .foregroundStyle(isGranted ? VoxTheme.accent : .white)
                 }
 
                 VStack(alignment: .leading, spacing: 3) {
@@ -1078,7 +1078,7 @@ struct PermissionCard: View {
                 if isGranted {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 24))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(VoxTheme.accent)
                 } else {
                     Button(buttonText, action: action)
                         .buttonStyle(.borderedProminent)
@@ -1094,13 +1094,13 @@ struct PermissionCard: View {
                 VStack(alignment: .leading, spacing: 5) {
                     Text("Como fazer:")
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(VoxTheme.accent)
 
                     ForEach(Array(helpSteps.enumerated()), id: \.offset) { index, step in
                         HStack(alignment: .top, spacing: 6) {
                             Text("\(index + 1).")
                                 .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.orange.opacity(0.8))
+                                .foregroundStyle(VoxTheme.accent.opacity(0.8))
                                 .frame(width: 16, alignment: .trailing)
                             Text(step)
                                 .font(.system(size: 11))
@@ -1114,7 +1114,7 @@ struct PermissionCard: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(isGranted ? Color.green.opacity(0.05) : Color(nsColor: .controlBackgroundColor))
+                .fill(isGranted ? VoxTheme.accent.opacity(0.05) : VoxTheme.surface)
         )
     }
 }
@@ -1128,10 +1128,10 @@ struct QuickRefRow: View {
         HStack(spacing: 12) {
             Text(keys)
                 .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundStyle(.purple)
+                .foregroundStyle(VoxTheme.accent)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.purple.opacity(0.1))
+                .background(VoxTheme.accent.opacity(0.1))
                 .cornerRadius(6)
 
             VStack(alignment: .leading, spacing: 2) {

@@ -78,20 +78,14 @@ struct FloatingPreviewView: View {
         }
         .frame(minWidth: 300, idealWidth: 400, maxWidth: .infinity,
                minHeight: 200, idealHeight: 300, maxHeight: .infinity)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(VoxTheme.background)
         .onAppear {
             setupKeyboardShortcuts()
         }
     }
     
     private var modeColor: Color {
-        switch mode {
-        case .code: return .blue
-        case .text: return .green
-        case .email: return .orange
-        case .uxDesign: return .purple
-        case .command: return .yellow
-        }
+        return VoxTheme.accent
     }
     
     private func copyToClipboard() {

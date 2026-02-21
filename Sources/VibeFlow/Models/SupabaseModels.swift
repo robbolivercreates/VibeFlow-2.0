@@ -87,6 +87,10 @@ struct TranscriptionResponse: Codable {
     let error: String?
     let code: String?
     let usage: UsageInfo?
+    // 429 responses put used/limit at root level (not inside usage)
+    let used: Int?
+    let limit: Int?
+    let resets_at: String?
 }
 
 struct UsageInfo: Codable {

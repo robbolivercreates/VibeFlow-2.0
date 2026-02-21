@@ -16,6 +16,15 @@ struct SettingsView: View {
     @State private var versionTapCount = 0
     @State private var showEasterEggPrompt = false
     @State private var easterEggPassword = ""
+    @StateObject private var subscription = SubscriptionManager.shared
+
+    private func activateEasterEgg() {
+        if easterEggPassword == "voxdev" {
+            subscription.activateDevMode()
+        }
+        showEasterEggPrompt = false
+        easterEggPassword = ""
+    }
     
     var body: some View {
         TabView {
@@ -100,11 +109,11 @@ struct SettingsView: View {
                             .font(.system(size: 13, weight: .medium))
                         Spacer()
                         Text(settings.cycleLanguageShortcut)
-                            .foregroundStyle(.purple)
+                            .foregroundStyle(VoxTheme.accent)
                             .font(.system(.body, design: .monospaced, weight: .bold))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
-                            .background(Color.purple.opacity(0.1))
+                            .background(VoxTheme.accentMuted)
                             .cornerRadius(4)
                     }
                     
@@ -135,14 +144,14 @@ struct SettingsView: View {
                                 if settings.favoriteLanguages.contains(language) {
                                     Image(systemName: "checkmark")
                                         .font(.system(size: 10))
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(VoxTheme.accent)
                                 }
                             }
                             .padding(.horizontal, 6)
                             .padding(.vertical, 4)
                             .background(
                                 settings.favoriteLanguages.contains(language)
-                                ? Color.blue.opacity(0.1)
+                                ? VoxTheme.accent.opacity(0.1)
                                 : Color.clear
                             )
                             .cornerRadius(4)
@@ -216,22 +225,11 @@ struct SettingsView: View {
                         SecureField("Password", text: $easterEggPassword)
                             .textFieldStyle(.roundedBorder)
                             .onSubmit {
-                                if easterEggPassword == "egg" {
-                                    settings.byokEnabled = true
-                                    showEasterEggPrompt = false
-                                    easterEggPassword = ""
-                                } else {
-                                    showEasterEggPrompt = false
-                                    easterEggPassword = ""
-                                }
+                                activateEasterEgg()
                             }
 
                         Button("OK") {
-                            if easterEggPassword == "egg" {
-                                settings.byokEnabled = true
-                            }
-                            showEasterEggPrompt = false
-                            easterEggPassword = ""
+                            activateEasterEgg()
                         }
                         .buttonStyle(.bordered)
                     }
@@ -267,7 +265,7 @@ struct SettingsView: View {
                 // Microfone
                 HStack {
                     Image(systemName: "microphone.fill")
-                        .foregroundStyle(microphonePermission == .authorized ? .green : .orange)
+                        .foregroundStyle(microphonePermission == .authorized ? VoxTheme.accent : .white)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -293,14 +291,14 @@ struct SettingsView: View {
                         .controlSize(.small)
                     } else {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(VoxTheme.accent)
                     }
                 }
-                
+
                 // Acessibilidade
                 HStack {
                     Image(systemName: "accessibility")
-                        .foregroundStyle(accessibilityPermission ? .green : .orange)
+                        .foregroundStyle(accessibilityPermission ? VoxTheme.accent : .white)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -323,14 +321,14 @@ struct SettingsView: View {
                         .controlSize(.small)
                     } else {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(VoxTheme.accent)
                     }
                 }
-                
+
                 // Input Monitoring
                 HStack {
                     Image(systemName: "keyboard")
-                        .foregroundStyle(inputMonitoringPermission ? .green : .orange)
+                        .foregroundStyle(inputMonitoringPermission ? VoxTheme.accent : .white)
                         .frame(width: 24)
                     
                     VStack(alignment: .leading, spacing: 2) {
@@ -353,11 +351,11 @@ struct SettingsView: View {
                         .controlSize(.small)
                     } else {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(VoxTheme.accent)
                     }
                 }
             }
-            
+
             Section {
                 Text(L10n.permissionsHint)
                     .font(.caption)
@@ -368,6 +366,54 @@ struct SettingsView: View {
     
     private var advancedTab: some View {
         Form {
+            // MARK: Voice Commands (Wake Word)
+            Section {
+                // Enable toggle
+                Toggle(isOn: $settings.wakeWordEnabled) {
+                    Label(L10n.wakeWordEnabled, systemImage: "waveform.badge.mic")
+                }
+
+                if settings.wakeWordEnabled {
+                    // Wake word text field
+                    HStack {
+                        Text(L10n.wakeWordLabel)
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        TextField("Hey Vox", text: $settings.wakeWord)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 140)
+                            .multilineTextAlignment(.trailing)
+                    }
+
+                    // Live preview
+                    HStack(spacing: 4) {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                        Text(L10n.wakeWordPreview(settings.wakeWord.isEmpty ? "Hey Vox" : settings.wakeWord))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 2)
+                }
+            } header: {
+                Text(L10n.voiceCommandsTitle)
+            } footer: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L10n.wakeWordExplanation)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Divider()
+
+                    Text(L10n.wakeWordModes)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 4)
+            }
+
+            // MARK: Shortcuts
             Section(L10n.shortcuts) {
                 HStack {
                     Text(L10n.record)
@@ -376,7 +422,7 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                         .font(.system(.body, design: .monospaced))
                 }
-                
+
                 HStack {
                     Text(L10n.showHideShort)
                     Spacer()
@@ -384,7 +430,15 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                         .font(.system(.body, design: .monospaced))
                 }
-                
+
+                HStack {
+                    Text(L10n.cycleMode)
+                    Spacer()
+                    Text(settings.cycleModeShortcut)
+                        .foregroundStyle(.secondary)
+                        .font(.system(.body, design: .monospaced))
+                }
+
                 HStack {
                     Text(L10n.settingsTitle)
                     Spacer()
@@ -393,15 +447,15 @@ struct SettingsView: View {
                         .font(.system(.body, design: .monospaced))
                 }
             }
-            
+
             Section(L10n.data) {
                 Button(L10n.clearHistory) {
                     HistoryManager.shared.clear()
                 }
-                .foregroundStyle(.red)
+                .foregroundStyle(VoxTheme.danger)
                 .disabled(HistoryManager.shared.items.isEmpty)
             }
-            
+
             Section(L10n.support) {
                 Link(destination: URL(string: "https://github.com/seu-usuario/voxaigo")!) {
                     HStack {
@@ -412,6 +466,7 @@ struct SettingsView: View {
             }
         }
     }
+
     
     // MARK: - Helpers
     
@@ -444,7 +499,29 @@ struct SettingsView: View {
 extension L10n {
     static var byokDescription: String { t("Use your own Gemini API key directly (bypasses server).", "Use sua propria chave API do Gemini diretamente (bypassa o servidor).", "Usa tu propia clave API de Gemini directamente (bypassa el servidor).") }
     static var byokToggle: String { t("Enable BYOK", "Ativar BYOK", "Activar BYOK") }
+
+    // Wake word
+    static var voiceCommandsTitle: String { t("Voice Commands", "Comandos de Voz", "Comandos de Voz") }
+    static var wakeWordEnabled: String { t("Enable voice mode switching", "Ativar troca de modo por voz", "Activar cambio de modo por voz") }
+    static var wakeWordLabel: String { t("Wake Word", "Palavra de Ativação", "Palabra de Activación") }
+    static func wakeWordPreview(_ word: String) -> String {
+        t("Say \"\(word), Email\" to switch to Email mode",
+          "Diga \"\(word), Email\" para mudar para o modo Email",
+          "Di \"\(word), Email\" para cambiar al modo Email")
+    }
+    static var wakeWordExplanation: String {
+        t("While recording (hold ⌥⌘), start by saying your wake word followed by the mode name. The app will switch modes without pasting any text. You can also use keyboard shortcuts below.",
+          "Durante a gravação (segure ⌥⌘), comece dizendo a palavra de ativação seguida do nome do modo. O app troca o modo sem colar nenhum texto. Você também pode usar os atalhos de teclado abaixo.",
+          "Durante la grabación (mantén ⌥⌘), empieza diciendo la palabra de activación seguida del nombre del modo. La app cambia el modo sin pegar texto. También puedes usar los atajos de teclado.")
+    }
+    static var wakeWordModes: String {
+        t("Available modes: Text, Chat, Code, Vibe Coder, Email, Formal, Social, X, Summary, Topics, Meeting, UX Design, Translation, Creative, Custom",
+          "Modos disponíveis: Texto, Chat, Código, Vibe Coder, Email, Formal, Social, X, Resumo, Tópicos, Reunião, UX Design, Tradução, Criativo, Meu Modo",
+          "Modos disponibles: Texto, Chat, Código, Vibe Coder, Email, Formal, Social, X, Resumen, Temas, Reunión, UX Design, Traducción, Creativo, Mi Modo")
+    }
+    static var cycleMode: String { t("Cycle mode", "Ciclar modo", "Ciclar modo") }
 }
+
 
 #Preview {
     SettingsView()

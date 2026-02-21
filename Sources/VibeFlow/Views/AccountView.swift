@@ -28,7 +28,7 @@ struct AccountView: View {
                 HStack {
                     Image(systemName: "person.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundStyle(.purple)
+                        .foregroundStyle(VoxTheme.accent)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(auth.userEmail ?? "")
@@ -40,7 +40,7 @@ struct AccountView: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 2)
-                                .background(subscription.isPro ? Color.purple : Color.gray)
+                                .background(subscription.isPro ? VoxTheme.accent : Color.gray)
                                 .cornerRadius(4)
 
                             if let status = subscription.subscriptionStatus {
@@ -72,7 +72,7 @@ struct AccountView: View {
                             value: Double(subscription.freeTranscriptionsUsed),
                             total: Double(SubscriptionManager.freeMonthlyLimit)
                         )
-                        .tint(subscription.hasReachedFreeLimit ? .red : .purple)
+                        .tint(subscription.hasReachedFreeLimit ? .red : VoxTheme.accent)
 
                         if subscription.hasReachedFreeLimit {
                             Text(L10n.freeLimitReached)
@@ -93,7 +93,7 @@ struct AccountView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(spacing: 8) {
                             Image(systemName: "crown.fill")
-                                .foregroundStyle(.yellow)
+                                .foregroundStyle(VoxTheme.accent)
                             Text(L10n.proFeatures)
                                 .font(.system(size: 14, weight: .medium))
                         }
@@ -130,7 +130,7 @@ struct AccountView: View {
                                 .padding(.vertical, 8)
                             }
                             .buttonStyle(.borderedProminent)
-                            .tint(.purple)
+                            .tint(VoxTheme.accent)
                         }
                     }
                 }
@@ -215,7 +215,7 @@ struct ProFeatureRow: View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 12))
-                .foregroundStyle(.green)
+                .foregroundStyle(VoxTheme.accent)
             Text(text)
                 .font(.system(size: 12))
         }

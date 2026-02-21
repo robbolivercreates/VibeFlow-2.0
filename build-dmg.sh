@@ -46,8 +46,15 @@ for arg in "$@"; do
     case $arg in
         --sign) DO_SIGN=true ;;
         --notarize) DO_SIGN=true; DO_NOTARIZE=true ;;
+        --no-sign) DO_SIGN=false ;;
     esac
 done
+
+# Auto-detect Developer ID certificate (sign by default if available)
+if [ "$DO_SIGN" = false ] && security find-identity -v -p codesigning 2>/dev/null | grep -q "Developer ID Application"; then
+    echo "🔐 Auto-detected Developer ID certificate — signing enabled"
+    DO_SIGN=true
+fi
 
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║  🎙️ VoxAiGo Build System                            ║"

@@ -25,6 +25,16 @@ struct ConversationReplyView: View {
             }
 
             mainCard
+
+            // Hidden escape button to close HUD anytime
+            Button(action: {
+                manager.dismiss()
+                NotificationCenter.default.post(name: .conversationReplyTimedOut, object: nil)
+            }) {
+                EmptyView()
+            }
+            .keyboardShortcut(.cancelAction)
+            .opacity(0)
         }
     }
 
@@ -45,43 +55,35 @@ struct ConversationReplyView: View {
                 processingContent
             }
         }
-        .frame(width: 356)
-        .background(cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(cardBorder)
-        .shadow(color: .black.opacity(0.45), radius: 20, x: 0, y: 6)
+        .frame(width: 380)
+        .background(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .fill(Color(white: 0.12, opacity: 0.85))
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 30, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [.white.opacity(0.3), .clear, borderColor],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
     }
 
     // MARK: - Backgrounds & Borders
 
-    private var cardBackground: some View {
-        RoundedRectangle(cornerRadius: 20)
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.12, green: 0.12, blue: 0.16),
-                        Color(red: 0.08, green: 0.08, blue: 0.11)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-    }
-
-    private var cardBorder: some View {
-        RoundedRectangle(cornerRadius: 20)
-            .stroke(borderColor, lineWidth: 1)
-            .animation(.easeInOut(duration: 0.3), value: borderColorKey)
-    }
-
     private var borderColor: Color {
         switch manager.state {
         case .recording:
-            return Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.4)
+            return Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.5)
         case .processing:
-            return Color(red: 0.6, green: 0.4, blue: 1.0).opacity(0.3)
+            return VoxTheme.accent.opacity(0.5)
         default:
-            return Color.white.opacity(0.08)
+            return Color.white.opacity(0.15)
         }
     }
 
@@ -100,7 +102,7 @@ struct ConversationReplyView: View {
         HStack(spacing: 14) {
             Image(systemName: "globe")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(red: 0.4, green: 0.72, blue: 1.0))
+                .foregroundColor(VoxTheme.accent)
 
             Text("Reading message...")
                 .font(.system(size: 13, weight: .medium))
@@ -146,17 +148,19 @@ struct ConversationReplyView: View {
             .padding(.horizontal, 16)
             .padding(.top, 14)
 
-            // ── Translated text ──────────────────────────────────────────
-            Text(context.translation)
-                .font(.system(size: 13.5, weight: .regular))
-                .foregroundColor(Color.white.opacity(0.88))
-                .lineSpacing(2)
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 12)
+            // ── Translated text (scrollable for long content) ─────────
+            ScrollView {
+                Text(context.translation)
+                    .font(.system(size: 13.5, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.88))
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 180)
+            .padding(.horizontal, 16)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
 
             // ── Separator ────────────────────────────────────────────────
             Rectangle()
@@ -232,7 +236,7 @@ struct ConversationReplyView: View {
         HStack(spacing: 14) {
             Image(systemName: "sparkles")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(Color(red: 0.6, green: 0.4, blue: 1.0))
+                .foregroundColor(VoxTheme.accent)
                 .rotationEffect(.degrees(processingRotation))
                 .onAppear {
                     withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
@@ -324,8 +328,8 @@ struct ConversationReplyView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.4, green: 0.72, blue: 1.0),
-                                Color(red: 0.35, green: 0.88, blue: 0.58)
+                                VoxTheme.accent,
+                                VoxTheme.accentLight
                             ],
                             startPoint: .leading,
                             endPoint: .trailing

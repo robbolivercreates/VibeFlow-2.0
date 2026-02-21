@@ -5,38 +5,45 @@ import IOKit
 /// Clean settings view with row-based design (inspired by modern macOS apps)
 struct SettingsDetailView: View {
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
     @State private var showingResetConfirmation = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
     @State private var inputMonitoringPermission = false
 
+    // Easter egg state
+    @State private var versionTapCount = 0
+    @State private var showEasterEggPrompt = false
+    @State private var easterEggPassword = ""
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Header
-                headerSection
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header
+            headerSection
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.background)
+                .zIndex(1)
 
-                // MARK: - API Configuration
-                apiSection
+            Divider()
 
-                // MARK: - Behavior
-                behaviorSection
-
-                // MARK: - Conversation Reply
-                conversationReplySection
-
-                // MARK: - Shortcuts
-                shortcutsSection
-
-                // MARK: - Permissions
-                permissionsSection
-
-                // MARK: - Advanced
-                advancedSection
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    apiSection
+                    behaviorSection
+                    conversationReplySection
+                    shortcutsSection
+                    permissionsSection
+                    advancedSection
+                }
+                .padding(32)
             }
-            .padding(32)
+            .clipped()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
         .onAppear {
             checkPermissions()
         }
@@ -75,8 +82,35 @@ struct SettingsDetailView: View {
 
     private var apiSection: some View {
         SettingsSection(title: L10n.account, icon: "person.crop.circle") {
-            AccountView()
+            AccountView(onVersionTap: {
+                versionTapCount += 1
+                if versionTapCount >= 5 {
+                    versionTapCount = 0
+                    showEasterEggPrompt = true
+                }
+            })
+
+            if showEasterEggPrompt {
+                HStack(spacing: 8) {
+                    SecureField("Password", text: $easterEggPassword)
+                        .textFieldStyle(.roundedBorder)
+                        .onSubmit { activateEasterEgg() }
+
+                    Button("OK") { activateEasterEgg() }
+                        .buttonStyle(.bordered)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+            }
         }
+    }
+
+    private func activateEasterEgg() {
+        if easterEggPassword == "voxdev" {
+            subscription.activateDevMode()
+        }
+        showEasterEggPrompt = false
+        easterEggPassword = ""
     }
 
     // MARK: - Behavior Section
@@ -357,7 +391,7 @@ struct SettingsDetailView: View {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(VoxTheme.danger)
                 }
 
                 Divider().padding(.leading, 44)
@@ -427,11 +461,11 @@ struct SettingsSection<Content: View>: View {
             }
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(VoxTheme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
             )
         }
     }
@@ -488,10 +522,10 @@ struct ShortcutBadge: View {
     var body: some View {
         Text(shortcut)
             .font(.system(size: 13, weight: .medium, design: .monospaced))
-            .foregroundStyle(.purple)
+            .foregroundStyle(VoxTheme.accent)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color.purple.opacity(0.1))
+            .background(VoxTheme.accentMuted)
             .cornerRadius(6)
     }
 }
@@ -506,6 +540,10 @@ struct ShortcutEditor: View {
     @State private var tempShortcut = ""
     @State private var eventMonitor: Any?
 
+    /// Global flag — when true, AppDelegate skips all shortcut processing so
+    /// the capture editor can intercept the key press cleanly.
+    static var isCapturing = false
+
     var body: some View {
         Button(action: {
             if isEditing {
@@ -517,7 +555,7 @@ struct ShortcutEditor: View {
             HStack(spacing: 6) {
                 Text(isEditing ? (tempShortcut.isEmpty ? "Pressione..." : tempShortcut) : shortcut)
                     .font(.system(size: 13, weight: .medium, design: .monospaced))
-                    .foregroundStyle(isEditing ? .orange : .purple)
+                    .foregroundStyle(isEditing ? VoxTheme.accent : VoxTheme.accent)
 
                 if !isEditing {
                     Image(systemName: "pencil")
@@ -526,16 +564,16 @@ struct ShortcutEditor: View {
                 } else {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 10))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(VoxTheme.accent)
                 }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(isEditing ? Color.orange.opacity(0.15) : Color.purple.opacity(0.1))
+            .background(isEditing ? VoxTheme.accent.opacity(0.15) : VoxTheme.accentMuted)
             .cornerRadius(6)
             .overlay(
                 RoundedRectangle(cornerRadius: 6)
-                    .stroke(isEditing ? Color.orange : Color.clear, lineWidth: 1)
+                    .stroke(isEditing ? VoxTheme.accent : Color.clear, lineWidth: 1)
             )
         }
         .buttonStyle(.plain)
@@ -547,6 +585,12 @@ struct ShortcutEditor: View {
     private func startEditing() {
         isEditing = true
         tempShortcut = ""
+        ShortcutEditor.isCapturing = true
+
+        // Ensure our window is key so local monitor receives events.
+        // Necessary for .accessory-policy apps where windows don't auto-steal focus.
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.mainWindow?.makeKeyAndOrderFront(nil)
 
         // Listen for key events using NSEvent (works on macOS 13+)
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
@@ -597,6 +641,7 @@ struct ShortcutEditor: View {
     private func stopEditing() {
         isEditing = false
         tempShortcut = ""
+        ShortcutEditor.isCapturing = false
         if let monitor = eventMonitor {
             NSEvent.removeMonitor(monitor)
             eventMonitor = nil
@@ -630,7 +675,7 @@ struct ConversationReplyStepRow: View {
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 16, height: 16)
-                .background(Circle().fill(Color.purple))
+                .background(Circle().fill(VoxTheme.accent))
 
             Text(text)
                 .font(.system(size: 12))
@@ -652,14 +697,14 @@ struct PermissionBadge: View {
         if isGranted {
             HStack(spacing: 4) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(VoxTheme.accent)
                 Text("OK")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(VoxTheme.accent)
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color.green.opacity(0.1))
+            .background(VoxTheme.accent.opacity(0.1))
             .cornerRadius(6)
         } else {
             Button("Permitir", action: onRequest)

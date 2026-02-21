@@ -8,27 +8,36 @@ struct StyleView: View {
     @State private var showingClearConfirmation = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // MARK: - Header
-                headerSection
+        VStack(alignment: .leading, spacing: 0) {
+            // Fixed header
+            headerSection
+                .padding(.horizontal, 32)
+                .padding(.top, 32)
+                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(VoxTheme.background)
+                .zIndex(1)
 
-                // MARK: - Toggle
-                toggleSection
+            Divider()
 
-                // MARK: - How it Works
-                if settings.enableStyleLearning {
-                    howItWorksSection
+            // Scrollable content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    toggleSection
+
+                    if settings.enableStyleLearning {
+                        howItWorksSection
+                    }
+
+                    if settings.enableStyleLearning {
+                        samplesSection
+                    }
                 }
-
-                // MARK: - Samples
-                if settings.enableStyleLearning {
-                    samplesSection
-                }
+                .padding(32)
             }
-            .padding(32)
+            .clipped()
         }
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(VoxTheme.background)
         .alert("Limpar Amostras", isPresented: $showingClearConfirmation) {
             Button("Cancelar", role: .cancel) {}
             Button("Limpar", role: .destructive) {
@@ -84,11 +93,11 @@ struct StyleView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(settings.enableStyleLearning ? Color.purple.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
+                .stroke(settings.enableStyleLearning ? VoxTheme.accent.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 
@@ -174,10 +183,10 @@ struct StyleView: View {
         .padding(.vertical, 40)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
                 .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                    .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
             )
         )
     }
@@ -186,7 +195,7 @@ struct StyleView: View {
         VStack(spacing: 12) {
             let counts = styleManager.sampleCounts()
 
-            ForEach(TranscriptionMode.allCases.filter { $0 != .command }, id: \.self) { mode in
+            ForEach(TranscriptionMode.allCases.filter { $0 != .custom && $0 != .vibeCoder }, id: \.self) { mode in
                 let count = counts[mode] ?? 0
 
                 StyleModeCard(
@@ -214,7 +223,7 @@ struct FeatureCard2: View {
         VStack(alignment: .leading, spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 20))
-                .foregroundStyle(.purple)
+                .foregroundStyle(VoxTheme.accent)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -230,7 +239,7 @@ struct FeatureCard2: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
         )
     }
 }
@@ -276,7 +285,7 @@ struct StyleModeCard: View {
                     HStack(spacing: 2) {
                         ForEach(0..<5) { i in
                             RoundedRectangle(cornerRadius: 2)
-                                .fill(i < sampleCount ? mode.color : Color(nsColor: .controlColor).opacity(0.1))
+                                .fill(i < sampleCount ? mode.color : VoxTheme.surface.opacity(0.1))
                                 .frame(width: 16, height: 4)
                         }
                     }
@@ -309,7 +318,7 @@ struct StyleModeCard: View {
                         }
                         .padding(10)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(nsColor: .controlBackgroundColor))
+                        .background(VoxTheme.surface)
                         .cornerRadius(6)
                     }
 
@@ -331,11 +340,11 @@ struct StyleModeCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(nsColor: .controlBackgroundColor))
+                .fill(VoxTheme.surface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
-                .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
         )
     }
 

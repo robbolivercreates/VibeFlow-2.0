@@ -21,11 +21,11 @@ class SupabaseService {
         let url = URL(string: "\(SupabaseConfig.url)/functions/v1/transcribe")!
         let audioBase64 = audioData.base64EncodedString()
 
-        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText)
+        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText, wakeWord: SettingsManager.shared.wakeWord)
 
         let body: [String: Any] = [
             "audio": audioBase64,
-            "mode": mode.rawValue,
+            "mode": mode.apiName,
             "language": outputLanguage.rawValue,
             "systemPrompt": systemPrompt,
             "temperature": mode.temperature,
@@ -44,11 +44,11 @@ class SupabaseService {
         let url = URL(string: "\(SupabaseConfig.url)/functions/v1/transcribe")!
         let audioBase64 = audioData.base64EncodedString()
 
-        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText)
+        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText, wakeWord: SettingsManager.shared.wakeWord)
 
         let body: [String: Any] = [
             "audio": audioBase64,
-            "mode": mode.rawValue,
+            "mode": mode.apiName,
             "language": outputLanguage.rawValue,
             "systemPrompt": systemPrompt,
             "temperature": mode.temperature,
@@ -149,7 +149,7 @@ class SupabaseService {
 
     // MARK: - Private
 
-    private func sendRequest(url: URL, token: String, body: [String: Any]) async throws -> String {
+    private func sendRequest(url: URL, token: String, body: [String: Any], isRetry: Bool = false) async throws -> String {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -165,36 +165,53 @@ class SupabaseService {
             throw SupabaseTranscriptionError.noResponse
         }
 
-        let result = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
+        // Decode JSON first (all fields optional so this tolerates error bodies)
+        // Fall back to raw body string if not valid JSON
+        let result = try? JSONDecoder().decode(TranscriptionResponse.self, from: data)
+        let rawBody = String(data: data, encoding: .utf8) ?? ""
 
-        // Handle error responses
+        // Auto-refresh and retry once on 401
+        if httpResponse.statusCode == 401 && !isRetry {
+            await AuthManager.shared.refreshSession()
+            if let newToken = AuthManager.shared.accessToken {
+                return try await sendRequest(url: url, token: newToken, body: body, isRetry: true)
+            }
+            throw AuthError.tokenExpired
+        }
         if httpResponse.statusCode == 401 {
             throw AuthError.tokenExpired
         }
 
         if httpResponse.statusCode == 429 {
+            // 429 response has used/limit at root level (not inside usage)
+            let usedCount = result?.used ?? result?.usage?.used ?? 0
+            let limitCount = result?.limit ?? result?.usage?.limit ?? 100
+            // Sync counter so the app shows the correct value
+            await MainActor.run {
+                SubscriptionManager.shared.freeTranscriptionsUsed = usedCount
+            }
             throw SupabaseTranscriptionError.freeLimitReached(
-                used: result.usage?.used ?? 0,
-                limit: result.usage?.limit ?? 100
+                used: usedCount,
+                limit: limitCount
             )
         }
 
         if httpResponse.statusCode == 403 {
-            throw SupabaseTranscriptionError.proFeatureRequired(result.error ?? "Pro feature")
+            throw SupabaseTranscriptionError.proFeatureRequired(result?.error ?? "Pro feature")
         }
 
         if httpResponse.statusCode != 200 {
-            throw SupabaseTranscriptionError.serverError(
-                result.error ?? "HTTP \(httpResponse.statusCode)"
-            )
+            // Include raw body so user sees the actual server error, not a cryptic JSON error
+            let msg = result?.error ?? (rawBody.isEmpty ? "HTTP \(httpResponse.statusCode)" : "\(httpResponse.statusCode): \(rawBody.prefix(200))")
+            throw SupabaseTranscriptionError.serverError(msg)
         }
 
-        guard let text = result.text, !text.isEmpty else {
+        guard let text = result?.text, !text.isEmpty else {
             throw SupabaseTranscriptionError.noTranscription
         }
 
         // Update usage stats if available
-        if let usage = result.usage {
+        if let usage = result?.usage {
             await MainActor.run {
                 SubscriptionManager.shared.freeTranscriptionsUsed = usage.used
             }

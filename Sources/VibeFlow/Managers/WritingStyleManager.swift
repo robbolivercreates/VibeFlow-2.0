@@ -59,8 +59,8 @@ class WritingStyleManager: ObservableObject {
 
     /// Records a successful transcription as a style sample
     func learnFromTranscription(_ text: String, mode: TranscriptionMode) {
-        // Don't learn from command mode (it's transformations, not user's style)
-        guard mode != .command else { return }
+        // Don't learn from custom or vibeCoder modes
+        guard mode != .custom && mode != .vibeCoder else { return }
 
         // Only learn from sufficiently long text
         guard text.count >= minTextLength else { return }

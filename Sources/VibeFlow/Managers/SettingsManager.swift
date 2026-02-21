@@ -32,6 +32,9 @@ class SettingsManager: ObservableObject {
         static let enableConversationReply = "enable_conversation_reply"
         static let enableStyleLearning = "enable_style_learning"
         static let clarifyText = "clarify_text"
+        static let customModePrompt = "custom_mode_prompt"
+        static let wakeWord = "wake_word"
+        static let wakeWordEnabled = "wake_word_enabled"
     }
     
     // MARK: - Published Properties
@@ -95,6 +98,21 @@ class SettingsManager: ObservableObject {
 
     @Published var clarifyText: Bool {
         didSet { defaults.set(clarifyText, forKey: Keys.clarifyText) }
+    }
+
+    /// Custom mode user-defined prompt
+    @Published var customModePrompt: String {
+        didSet { defaults.set(customModePrompt, forKey: Keys.customModePrompt) }
+    }
+
+    /// Wake word used to trigger voice commands (default: "Hey Vox")
+    @Published var wakeWord: String {
+        didSet { defaults.set(wakeWord, forKey: Keys.wakeWord) }
+    }
+
+    /// Whether wake word mode switching is enabled
+    @Published var wakeWordEnabled: Bool {
+        didSet { defaults.set(wakeWordEnabled, forKey: Keys.wakeWordEnabled) }
     }
 
     @Published var launchAtLogin: Bool {
@@ -220,6 +238,8 @@ class SettingsManager: ObservableObject {
             self.launchAtLogin = launchStatus == .enabled
         }
 
+        self.customModePrompt = defaults.string(forKey: Keys.customModePrompt) ?? ""
+
         // Migrate clarifyText from old ViewModel key if needed, default: true
         if defaults.object(forKey: Keys.clarifyText) != nil {
             self.clarifyText = defaults.bool(forKey: Keys.clarifyText)
@@ -246,6 +266,9 @@ class SettingsManager: ObservableObject {
 
         self.shortcutRecordKey = defaults.string(forKey: Keys.shortcutRecord) ?? "⌥⌘"
         self.shortcutToggleKey = defaults.string(forKey: Keys.shortcutToggle) ?? "⌘⇧V"
+
+        self.wakeWord = defaults.string(forKey: Keys.wakeWord) ?? "Hey Vox"
+        self.wakeWordEnabled = defaults.object(forKey: Keys.wakeWordEnabled) as? Bool ?? true
 
         // Initialize favorite index based on current language
         if let index = self.favoriteLanguages.firstIndex(of: self.outputLanguage) {
@@ -325,4 +348,7 @@ extension Notification.Name {
     static let shortcutChanged = Notification.Name("shortcutChanged")
     static let languageChanged = Notification.Name("languageChanged")
     static let openSetupWizard = Notification.Name("openSetupWizard")
+    static let authStateChanged = Notification.Name("authStateChanged")
+    static let showUpgradePrompt = Notification.Name("showUpgradePrompt")
+    static let wakeWordCommand = Notification.Name("wakeWordCommand")
 }

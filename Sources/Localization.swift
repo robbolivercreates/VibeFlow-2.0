@@ -319,12 +319,20 @@ struct L10n {
     static var uses: String { t("uses", "usos", "usos") }
     static var systemPrompt: String { t("System Prompt", "Prompt do Sistema", "Prompt del Sistema") }
     static var temperature: String { t("Temperature:", "Temperatura:", "Temperatura:") }
-    static var commandMode: String { t("Command Mode", "Modo Comando", "Modo Comando") }
+    static var customModeSettings: String { t("Custom Mode Prompt", "Prompt do Modo Personalizado", "Prompt del Modo Personalizado") }
     
     // MARK: - Modes
     static var codeMode: String { t("Code", "Código", "Código") }
     static var textMode: String { t("Text", "Texto", "Texto") }
     static var uxMode: String { t("UX Design", "UX Design", "UX Design") }
+    static var translationMode: String { t("Translation", "Tradução", "Traducción") }
+    static var formalMode: String { t("Formal", "Formal", "Formal") }
+    static var summaryMode: String { t("Summary", "Resumo", "Resumen") }
+    static var topicsMode: String { t("Topics", "Tópicos", "Tópicos") }
+    static var meetingMode: String { t("Meeting", "Reunião", "Reunión") }
+    static var creativeMode: String { t("Creative", "Criativo", "Creativo") }
+    static var customMode: String { t("My Mode", "Meu Modo", "Mi Modo") }
+
     static var codeModeTitle: String { t("Code Mode", "Modo Código", "Modo Código") }
     static var codeModeDescription: String { t("Transforms dictation into code. Say \"sum function that takes two numbers\" and get ready code.", "Transforma ditado em código. Diga \"função soma que recebe dois números\" e receba código pronto.", "Transforma el dictado en código. Di \"función suma que recibe dos números\" y obtén código listo.") }
     static var textModeTitle: String { t("Text Mode", "Modo Texto", "Modo Texto") }
@@ -406,12 +414,72 @@ struct L10n {
         "Diseñado para diseñadores UX y equipos de producto. Describe interfaces, flujos de usuario o specs de diseño y obtén documentación bien organizada.\n\nCuándo usar:\n• Describir pantallas, componentes o interacciones\n• Documentar flujos de usuario paso a paso\n• Escribir specs de diseño y requisitos\n\nConsejo: Sé específico con elementos de UI — di \"botón\", \"modal\", \"card\", \"dropdown\" — para una salida más estructurada."
     ) }
 
-    static var commandModeDetail: String { t(
-        "A powerful mode that transforms selected text based on voice commands. Select text in any app, then use a voice command to modify it.\n\nWhen to use:\n• \"Make it professional\" — rewrites in formal tone\n• \"Summarize\" — creates a concise summary\n• \"Translate to English\" — translates the text\n• \"Fix grammar\" — corrects errors only\n• \"Add bullet points\" — formats as a list\n\nTip: First select text in any app, then activate VoxAiGo and say the command.",
-        "Um modo poderoso que transforma texto selecionado com comandos de voz. Selecione texto em qualquer app e use um comando de voz para modificá-lo.\n\nQuando usar:\n• \"Mais profissional\" — reescreve em tom formal\n• \"Resumir\" — cria um resumo conciso\n• \"Traduzir para inglês\" — traduz o texto\n• \"Corrigir gramática\" — corrige apenas erros\n• \"Adicionar tópicos\" — formata como lista\n\nDica: Primeiro selecione o texto em qualquer app, depois ative o VoxAiGo e diga o comando.",
-        "Un modo poderoso que transforma texto seleccionado con comandos de voz. Selecciona texto en cualquier app y usa un comando de voz para modificarlo.\n\nCuándo usar:\n• \"Más profesional\" — reescribe en tono formal\n• \"Resumir\" — crea un resumen conciso\n• \"Traducir al inglés\" — traduce el texto\n• \"Corregir gramática\" — corrige solo errores\n• \"Agregar viñetas\" — formatea como lista\n\nConsejo: Primero selecciona texto en cualquier app, luego activa VoxAiGo y di el comando."
+    static var translationModeDetail: String { t(
+        "Translates audio directly into the chosen output language. Speak in any language, and it will automatically detect and translate.\n\nWhen to use:\n• Dictating ideas in your native language to write in English\n• Transcribing multilingual meetings\n• Responding accurately in another language\n\nTip: The output language is determined by the app's 'Output Language' setting.",
+        "Traduz o áudio diretamente para o idioma de saída escolhido. Fale em qualquer idioma, ele detectará e traduzirá automaticamente.\n\nQuando usar:\n• Ditar ideias em sua língua nativa para escrever em inglês\n• Transcrever reuniões multilíngues\n• Responder com facilidade em outro idioma\n\nDica: O idioma de saída é determinado pela configuração 'Idioma de Saída' do aplicativo.",
+        "Traduce el audio directamente al idioma de salida elegido. Habla en cualquier idioma, lo detectará y traducirá automáticamente.\n\nCuándo usar:\n• Dictar ideas en tu lengua materna para escribir en inglés\n• Transcribir reuniones multilingües\n• Responder con facilidad en otro idioma\n\nConsejo: El idioma de salida está determinado por la configuración 'Idioma de Salida' de la aplicación."
     ) }
-    
+
+    static var chatModeDetail: String { t(
+        "For quick, natural messages like WhatsApp or Slack. Keeps your casual tone — only removes speech disfluencies, not your style.\n\nWhen to use:\n• Quick replies in chat apps\n• Informal messages to friends or colleagues\n• Any situation where you want natural, unpolished text",
+        "Para mensagens rápidas e naturais como WhatsApp ou Slack. Mantém seu tom casual — remove apenas hesitações da fala, não seu estilo.\n\nQuando usar:\n• Respostas rápidas em apps de chat\n• Mensagens informais para amigos ou colegas\n• Qualquer situação onde você quer texto natural, sem polimento",
+        "Para mensajes rápidos y naturales como WhatsApp o Slack. Mantiene tu tono casual — solo elimina vacilaciones del habla, no tu estilo.\n\nCuándo usar:\n• Respuestas rápidas en apps de chat\n• Mensajes informales a amigos o colegas\n• Cualquier situación donde quieras texto natural, sin pulir"
+    ) }
+
+    static var vibeCoderModeDetail: String { t(
+        "Optimized for vibe coding. Extracts only the essential instruction from your speech and outputs a clean, concise prompt ready to paste into AI coding tools (Claude, Cursor, Copilot).\n\nWhen to use:\n• Describing what you want to build by voice\n• Creating prompts for AI coding assistants\n• Saving tokens by compressing verbose speech into focused instructions\n\nTip: Speak naturally — it will keep technical terms and requirements but remove all filler.",
+        "Otimizado para vibe coding. Extrai apenas a instrução essencial da sua fala e gera um prompt limpo e conciso, pronto para colar em ferramentas de IA (Claude, Cursor, Copilot).\n\nQuando usar:\n• Descrever o que quer construir por voz\n• Criar prompts para assistentes de código IA\n• Economizar tokens comprimindo fala prolixa em instruções focadas\n\nDica: Fale naturalmente — ele mantém termos técnicos e requisitos mas remove toda gordura.",
+        "Optimizado para vibe coding. Extrae solo la instrucción esencial de tu habla y genera un prompt limpio y conciso, listo para pegar en herramientas de IA (Claude, Cursor, Copilot).\n\nCuándo usar:\n• Describir lo que quieres construir por voz\n• Crear prompts para asistentes de código IA\n• Ahorrar tokens comprimiendo habla prolija en instrucciones enfocadas\n\nConsejo: Habla naturalmente — mantiene términos técnicos y requisitos pero elimina toda la grasa."
+    ) }
+
+    static var formalModeDetail: String { t(
+        "Transforms casual speech into formal, corporate-ready text. Ideal for reports, proposals, and official communications.\n\nWhen to use:\n• Writing reports or official documents\n• Drafting proposals or announcements\n• Any text that needs a professional, formal tone",
+        "Transforma fala casual em texto formal e corporativo. Ideal para relatórios, propostas e comunicações oficiais.\n\nQuando usar:\n• Escrever relatórios ou documentos oficiais\n• Redigir propostas ou comunicados\n• Qualquer texto que precise de tom profissional e formal",
+        "Transforma habla casual en texto formal y corporativo. Ideal para informes, propuestas y comunicaciones oficiales.\n\nCuándo usar:\n• Escribir informes o documentos oficiales\n• Redactar propuestas o comunicados\n• Cualquier texto que necesite tono profesional y formal"
+    ) }
+
+    static var socialModeDetail: String { t(
+        "Creates engaging social media posts using the IMC framework (Impact, Method, Call). Perfect for Instagram and LinkedIn.\n\nWhen to use:\n• Creating Instagram or LinkedIn posts\n• Writing engaging content with a hook\n• Any post that needs to capture attention\n\nTip: Just describe your idea — the IMC framework will structure it automatically.",
+        "Cria posts engajantes usando o framework IMC (Impacto, Método, Call). Perfeito para Instagram e LinkedIn.\n\nQuando usar:\n• Criar posts para Instagram ou LinkedIn\n• Escrever conteúdo engajante com gancho\n• Qualquer post que precise prender atenção\n\nDica: Apenas descreva sua ideia — o framework IMC estrutura automaticamente.",
+        "Crea posts atractivos usando el framework IMC (Impacto, Método, Call). Perfecto para Instagram y LinkedIn.\n\nCuándo usar:\n• Crear posts para Instagram o LinkedIn\n• Escribir contenido atractivo con gancho\n• Cualquier post que necesite capturar atención\n\nConsejo: Solo describe tu idea — el framework IMC lo estructura automáticamente."
+    ) }
+
+    static var xTweetModeDetail: String { t(
+        "Creates tweets optimized for X (Twitter) with a maximum of 280 characters. Uses a compressed IMC framework for punchy, engaging posts.\n\nWhen to use:\n• Posting on X/Twitter\n• Creating short, impactful statements\n• Any text that needs to fit 280 characters",
+        "Cria tweets otimizados para X (Twitter) com máximo de 280 caracteres. Usa framework IMC comprimido para posts impactantes.\n\nQuando usar:\n• Postar no X/Twitter\n• Criar declarações curtas e impactantes\n• Qualquer texto que precise caber em 280 caracteres",
+        "Crea tweets optimizados para X (Twitter) con máximo de 280 caracteres. Usa framework IMC comprimido para posts impactantes.\n\nCuándo usar:\n• Publicar en X/Twitter\n• Crear declaraciones cortas e impactantes\n• Cualquier texto que necesite caber en 280 caracteres"
+    ) }
+
+    static var summaryModeDetail: String { t(
+        "Summarizes speech to 20-30% of the original content. Prioritizes decisions, numbers, dates, and action items.\n\nWhen to use:\n• Summarizing long explanations or ideas\n• Capturing key points from meetings\n• Creating concise notes from verbose speech",
+        "Resume a fala para 20-30% do conteúdo original. Prioriza decisões, números, datas e itens de ação.\n\nQuando usar:\n• Resumir explicações longas ou ideias\n• Capturar pontos-chave de reuniões\n• Criar notas concisas de falas longas",
+        "Resume el habla al 20-30% del contenido original. Prioriza decisiones, números, fechas y elementos de acción.\n\nCuándo usar:\n• Resumir explicaciones largas o ideas\n• Capturar puntos clave de reuniones\n• Crear notas concisas de habla prolija"
+    ) }
+
+    static var topicsModeDetail: String { t(
+        "Organizes everything you say into a clean bullet point list. Groups related items automatically.\n\nWhen to use:\n• Creating to-do lists or shopping lists\n• Organizing ideas and brainstorming\n• Taking structured notes\n\nTip: Just speak freely — it will organize everything into logical groups.",
+        "Organiza tudo que você fala em uma lista limpa com bullet points. Agrupa itens relacionados automaticamente.\n\nQuando usar:\n• Criar listas de tarefas ou compras\n• Organizar ideias e brainstorming\n• Tomar notas estruturadas\n\nDica: Fale livremente — ele organiza tudo em grupos lógicos.",
+        "Organiza todo lo que dices en una lista limpia con viñetas. Agrupa elementos relacionados automáticamente.\n\nCuándo usar:\n• Crear listas de tareas o compras\n• Organizar ideas y brainstorming\n• Tomar notas estructuradas\n\nConsejo: Habla libremente — organizará todo en grupos lógicos."
+    ) }
+
+    static var meetingModeDetail: String { t(
+        "Structures speech as professional meeting minutes with participants, topics, decisions, and action items.\n\nWhen to use:\n• Recording meeting outcomes\n• Documenting decisions and next steps\n• Creating structured notes from group discussions\n\nTip: Mention names and deadlines — they'll be captured in the right sections.",
+        "Estrutura a fala como ata de reunião profissional com participantes, tópicos, decisões e ações.\n\nQuando usar:\n• Registrar resultados de reuniões\n• Documentar decisões e próximos passos\n• Criar notas estruturadas de discussões em grupo\n\nDica: Mencione nomes e prazos — serão capturados nas seções corretas.",
+        "Estructura el habla como acta de reunión profesional con participantes, temas, decisiones y acciones.\n\nCuándo usar:\n• Registrar resultados de reuniones\n• Documentar decisiones y próximos pasos\n• Crear notas estructuradas de discusiones grupales\n\nConsejo: Menciona nombres y plazos — serán capturados en las secciones correctas."
+    ) }
+
+    static var creativeModeDetail: String { t(
+        "Transforms your speech into creative, narrative text with rich language and storytelling elements.\n\nWhen to use:\n• Writing blog posts or newsletters\n• Creating engaging narratives\n• Any text that benefits from a creative, literary touch",
+        "Transforma sua fala em texto criativo e narrativo com linguagem rica e elementos de storytelling.\n\nQuando usar:\n• Escrever posts de blog ou newsletters\n• Criar narrativas envolventes\n• Qualquer texto que se beneficie de um toque criativo e literário",
+        "Transforma tu habla en texto creativo y narrativo con lenguaje rico y elementos de storytelling.\n\nCuándo usar:\n• Escribir posts de blog o newsletters\n• Crear narrativas atractivas\n• Cualquier texto que se beneficie de un toque creativo y literario"
+    ) }
+
+    static var customModeDetail: String { t(
+        "Define your own instructions for how VoxAiGo should process your speech. Write a custom prompt and the AI will follow it.\n\nWhen to use:\n• Any specific format not covered by other modes\n• Custom workflows (YouTube captions, code reviews, etc.)\n• Experimenting with different output styles\n\nTip: Write clear, direct instructions in Settings for best results.",
+        "Defina suas próprias instruções para como o VoxAiGo deve processar sua fala. Escreva um prompt personalizado e a IA seguirá.\n\nQuando usar:\n• Qualquer formato específico não coberto pelos outros modos\n• Workflows customizados (legendas YouTube, code reviews, etc.)\n• Experimentar diferentes estilos de saída\n\nDica: Escreva instruções claras e diretas em Ajustes para melhores resultados.",
+        "Define tus propias instrucciones para cómo VoxAiGo debe procesar tu habla. Escribe un prompt personalizado y la IA lo seguirá.\n\nCuándo usar:\n• Cualquier formato específico no cubierto por otros modos\n• Workflows personalizados (subtítulos YouTube, code reviews, etc.)\n• Experimentar con diferentes estilos de salida\n\nConsejo: Escribe instrucciones claras y directas en Ajustes para mejores resultados."
+    ) }
+
     // MARK: - ModernSettingsView
     static var openWizardShort: String { t("Open Wizard", "Abrir Wizard", "Abrir Asistente") }
     static var transcriptionMode: String { t("Transcription Mode", "Modo de Transcrição", "Modo de Transcripción") }
@@ -466,9 +534,19 @@ struct L10n {
     // ModernSettings - Mode descriptions
     static var codeModeShort: String { t("Converts natural language to code", "Converte linguagem natural em código", "Convierte lenguaje natural en código") }
     static var textModeShort: String { t("Clean text transcription", "Transcrição limpa de texto", "Transcripción limpia de texto") }
+    static var chatModeShort: String { t("Quick messages for chat apps", "Mensagens rápidas para chat", "Mensajes rápidos para chat") }
+    static var vibeCoderModeShort: String { t("Extracts coding intent from speech", "Extrai instrução essencial da fala", "Extrae instrucción esencial del habla") }
     static var emailModeShort: String { t("Formats as professional email", "Formata como email profissional", "Formatea como email profesional") }
+    static var formalModeShort: String { t("Corporate professional tone", "Tom corporativo e profissional", "Tono corporativo y profesional") }
+    static var socialModeShort: String { t("Engaging posts with IMC framework", "Posts engajantes com framework IMC", "Posts atractivos con framework IMC") }
+    static var xTweetModeShort: String { t("Tweets up to 280 characters", "Tweets de até 280 caracteres", "Tweets de hasta 280 caracteres") }
+    static var summaryModeShort: String { t("Concise summary of speech", "Resumo conciso da fala", "Resumen conciso del habla") }
+    static var topicsModeShort: String { t("Organized bullet point list", "Lista organizada em tópicos", "Lista organizada en tópicos") }
+    static var meetingModeShort: String { t("Structured meeting minutes", "Ata de reunião estruturada", "Acta de reunión estructurada") }
     static var uxModeShort: String { t("For design documentation", "Para documentação de design", "Para documentación de diseño") }
-    static var commandModeShort: String { t("Transforms selected text", "Transforma texto selecionado", "Transforma texto seleccionado") }
+    static var translationModeShort: String { t("Translates to output language", "Traduz para o idioma de saída", "Traduce al idioma de salida") }
+    static var creativeModeShort: String { t("Narrative and storytelling tone", "Tom narrativo e storytelling", "Tono narrativo y storytelling") }
+    static var customModeShort: String { t("Your own custom prompt", "Seu prompt personalizado", "Tu prompt personalizado") }
     
     // ModernSettings - Search
     static var searchLanguage: String { t("Search language...", "Buscar idioma...", "Buscar idioma...") }

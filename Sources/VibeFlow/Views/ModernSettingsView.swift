@@ -69,6 +69,7 @@ struct ModernSettingsView: View {
                 }
                 .padding(24)
             }
+            .clipped()
             
             Divider()
             
@@ -76,7 +77,7 @@ struct ModernSettingsView: View {
             footerView
         }
         .frame(width: 550, height: 500)
-        .background(Color(.windowBackgroundColor))
+        .background(VoxTheme.background)
         .onAppear {
             checkPermissions()
         }
@@ -131,7 +132,7 @@ struct ModernSettingsView: View {
     // MARK: - Footer
     private var footerView: some View {
         HStack {
-            Text("VoxAiGo v2.1")
+            Text("VoxAiGo v\(AppVersion.current)")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             
@@ -191,7 +192,7 @@ struct TabButton: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue : Color.clear)
+                    .fill(isSelected ? VoxTheme.accent : Color.clear)
             )
         }
         .buttonStyle(.plain)
@@ -341,10 +342,10 @@ struct LanguageSettingsSection: View {
                         .padding(12)
                         .background(
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.blue.opacity(0.08))
+                                .fill(VoxTheme.accent.opacity(0.08))
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+                                        .stroke(VoxTheme.accent.opacity(0.2), lineWidth: 1)
                                 )
                         )
                     }
@@ -395,7 +396,7 @@ struct LanguageSettingsSection: View {
                             Text(L10n.editFavorites)
                         }
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                     }
                     .buttonStyle(.plain)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -457,7 +458,7 @@ struct LanguageSelectorView2: View {
                     .textFieldStyle(.plain)
             }
             .padding(10)
-            .background(Color(.controlBackgroundColor))
+            .background(VoxTheme.surface)
             .cornerRadius(8)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -521,7 +522,7 @@ struct LanguageSelectorView2: View {
                     .foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(Color(.controlBackgroundColor).opacity(0.5))
+            .background(VoxTheme.surface.opacity(0.5))
         }
         .frame(width: 400, height: 500)
     }
@@ -566,7 +567,7 @@ struct LanguageRow2: View {
                 Button(action: toggleFavorite) {
                     Image(systemName: isFavorite ? "star.fill" : "star")
                         .font(.system(size: 14))
-                        .foregroundStyle(isFavorite ? .yellow : .secondary.opacity(0.4))
+                        .foregroundStyle(isFavorite ? VoxTheme.accent : .secondary.opacity(0.4))
                 }
                 .buttonStyle(.plain)
                 .onTapGesture { toggleFavorite() }
@@ -575,7 +576,7 @@ struct LanguageRow2: View {
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                 }
             }
             .padding(.vertical, 6)
@@ -584,7 +585,7 @@ struct LanguageRow2: View {
         .buttonStyle(.plain)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                .fill(isSelected ? VoxTheme.accent.opacity(0.1) : Color.clear)
         )
     }
 }
@@ -607,11 +608,11 @@ struct FavoriteButton: View {
             .frame(width: 60, height: 56)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color.blue : Color(.controlBackgroundColor))
+                    .fill(isSelected ? VoxTheme.accent : VoxTheme.surface)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? VoxTheme.accent.opacity(0.3) : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)
@@ -678,7 +679,7 @@ struct ConversationReplyStep: View {
                 .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(.white)
                 .frame(width: 16, height: 16)
-                .background(Circle().fill(Color(red: 0.4, green: 0.72, blue: 1.0)))
+                .background(Circle().fill(VoxTheme.accent))
 
             Text(text)
                 .font(.system(size: 11))
@@ -784,7 +785,7 @@ struct PermissionsSettingsSection: View {
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
                     Image(systemName: "lightbulb.fill")
-                        .foregroundStyle(.yellow)
+                        .foregroundStyle(VoxTheme.accent)
                     Text(L10n.shortcutsTipTitle)
                         .font(.system(size: 12, weight: .medium))
                 }
@@ -794,7 +795,7 @@ struct PermissionsSettingsSection: View {
                     .foregroundStyle(.secondary)
             }
             .padding(12)
-            .background(Color.yellow.opacity(0.08))
+            .background(VoxTheme.accent.opacity(0.08))
             .cornerRadius(8)
         }
         .onAppear {
@@ -879,14 +880,14 @@ struct DiagnosticRow: View {
         HStack(spacing: 10) {
             Image(systemName: status ? "checkmark.circle.fill" : "xmark.circle.fill")
                 .font(.system(size: 14))
-                .foregroundStyle(status ? .green : .red)
+                .foregroundStyle(status ? VoxTheme.accent : VoxTheme.danger)
             
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
                     .font(.system(size: 12, weight: .medium))
                 Text(detail)
                     .font(.system(size: 10))
-                    .foregroundStyle(status ? Color.secondary : Color.red.opacity(0.7))
+                    .foregroundStyle(status ? Color.secondary : VoxTheme.danger.opacity(0.7))
             }
             
             Spacer()
@@ -906,21 +907,21 @@ struct SettingsCard<Content: View>: View {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 12))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(VoxTheme.accent)
                 Text(title)
                     .font(.system(size: 13, weight: .semibold))
             }
             .foregroundStyle(.primary)
-            
+
             content
         }
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.controlBackgroundColor).opacity(0.5))
+                .fill(VoxTheme.surface.opacity(0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                        .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
                 )
         )
     }
@@ -954,13 +955,13 @@ struct ModeSelectionRow: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 16))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(VoxTheme.accent)
                 }
             }
             .padding(10)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.blue.opacity(0.1) : Color.clear)
+                    .fill(isSelected ? VoxTheme.accent.opacity(0.1) : Color.clear)
             )
             .contentShape(Rectangle())
         }
@@ -968,23 +969,11 @@ struct ModeSelectionRow: View {
     }
     
     private var modeColor: Color {
-        switch mode {
-        case .code: return Color(red: 0.2, green: 0.6, blue: 1.0)
-        case .text: return Color(red: 0.3, green: 0.8, blue: 0.4)
-        case .email: return Color(red: 1.0, green: 0.5, blue: 0.2)
-        case .uxDesign: return Color(red: 0.8, green: 0.4, blue: 0.9)
-        case .command: return Color(red: 0.9, green: 0.3, blue: 0.5)
-        }
+        VoxTheme.accent
     }
     
     private var modeDescription: String {
-        switch mode {
-        case .code: return L10n.codeModeShort
-        case .text: return L10n.textModeShort
-        case .email: return L10n.emailModeShort
-        case .uxDesign: return L10n.uxModeShort
-        case .command: return L10n.commandModeShort
-        }
+        mode.shortDescription
     }
 }
 
@@ -1017,10 +1006,10 @@ struct ShortcutKey: View {
             .frame(width: 20, height: 20)
             .background(
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(.controlBackgroundColor))
+                    .fill(VoxTheme.surface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color(nsColor: .separatorColor), lineWidth: 1)
+                            .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
                     )
             )
     }
@@ -1061,7 +1050,7 @@ struct SettingsPermissionRow: View {
     let action: () -> Void
     
     private var statusColor: Color {
-        isGranted ? .green : .orange
+        isGranted ? VoxTheme.accent : .white
     }
     
     private var statusIcon: String {
@@ -1129,7 +1118,7 @@ struct FavoriteLanguageBadge: View {
         .padding(.vertical, 4)
         .background(
             Capsule()
-                .fill(isActive ? Color.blue : Color(.controlBackgroundColor))
+                .fill(isActive ? VoxTheme.accent : VoxTheme.surface)
         )
         .foregroundStyle(isActive ? .white : .primary)
     }

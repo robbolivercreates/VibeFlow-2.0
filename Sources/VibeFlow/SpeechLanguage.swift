@@ -148,4 +148,41 @@ enum SpeechLanguage: String, CaseIterable, Identifiable, Codable {
     var displayWithFlag: String {
         "\(flag) \(displayName)"
     }
+
+    /// Voice keywords that trigger this language via wake word ("Hey Vox, <keyword>")
+    /// Supports Portuguese, English and native names
+    var voiceAliases: [String] {
+        switch self {
+        case .english:    return ["inglês", "ingles", "english", "inglesa"]
+        case .portuguese: return ["português", "portugues", "portuguese", "pt", "ptbr"]
+        case .spanish:    return ["espanhol", "español", "spanish", "espanol"]
+        case .french:     return ["francês", "frances", "french", "français", "francais"]
+        case .german:     return ["alemão", "alemao", "german", "deutsch"]
+        case .italian:    return ["italiano", "italian"]
+        case .dutch:      return ["holandês", "holandes", "dutch", "nederlands"]
+        case .russian:    return ["russo", "russian", "russkiy"]
+        case .japanese:   return ["japonês", "japones", "japanese", "nihongo"]
+        case .korean:     return ["coreano", "korean", "hangugeo"]
+        case .chinese:    return ["chinês", "chines", "chinese", "mandarin", "zhongwen"]
+        case .arabic:     return ["árabe", "arabe", "arabic"]
+        case .hindi:      return ["hindi", "hindu"]
+        case .turkish:    return ["turco", "turkish", "türkçe", "turkce"]
+        case .polish:     return ["polonês", "polones", "polish", "polski"]
+        case .swedish:    return ["sueco", "swedish", "svenska"]
+        case .norwegian:  return ["norueguês", "noruegues", "norwegian", "norsk"]
+        case .danish:     return ["dinamarquês", "dinamarques", "danish", "dansk"]
+        case .finnish:    return ["finlandês", "finlandes", "finnish", "suomi"]
+        case .czech:      return ["tcheco", "czech", "čeština", "cestina"]
+        case .greek:      return ["grego", "greek", "ellinika"]
+        case .hebrew:     return ["hebraico", "hebrew", "ivrit"]
+        case .thai:       return ["tailandês", "tailandes", "thai"]
+        case .vietnamese: return ["vietnamita", "vietnamese", "tieng viet"]
+        case .indonesian: return ["indonésio", "indonesio", "indonesian", "bahasa indonesia"]
+        case .malay:      return ["malaio", "malay", "bahasa melayu"]
+        case .ukrainian:  return ["ucraniano", "ukrainian", "ukrayinska"]
+        case .romanian:   return ["romeno", "romanian", "română", "romana"]
+        case .hungarian:  return ["húngaro", "hungaro", "hungarian", "magyar"]
+        case .catalan:    return ["catalão", "catalan", "català", "catala"]
+        }
+    }
 }

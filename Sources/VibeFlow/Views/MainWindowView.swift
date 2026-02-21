@@ -52,7 +52,7 @@ struct MainWindowView: View {
                         Text("VoxAiGo")
                             .font(.system(size: 17, weight: .semibold))
 
-                        Text("v2.1")
+                        Text("v\(AppVersion.current)")
                             .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
@@ -113,7 +113,7 @@ struct MainWindowView: View {
                 }
             }
             .frame(minWidth: 200, maxWidth: 220)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(VoxTheme.surface)
         } detail: {
             // MARK: - Content Area
             Group {
@@ -160,7 +160,7 @@ struct SidebarItem: View {
                 Image(systemName: isSelected ? section.iconFilled : section.icon)
                     .font(.system(size: 14))
                     .frame(width: 20)
-                    .foregroundStyle(isSelected ? .purple : .secondary)
+                    .foregroundStyle(isSelected ? VoxTheme.accent : VoxTheme.textSecondary)
 
                 Text(section.rawValue)
                     .font(.system(size: 13, weight: isSelected ? .medium : .regular))
@@ -172,41 +172,34 @@ struct SidebarItem: View {
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(isSelected ? Color.purple.opacity(0.12) : Color.clear)
+                    .fill(isSelected ? VoxTheme.accent.opacity(0.12) : Color.clear)
             )
         }
         .buttonStyle(.plain)
     }
 }
 
-/// Custom VoxAiGo logo - Minimalist waveform in a rounded square
+/// Custom VoxAiGo logo - Black background with gold waveform bars
 struct VoxAiGoLogo: View {
     let size: CGFloat
 
-    // Brand color
-    private let brandColor = Color(red: 0.45, green: 0.38, blue: 0.85)
-
     var body: some View {
         ZStack {
-            // Background
+            // Background — Matte Black
             RoundedRectangle(cornerRadius: size * 0.22)
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.42, green: 0.35, blue: 0.85),
-                            Color(red: 0.52, green: 0.42, blue: 0.90)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Color.black)
 
-            // Waveform bars
+            // Subtle gold border
+            RoundedRectangle(cornerRadius: size * 0.22)
+                .stroke(VoxTheme.accent.opacity(0.3), lineWidth: max(1, size * 0.015))
+
+            // Waveform bars — Gold gradient
             HStack(spacing: size * 0.06) {
                 ForEach(barHeights.indices, id: \.self) { index in
                     RoundedRectangle(cornerRadius: size * 0.04)
-                        .fill(Color.white)
+                        .fill(VoxTheme.goldGradient)
                         .frame(width: size * 0.10, height: size * barHeights[index])
+                        .shadow(color: VoxTheme.accent.opacity(0.3), radius: size * 0.03, x: 0, y: 0)
                 }
             }
         }
