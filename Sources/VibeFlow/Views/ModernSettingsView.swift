@@ -304,6 +304,55 @@ struct GeneralSettingsSection: View {
                     )
                 }
             }
+
+            // Modo Avião (Offline)
+            SettingsCard(title: "✈️ Modo Avião", icon: "airplane") {
+                VStack(spacing: 12) {
+                    Toggle(isOn: $settings.offlineMode) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Transcrição Offline")
+                                .font(.system(size: 13, weight: .medium))
+                            Text("Transcrição local simplificada — funciona sem internet")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+
+                    if settings.offlineMode {
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            if SubscriptionManager.shared.isPro || TrialManager.shared.isTrialActive() {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "crown.fill")
+                                        .foregroundStyle(VoxTheme.accent)
+                                        .font(.system(size: 14))
+                                    Text("Formatação por modo ativa")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(VoxTheme.accent)
+                                }
+                                Text("Email, Reunião, Tópicos e outros modos aplicam formatação local.")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "text.cursor")
+                                        .foregroundStyle(.secondary)
+                                        .font(.system(size: 14))
+                                    Text("Correção de pontuação apenas")
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                Text("Plano gratuito: transcreve com correção de pontuação básica. Assine o Pro para formatação por modo offline.")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(10)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(VoxTheme.surface))
+                    }
+                }
+            }
         }
     }
 }

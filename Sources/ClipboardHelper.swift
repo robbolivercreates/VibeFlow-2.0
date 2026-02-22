@@ -42,6 +42,17 @@ class ClipboardHelper {
         print("[ClipboardHelper] previousApp = \(previousApp?.localizedName ?? "nil")")
     }
 
+    /// Re-activate the previously saved app (without pasting).
+    /// Used by Vox Transform to focus the source app before capturing selected text.
+    static func restorePreviousApp() {
+        guard let app = previousApp, !app.isTerminated else {
+            print("[ClipboardHelper] restorePreviousApp: no valid previous app")
+            return
+        }
+        print("[ClipboardHelper] restorePreviousApp → \(app.localizedName ?? "unknown")")
+        app.activate(options: [.activateIgnoringOtherApps])
+    }
+
     // MARK: - Clipboard Save/Restore
 
     /// Saved clipboard data: array of (type, data) pairs per pasteboard item
@@ -130,7 +141,23 @@ class ClipboardHelper {
         keyUp.post(tap: .cgAnnotatedSessionEventTap)
     }
 
+    /// Simulates Cmd+C via AppleScript (System Events) — more compatible with web apps
+    /// that ignore CGEvent-based synthetic key events (e.g. Telegram Web).
+    private static func simulateCopyViaAppleScript() {
+        let script = NSAppleScript(source: """
+            tell application "System Events"
+                keystroke "c" using command down
+            end tell
+        """)
+        var error: NSDictionary?
+        script?.executeAndReturnError(&error)
+        if let error = error {
+            print("[ClipboardHelper] AppleScript copy error: \(error)")
+        }
+    }
+
     /// Obtém o texto selecionado no app ativo usando Cmd+C
+    /// Tries CGEvent first (fast), then AppleScript fallback (more compatible with web apps).
     static func getSelectedText() -> String? {
         // Salvar clipboard atual
         let savedClipboard = saveClipboardContents()
@@ -138,14 +165,20 @@ class ClipboardHelper {
         // Limpar clipboard
         NSPasteboard.general.clearContents()
 
-        // Simular Cmd+C
+        // Attempt 1: CGEvent-based Cmd+C (works for most native apps)
         simulateCopy()
+        usleep(150000) // 150ms
 
-        // Esperar um pouco para o sistema processar
-        usleep(100000) // 100ms
+        var selectedText = readFromClipboard()
 
-        // Ler o texto copiado
-        let selectedText = readFromClipboard()
+        // Attempt 2: AppleScript fallback (works for web apps like Telegram Web)
+        if selectedText == nil || selectedText?.isEmpty == true {
+            print("[ClipboardHelper] CGEvent copy failed, trying AppleScript fallback...")
+            NSPasteboard.general.clearContents()
+            simulateCopyViaAppleScript()
+            usleep(200000) // 200ms — AppleScript needs a bit more time
+            selectedText = readFromClipboard()
+        }
 
         // Restaurar clipboard anterior se não conseguiu copiar nada
         if selectedText == nil || selectedText?.isEmpty == true {

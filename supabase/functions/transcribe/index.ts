@@ -121,8 +121,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Text-only translation path (for Conversation Reply detect+translate) ──
+    // ── Text-only path: Transform or Translate ──────────────────────────────
     if (!audio && text) {
+      // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
+      if (systemPrompt && !targetLanguage) {
+        const transformBody = {
+          system_instruction: {
+            parts: [{ text: systemPrompt }],
+          },
+          contents: [{ parts: [{ text: text }] }],
+          generationConfig: {
+            temperature: temperature ?? 0.3,
+            maxOutputTokens: maxOutputTokens ?? 2048,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
+        };
+
+        const transformUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+        const transformResponse = await fetch(transformUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(transformBody),
+        });
+
+        if (!transformResponse.ok) {
+          return new Response(
+            JSON.stringify({ error: "Transform failed", details: transformResponse.status }),
+            { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+
+        const transformData = await transformResponse.json();
+        const transformParts = (transformData.candidates?.[0]?.content?.parts ?? [])
+          .filter((p: { thought?: boolean }) => !p.thought)
+          .map((p: { text?: string }) => p.text)
+          .filter(Boolean);
+
+        const transformResult = transformParts.join("").trim();
+
+        return new Response(
+          JSON.stringify({ text: transformResult }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      // ── Translation: text + targetLanguage → detect and translate ──
       const toLang = targetLanguage || "English";
       const translationPrompt =
         `Translate the following text to ${toLang}.\n` +

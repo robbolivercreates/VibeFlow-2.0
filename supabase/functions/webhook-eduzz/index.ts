@@ -45,11 +45,12 @@ Deno.serve(async (req) => {
       recurrence_status, // recurrence status (if applicable)
     } = payload;
 
+    // Handle Eduzz verification ping (no customer data in payload)
     if (!cus_email) {
-      console.error("Webhook missing customer email");
+      console.log("Webhook ping/verification received (no customer email) — returning 200");
       return new Response(
-        JSON.stringify({ error: "Missing customer email" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
+        JSON.stringify({ status: "ok", message: "Webhook verified" }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
       );
     }
 

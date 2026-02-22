@@ -5,6 +5,20 @@ struct HomeView: View {
     @StateObject private var history = HistoryManager.shared
     @StateObject private var analytics = AnalyticsManager.shared
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
+
+    /// Use cloud stats when available, fall back to local analytics
+    private var displayTranscriptions: Int {
+        subscription.cloudTotalTranscriptions > 0
+            ? subscription.cloudTotalTranscriptions
+            : analytics.totalTranscriptions
+    }
+
+    private var displayRecordingTime: Double {
+        subscription.cloudTotalRecordingSeconds > 0
+            ? subscription.cloudTotalRecordingSeconds
+            : analytics.totalRecordingTime
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -93,7 +107,7 @@ struct HomeView: View {
         ], spacing: 16) {
             StatCard(
                 title: "Transcricoes",
-                value: "\(analytics.totalTranscriptions)",
+                value: "\(displayTranscriptions)",
                 subtitle: subtitleForTranscriptions,
                 icon: "waveform",
                 color: VoxTheme.accent
@@ -101,7 +115,7 @@ struct HomeView: View {
 
             StatCard(
                 title: "Tempo Gravado",
-                value: formatRecordingTime(analytics.totalRecordingTime),
+                value: formatRecordingTime(displayRecordingTime),
                 subtitle: "total acumulado",
                 icon: "clock",
                 color: VoxTheme.accent
@@ -126,13 +140,13 @@ struct HomeView: View {
     }
 
     private var subtitleForTranscriptions: String {
-        if analytics.totalTranscriptions == 0 {
+        if displayTranscriptions == 0 {
             return "comece a gravar"
-        } else if analytics.totalTranscriptions < 10 {
+        } else if displayTranscriptions < 10 {
             return "bom comeco"
-        } else if analytics.totalTranscriptions < 50 {
+        } else if displayTranscriptions < 50 {
             return "em progresso"
-        } else if analytics.totalTranscriptions < 100 {
+        } else if displayTranscriptions < 100 {
             return "usuario frequente"
         } else {
             return "usuario avancado"

@@ -160,7 +160,8 @@ enum AuthError: LocalizedError {
 // MARK: - Transcription Service Type
 
 enum TranscriptionServiceType {
-    case supabase
-    case byok(apiKey: String)
-    case none
+    case supabase       // Gemini cloud (Pro/Trial)
+    case whisper        // Local Whisper (Free/Offline)
+    case byok(apiKey: String)  // Direct Gemini (easter egg)
+    case none           // Not authenticated
 }

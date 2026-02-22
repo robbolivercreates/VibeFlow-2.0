@@ -36,6 +36,7 @@ class SettingsManager: ObservableObject {
         static let wakeWord = "wake_word"
         static let wakeWordEnabled = "wake_word_enabled"
         static let commandLanguage = "command_language"
+        static let offlineMode = "offline_mode"
     }
     
     // MARK: - Published Properties
@@ -197,9 +198,19 @@ class SettingsManager: ObservableObject {
     /// Current index for cycling through favorites
     private var currentFavoriteIndex: Int = 0
 
+    /// Offline mode: force Whisper local even for Pro users
+    @Published var offlineMode: Bool {
+        didSet { defaults.set(offlineMode, forKey: Keys.offlineMode) }
+    }
+
     // MARK: - Computed
     var hasByokKey: Bool {
         byokEnabled && !byokApiKey.isEmpty
+    }
+
+    /// Whether the Vox intelligent agent is active (Gemini cloud)
+    var isVoxActive: Bool {
+        !offlineMode && (SubscriptionManager.shared.isPro || TrialManager.shared.isTrialActive())
     }
 
     // MARK: - Init
@@ -279,6 +290,8 @@ class SettingsManager: ObservableObject {
         self.wakeWordEnabled = defaults.object(forKey: Keys.wakeWordEnabled) as? Bool ?? true
         let cmdLangRaw = defaults.string(forKey: Keys.commandLanguage) ?? SpeechLanguage.portuguese.rawValue
         self.commandLanguage = SpeechLanguage(rawValue: cmdLangRaw) ?? .portuguese
+
+        self.offlineMode = defaults.bool(forKey: Keys.offlineMode)
 
         // Initialize favorite index based on current language
         if let index = self.favoriteLanguages.firstIndex(of: self.outputLanguage) {
@@ -361,4 +374,7 @@ extension Notification.Name {
     static let authStateChanged = Notification.Name("authStateChanged")
     static let showUpgradePrompt = Notification.Name("showUpgradePrompt")
     static let wakeWordCommand = Notification.Name("wakeWordCommand")
+    static let offlineModeChanged = Notification.Name("offlineModeChanged")
+    static let showTrialOffer = Notification.Name("showTrialOffer")
+    static let showTrialExpired = Notification.Name("showTrialExpired")
 }

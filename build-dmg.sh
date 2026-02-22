@@ -33,10 +33,11 @@ NOTARY_PROFILE="VoxAiGo-Notary"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/.build/release"
+TIMESTAMP="$(date +%d-%m-%Y-%H%M)"
 # Use /tmp to avoid iCloud Drive extended attributes that break codesign
 DIST_DIR="/tmp/VoxAiGo-dist"
 APP_BUNDLE="${DIST_DIR}/${APP_NAME}.app"
-DMG_NAME="${APP_NAME}-${VERSION}.dmg"
+DMG_NAME="${APP_NAME}-${VERSION}-${TIMESTAMP}.dmg"
 DMG_PATH="${DIST_DIR}/${DMG_NAME}"
 
 # Parse flags
@@ -118,7 +119,7 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
     <key>LSUIElement</key>
     <false/>
     <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
+    <string>14.0</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>VoxAiGo precisa do microfone para transcrever sua voz em texto.</string>
     <key>NSHighResolutionCapable</key>
@@ -141,6 +142,16 @@ cat > "${APP_BUNDLE}/Contents/Info.plist" << PLIST
 </dict>
 </plist>
 PLIST
+
+# Copy Whisper model (if present)
+WHISPER_MODEL_DIR="${SCRIPT_DIR}/Models/whisper-small"
+if [ -d "${WHISPER_MODEL_DIR}" ]; then
+    cp -R "${WHISPER_MODEL_DIR}" "${APP_BUNDLE}/Contents/Resources/whisper-small"
+    echo "   ✅ Whisper model embedded (~250MB)"
+else
+    echo "   ⚠️  Whisper model not found at Models/whisper-small/"
+    echo "      App will download model on first launch (requires internet)"
+fi
 
 echo "   ✅ .app bundle assembled"
 

@@ -7,6 +7,7 @@ struct SettingsDetailView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var subscription = SubscriptionManager.shared
     @State private var showingResetConfirmation = false
+    @State private var showingOfflineAlert = false
     @State private var microphonePermission: AVAuthorizationStatus = .notDetermined
     @State private var accessibilityPermission = false
     @State private var inputMonitoringPermission = false
@@ -15,6 +16,10 @@ struct SettingsDetailView: View {
     @State private var versionTapCount = 0
     @State private var showEasterEggPrompt = false
     @State private var easterEggPassword = ""
+
+    // Dev tools state
+    @State private var devLoading = false
+    @State private var devStatusMessage = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -38,6 +43,12 @@ struct SettingsDetailView: View {
                     shortcutsSection
                     permissionsSection
                     advancedSection
+
+                    supportSection
+
+                    if subscription.devModeActive {
+                        developerSection
+                    }
                 }
                 .padding(32)
             }
@@ -55,6 +66,11 @@ struct SettingsDetailView: View {
             }
         } message: {
             Text("Isso ira limpar todo o historico de transcricoes e amostras de estilo. Esta acao nao pode ser desfeita.")
+        }
+        .alert("Modo Offline Ativado", isPresented: $showingOfflineAlert) {
+            Button("Entendi") {}
+        } message: {
+            Text("O modo offline usa transcrição local simplificada.\n\n• Sem formatação inteligente\n• Sem remoção de hesitações\n• Sem tradução automática\n• Modo ajustado para Texto\n\nPara voltar ao Vox AI, desative o Modo Offline.")
         }
     }
 
@@ -163,6 +179,32 @@ struct SettingsDetailView: View {
                     subtitle: L10n.clarifyDescription,
                     isOn: $settings.clarifyText
                 )
+
+                if subscription.isPro {
+                    Divider().padding(.leading, 44)
+
+                    SettingsToggleRow(
+                        title: "Modo Offline",
+                        subtitle: settings.offlineMode
+                            ? "Transcrição local simplificada"
+                            : "Vox AI — transcrição inteligente",
+                        isOn: Binding(
+                            get: { settings.offlineMode },
+                            set: { newValue in
+                                settings.offlineMode = newValue
+                                if newValue {
+                                    // Auto-switch to Text mode (only free mode available offline)
+                                    if !SubscriptionManager.freeModes.contains(settings.selectedMode) {
+                                        settings.selectedMode = .text
+                                    }
+                                    showingOfflineAlert = true
+                                }
+                                // Rebuild menu bar to show/hide offline indicator
+                                NotificationCenter.default.post(name: .offlineModeChanged, object: nil)
+                            }
+                        )
+                    )
+                }
             }
         }
     }
@@ -423,6 +465,357 @@ struct SettingsDetailView: View {
                         .foregroundStyle(.secondary)
                 }
             }
+        }
+    }
+
+    // MARK: - Support Section
+
+    private var supportSection: some View {
+        SettingsSection(title: "Ajuda", icon: "questionmark.circle") {
+            VStack(spacing: 0) {
+                Button(action: {
+                    if let url = URL(string: "https://www.voxaigo.com/suporte") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "lifepreserver")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.blue)
+                            .frame(width: 32)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Suporte e Ajuda")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.primary)
+                            Text("Tutoriais, FAQ e contato")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                Divider().padding(.leading, 44)
+
+                Button(action: {
+                    if let url = URL(string: "https://www.voxaigo.com/dashboard") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "chart.bar")
+                            .font(.system(size: 16))
+                            .foregroundStyle(VoxTheme.accent)
+                            .frame(width: 32)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Dashboard")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.primary)
+                            Text("Estatisticas e gerenciamento da conta")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Developer Section (devMode only)
+
+    @StateObject private var trial = TrialManager.shared
+
+    private var developerSection: some View {
+        SettingsSection(title: "Developer Tools", icon: "hammer.fill") {
+            VStack(spacing: 0) {
+                // Current state overview
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text("STATUS")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text(subscription.isPro ? "PRO" : "FREE")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundStyle(subscription.isPro ? VoxTheme.accent : .orange)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(subscription.isPro ? VoxTheme.accent.opacity(0.15) : Color.orange.opacity(0.15))
+                            )
+                    }
+
+                    Group {
+                        devInfoRow("Plan (DB)", subscription.plan)
+                        devInfoRow("DevMode", subscription.devModeActive ? "ON" : "OFF")
+                        devInfoRow("Force Free", subscription.forceFreeMode ? "ON" : "OFF")
+                        devInfoRow("isPro (efetivo)", subscription.isPro ? "YES" : "NO")
+                        devInfoRow("isVoxActive", settings.isVoxActive ? "YES" : "NO")
+                        devInfoRow("Offline", settings.offlineMode ? "ON" : "OFF")
+                        devInfoRow("Trial", trialStateLabel)
+                        devInfoRow("Auth", AuthManager.shared.isAuthenticated ? (AuthManager.shared.userEmail ?? "yes") : "NO")
+                        devInfoRow("Whisper ready", WhisperEngine.shared.isReady ? "YES" : "NO")
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                Divider().padding(.leading, 16)
+
+                // Plan toggle — changes REAL Supabase data
+                SettingsRow(
+                    title: "Plano (Supabase)",
+                    subtitle: subscription.forceFreeMode
+                        ? "Force Free local ativo"
+                        : "Plano real: \(subscription.plan) | isPro: \(subscription.isPro ? "YES" : "NO")"
+                ) {
+                    HStack(spacing: 6) {
+                        Button("Free (DB)") {
+                            devLoading = true
+                            Task {
+                                let ok = await subscription.devSetPlanOnSupabase("free")
+                                subscription.deactivateForceFree()
+                                await MainActor.run {
+                                    devLoading = false
+                                    devStatusMessage = ok ? "plan → free" : "ERRO"
+                                }
+                            }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .disabled(devLoading)
+
+                        Button("Pro (DB)") {
+                            devLoading = true
+                            Task {
+                                let ok = await subscription.devSetPlanOnSupabase("pro")
+                                subscription.deactivateForceFree()
+                                await MainActor.run {
+                                    devLoading = false
+                                    devStatusMessage = ok ? "plan → pro" : "ERRO"
+                                }
+                            }
+                        }
+                        .buttonStyle(.borderedProminent).controlSize(.small)
+                        .disabled(devLoading)
+
+                        Button(subscription.forceFreeMode ? "Local ON" : "Local") {
+                            if subscription.forceFreeMode {
+                                subscription.deactivateForceFree()
+                            } else {
+                                subscription.activateForceFree()
+                            }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .foregroundStyle(subscription.forceFreeMode ? .orange : .primary)
+                    }
+                }
+
+                // Status feedback
+                if !devStatusMessage.isEmpty {
+                    HStack {
+                        Spacer()
+                        Text(devStatusMessage)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(devStatusMessage.contains("ERRO") ? .red : .green)
+                            .padding(.trailing, 16)
+                            .padding(.bottom, 4)
+                    }
+                }
+
+                if devLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView()
+                            .scaleEffect(0.6)
+                            .padding(.trailing, 16)
+                            .padding(.bottom, 4)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Wizard reset
+                SettingsRow(
+                    title: "Wizard / Onboarding",
+                    subtitle: "Reseta onboarding e abre o wizard novamente"
+                ) {
+                    Button("Abrir Wizard") {
+                        NotificationCenter.default.post(name: .openSetupWizard, object: nil)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Whisper usage counter
+                SettingsRow(
+                    title: "Whisper (local)",
+                    subtitle: "\(subscription.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit) usados"
+                ) {
+                    HStack(spacing: 6) {
+                        Button("0") { subscription.devSetWhisperUsage(0) }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                        Button("50") { subscription.devSetWhisperUsage(50) }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                        Button("199") { subscription.devSetWhisperUsage(199) }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                        Button("200") { subscription.devSetWhisperUsage(200) }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Free (server) usage counter — writes to Supabase
+                SettingsRow(
+                    title: "Uso Free (Supabase)",
+                    subtitle: "\(subscription.freeTranscriptionsUsed)/\(SubscriptionManager.freeMonthlyLimit) usados"
+                ) {
+                    HStack(spacing: 6) {
+                        ForEach([0, 50, 99, 100], id: \.self) { count in
+                            Button("\(count)") {
+                                devLoading = true
+                                Task {
+                                    let ok = await subscription.devSetFreeUsageOnSupabase(count)
+                                    await MainActor.run {
+                                        devLoading = false
+                                        devStatusMessage = ok ? "uso → \(count)" : "ERRO"
+                                    }
+                                }
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                            .disabled(devLoading)
+                        }
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Trial controls
+                SettingsRow(
+                    title: "Trial",
+                    subtitle: trialStateLabel
+                ) {
+                    HStack(spacing: 6) {
+                        Button("Start") {
+                            Task { await trial.startTrial() }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .disabled(trial.isTrialActive())
+
+                        Button("Expire") {
+                            UserDefaults.standard.set(
+                                Date().addingTimeInterval(-1).timeIntervalSince1970,
+                                forKey: "trial_ends_at"
+                            )
+                            // Force refresh
+                            trial.trialState = .expired
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .disabled(!trial.isTrialActive())
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Offline mode quick toggle
+                SettingsRow(
+                    title: "Modo Offline",
+                    subtitle: settings.offlineMode ? "Whisper local ativo" : "Vox AI na nuvem"
+                ) {
+                    Toggle("", isOn: $settings.offlineMode)
+                        .toggleStyle(.switch)
+                        .labelsHidden()
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Clear history
+                SettingsRow(
+                    title: "Historico",
+                    subtitle: "\(HistoryManager.shared.items.count) itens"
+                ) {
+                    HStack(spacing: 6) {
+                        Button("Limpar") {
+                            HistoryManager.shared.clear()
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .foregroundStyle(VoxTheme.danger)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Force refresh profile
+                SettingsRow(
+                    title: "Perfil Supabase",
+                    subtitle: "Recarrega plano e contadores do servidor"
+                ) {
+                    Button("Refresh") {
+                        Task { await subscription.fetchProfile() }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Deactivate dev mode
+                SettingsRow(
+                    title: "Sair do Dev Mode",
+                    subtitle: "Remove esta seção e desativa override Pro"
+                ) {
+                    Button("Desativar") {
+                        subscription.deactivateDevMode()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .foregroundStyle(VoxTheme.danger)
+                }
+            }
+        }
+    }
+
+    private var trialStateLabel: String {
+        switch trial.trialState {
+        case .unknown: return "Não iniciado"
+        case .active(let days): return "\(days)d restantes (\(trial.trialTranscriptionsUsed)/\(TrialManager.trialTranscriptionLimit) usados)"
+        case .expired: return "Expirado"
+        }
+    }
+
+    private func devInfoRow(_ label: String, _ value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
         }
     }
 

@@ -147,6 +147,93 @@ class SupabaseService {
         return try await sendRequest(url: url, token: token, body: body)
     }
 
+    // MARK: - Vox Transform: Text-to-Text
+
+    /// Transforms selected text based on a voice instruction via Supabase Edge Function.
+    static func transformText(
+        selectedText: String,
+        instruction: String,
+        mode: TranscriptionMode?,
+        outputLanguage: SpeechLanguage
+    ) async throws -> String {
+        guard let token = AuthManager.shared.accessToken else {
+            throw AuthError.notAuthenticated
+        }
+
+        let url = URL(string: "\(SupabaseConfig.url)/functions/v1/transcribe")!
+
+        let systemPrompt: String
+        if let mode = mode {
+            systemPrompt = """
+            You are an AI text transformation assistant. Rewrite the provided text in the style of "\(mode.localizedName)" mode.
+            \(mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: false)
+                .replacingOccurrences(of: "O usuário está ditando", with: "O usuário selecionou um texto e quer")
+                .replacingOccurrences(of: "Transcreva o áudio", with: "Reescreva o texto"))
+
+            CRITICAL: Output ONLY the transformed text. No greetings, no explanations.
+            Keep the output in \(outputLanguage.fullName).
+            """
+        } else {
+            systemPrompt = """
+            You are an AI text transformation assistant.
+            The user selected text and gave this instruction: "\(instruction)"
+            Execute the instruction on the provided text.
+            Output ONLY the result. No greetings, no explanations.
+            Output in \(outputLanguage.fullName) unless the instruction specifies otherwise.
+            """
+        }
+
+        let body: [String: Any] = [
+            "text": "[SELECTED TEXT]\n\(selectedText)\n[END SELECTED TEXT]\n\nExecute the transformation. Output ONLY the result:",
+            "mode": mode?.apiName ?? "text",
+            "systemPrompt": systemPrompt,
+            "temperature": mode?.temperature ?? 0.3,
+            "maxOutputTokens": mode?.maxOutputTokens ?? 2048
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(DeviceManager.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 30
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if code == 401 { throw AuthError.tokenExpired }
+            throw SupabaseTranscriptionError.serverError("Transform failed (HTTP \(code))")
+        }
+
+        guard let result = try? JSONDecoder().decode(TranscriptionResponse.self, from: data),
+              let text = result.text, !text.isEmpty else {
+            throw SupabaseTranscriptionError.noTranscription
+        }
+
+        // Update usage stats if available
+        if let usage = result.usage {
+            await MainActor.run {
+                SubscriptionManager.shared.freeTranscriptionsUsed = usage.used
+            }
+        }
+
+        // Clean markdown
+        var cleaned = text
+        cleaned = cleaned.replacingOccurrences(of: "```", with: "")
+        let greetings = ["Aqui está:", "Aqui está o texto:", "Claro!", "Claro,", "Here is:", "Sure!"]
+        for greeting in greetings {
+            if cleaned.lowercased().hasPrefix(greeting.lowercased()) {
+                cleaned = String(cleaned.dropFirst(greeting.count))
+                break
+            }
+        }
+
+        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Private
 
     private func sendRequest(url: URL, token: String, body: [String: Any], isRetry: Bool = false) async throws -> String {
@@ -160,6 +247,7 @@ class SupabaseService {
         request.timeoutInterval = 60
 
         let (data, response) = try await URLSession.shared.data(for: request)
+        print("[Supabase] Response received, status: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw SupabaseTranscriptionError.noResponse
@@ -174,6 +262,7 @@ class SupabaseService {
         if httpResponse.statusCode == 401 && !isRetry {
             await AuthManager.shared.refreshSession()
             if let newToken = AuthManager.shared.accessToken {
+                print("[Supabase] Retrying with refreshed token...")
                 return try await sendRequest(url: url, token: newToken, body: body, isRetry: true)
             }
             throw AuthError.tokenExpired
@@ -207,8 +296,11 @@ class SupabaseService {
         }
 
         guard let text = result?.text, !text.isEmpty else {
+            print("[Supabase] ❌ No text in response. Raw body: \(rawBody.prefix(300))")
             throw SupabaseTranscriptionError.noTranscription
         }
+
+        print("[Supabase] ✅ Transcription: '\(text.prefix(80))' (\(text.count) chars)")
 
         // Update usage stats if available
         if let usage = result?.usage {

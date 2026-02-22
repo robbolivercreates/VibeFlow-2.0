@@ -446,9 +446,9 @@ struct SetupWizardView: View {
 
     private var modesTrainingContent: some View {
         VStack(alignment: .leading, spacing: 20) {
-            stepHeader(title: "Treinar ciclo de modos", subtitle: "Pressione ⌃⇧M (Control + Shift + M) pelo menos \(requiredModeCycles) vezes para avançar.")
+            stepHeader(title: "Treinar ciclo de modos", subtitle: "Existem 3 formas de trocar de modo. Teste pelo menos \(requiredModeCycles) vezes para avançar.")
 
-            // Shortcut badge
+            // Method 1: Keyboard shortcut ⌃⇧M
             HStack(spacing: 12) {
                 Text("⌃⇧M")
                     .font(.system(size: 20, weight: .bold, design: .monospaced))
@@ -456,9 +456,9 @@ struct SetupWizardView: View {
                     .padding(.horizontal, 14).padding(.vertical, 8)
                     .background(VoxTheme.accent.opacity(0.12)).cornerRadius(8)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Ciclar modos")
+                    Text("Atalho de teclado")
                         .font(.system(size: 14, weight: .semibold))
-                    Text("Control + Shift + M — cada pressão muda para o próximo")
+                    Text("Control + Shift + M — cicla para o próximo modo")
                         .font(.system(size: 12)).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -469,6 +469,41 @@ struct SetupWizardView: View {
                     .padding(.horizontal, 10).padding(.vertical, 5)
                     .background(modeChangedCount >= requiredModeCycles ? VoxTheme.accent.opacity(0.12) : Color(NSColor.controlBackgroundColor))
                     .cornerRadius(8)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Method 2: Voice command
+            HStack(spacing: 12) {
+                Image(systemName: "waveform.badge.mic")
+                    .font(.system(size: 20))
+                    .foregroundStyle(VoxTheme.accent)
+                    .frame(width: 44)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Comando de voz")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Diga \"\(settings.wakeWord), Email\" ou \"\(settings.wakeWord), Coder\" durante a gravação")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(12)
+
+            // Method 3: Cycle next shortcut
+            HStack(spacing: 12) {
+                Text("⌃⇧N")
+                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                    .foregroundStyle(VoxTheme.accent)
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(VoxTheme.accent.opacity(0.12)).cornerRadius(8)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Atalho alternativo")
+                        .font(.system(size: 14, weight: .semibold))
+                    Text("Control + Shift + N — outra forma de ciclar modos")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))

@@ -3,6 +3,7 @@ import SwiftUI
 struct AccountView: View {
     @StateObject private var auth = AuthManager.shared
     @StateObject private var subscription = SubscriptionManager.shared
+    @StateObject private var trial = TrialManager.shared
     @State private var isVerifyingPurchase = false
     @State private var verifyMessage: String?
 
@@ -55,31 +56,61 @@ struct AccountView: View {
                 }
             }
 
-            // Usage (free users only)
+            // Usage (free/trial users only)
             if !subscription.isPro {
                 Section(L10n.usageThisMonth) {
                     VStack(alignment: .leading, spacing: 8) {
+                        // Trial info
+                        if trial.isTrialActive() {
+                            HStack {
+                                Image(systemName: "sparkles")
+                                    .foregroundStyle(VoxTheme.accent)
+                                Text("Trial Pro")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Spacer()
+                                Text("\(trial.trialDaysRemaining) \(trial.trialDaysRemaining == 1 ? L10n.dayRemaining : L10n.daysRemaining)")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(VoxTheme.accent)
+                            }
+
+                            HStack {
+                                Text(L10n.trialTranscriptions)
+                                    .font(.system(size: 13))
+                                Spacer()
+                                Text("\(trial.trialTranscriptionsUsed) / \(TrialManager.trialTranscriptionLimit)")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(trial.hasReachedTrialLimit ? .red : .primary)
+                            }
+
+                            ProgressView(
+                                value: Double(trial.trialTranscriptionsUsed),
+                                total: Double(TrialManager.trialTranscriptionLimit)
+                            )
+                            .tint(trial.hasReachedTrialLimit ? .red : VoxTheme.accent)
+                        }
+
+                        // Whisper local usage
                         HStack {
                             Text(L10n.transcriptionsUsed)
                                 .font(.system(size: 13))
                             Spacer()
-                            Text("\(subscription.freeTranscriptionsUsed) / \(SubscriptionManager.freeMonthlyLimit)")
+                            Text("\(subscription.whisperTranscriptionsUsed) / \(SubscriptionManager.whisperMonthlyLimit)")
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(subscription.hasReachedFreeLimit ? .red : .primary)
+                                .foregroundStyle(subscription.hasReachedWhisperLimit ? .red : .primary)
                         }
 
                         ProgressView(
-                            value: Double(subscription.freeTranscriptionsUsed),
-                            total: Double(SubscriptionManager.freeMonthlyLimit)
+                            value: Double(subscription.whisperTranscriptionsUsed),
+                            total: Double(SubscriptionManager.whisperMonthlyLimit)
                         )
-                        .tint(subscription.hasReachedFreeLimit ? .red : VoxTheme.accent)
+                        .tint(subscription.hasReachedWhisperLimit ? .red : VoxTheme.accent)
 
-                        if subscription.hasReachedFreeLimit {
+                        if subscription.hasReachedWhisperLimit {
                             Text(L10n.freeLimitReached)
                                 .font(.system(size: 12))
                                 .foregroundStyle(.red)
                         } else {
-                            Text("\(subscription.freeTranscriptionsRemaining) \(L10n.remaining)")
+                            Text("\(subscription.whisperTranscriptionsRemaining) \(L10n.remaining)")
                                 .font(.system(size: 12))
                                 .foregroundStyle(.secondary)
                         }
@@ -163,7 +194,7 @@ struct AccountView: View {
                 HStack {
                     Text(L10n.model)
                     Spacer()
-                    Text("Gemini 2.5 Flash")
+                    Text("Vox AI Engine")
                         .foregroundStyle(.secondary)
                 }
                 HStack {
@@ -177,9 +208,14 @@ struct AccountView: View {
                 }
             }
 
-            // Logout
+            // Logout — signs out and quits the app
             Section {
-                Button(action: { auth.signOut() }) {
+                Button(action: {
+                    auth.signOut()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        NSApplication.shared.terminate(nil)
+                    }
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
                         Text(L10n.logout)
@@ -242,4 +278,7 @@ extension L10n {
     static var verifyPurchase: String { t("Verify Purchase", "Verificar Compra", "Verificar Compra") }
     static var verifyPurchaseFailed: String { t("Could not verify purchase. Try again later.", "Nao foi possivel verificar a compra. Tente novamente.", "No se pudo verificar la compra. Intenta de nuevo.") }
     static var logout: String { t("Log Out", "Sair", "Cerrar Sesion") }
+    static var dayRemaining: String { t("day remaining", "dia restante", "dia restante") }
+    static var daysRemaining: String { t("days remaining", "dias restantes", "dias restantes") }
+    static var trialTranscriptions: String { t("Trial transcriptions", "Transcricoes trial", "Transcripciones trial") }
 }

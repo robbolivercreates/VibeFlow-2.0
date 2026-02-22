@@ -8,6 +8,7 @@ private enum VoiceColors {
     static let speechActive = Color(red: 0.95, green: 0.25, blue: 0.25) // Red for active speech
     static let speechActiveGlow = Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.3)
     static let processing = VoxTheme.accent  // Gold for processing state
+    static let transform = Color(red: 0.65, green: 0.45, blue: 1.0) // Purple for transform mode
     static let background = Color.black.opacity(0.75)
     static let backgroundIdle = Color.black.opacity(0.6)
     static let border = Color.white.opacity(0.1)
@@ -130,15 +131,19 @@ struct ModernVoiceOverlay: View {
             Capsule()
                 .stroke(
                     LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.15),
-                            Color.white.opacity(0.02)
-                        ],
+                        colors: settings.isVoxActive && currentState == .listening
+                            ? [VoxTheme.accent.opacity(0.4), VoxTheme.accent.opacity(0.1)]
+                            : [Color.white.opacity(0.15), Color.white.opacity(0.02)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: settings.isVoxActive && currentState == .listening ? 1.5 : 1
                 )
+        )
+        .shadow(
+            color: settings.isVoxActive && currentState == .listening
+                ? VoxTheme.accent.opacity(0.2) : Color.clear,
+            radius: 12
         )
         .animation(.spring(response: 0.45, dampingFraction: 0.75, blendDuration: 0.1), value: isExpanded)
         .animation(.spring(response: 0.45, dampingFraction: 0.75, blendDuration: 0.1), value: currentState)
@@ -162,8 +167,19 @@ struct ModernVoiceOverlay: View {
     // MARK: - Left Section (Mic + Waves)
     private var leftSection: some View {
         HStack(spacing: 10) {
-            // Microphone icon
+            // Microphone icon (transform visuals only during processing)
             ZStack {
+                // Vox AI glow — golden neon effect when AI engine is active
+                if settings.isVoxActive {
+                    Circle()
+                        .fill(VoxTheme.accent.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                        .shadow(color: VoxTheme.accent.opacity(0.5), radius: 10)
+                        .shadow(color: VoxTheme.accent.opacity(0.25), radius: 20)
+                        .opacity(currentState == .idle ? 0.4 : (micPulse ? 0.5 : 0.8))
+                        .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: currentState == .listening)
+                }
+
                 if currentState == .listening && isSpeechActive {
                     // Speaking: red circle with pulse
                     Circle()
@@ -187,7 +203,9 @@ struct ModernVoiceOverlay: View {
                     .foregroundColor(
                         currentState == .listening && isSpeechActive
                             ? .white  // White mic on red circle
-                            : (currentState == .processing ? VoiceColors.processing : VoxTheme.accent)  // Gold mic
+                            : (currentState == .processing
+                                ? (viewModel.isTransformMode ? VoiceColors.transform : VoiceColors.processing)
+                                : VoxTheme.accent)  // Gold mic
                     )
             }
             .animation(.easeInOut(duration: 0.2), value: isSpeechActive)
@@ -216,7 +234,7 @@ struct ModernVoiceOverlay: View {
     private var micIcon: String {
         switch currentState {
         case .processing:
-            return "sparkles"
+            return viewModel.isTransformMode ? "wand.and.stars" : "sparkles"
         default:
             return "mic.fill"
         }
@@ -264,9 +282,9 @@ struct ModernVoiceOverlay: View {
     }
 
     private var listeningContent: some View {
-        Text("Ouvindo...")
+        Text(settings.isVoxActive ? L10n.voxListening : L10n.listening)
             .font(.system(size: 14, weight: .medium))
-            .foregroundColor(VoiceColors.textPrimary)
+            .foregroundColor(settings.isVoxActive ? VoiceColors.processing : VoiceColors.textPrimary)
             .transition(.opacity.combined(with: .move(edge: .bottom)))
     }
 
@@ -275,13 +293,15 @@ struct ModernVoiceOverlay: View {
             // Spinning sparkle
             Image(systemName: "sparkles")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundColor(VoiceColors.processing)
+                .foregroundColor(viewModel.isTransformMode ? VoiceColors.transform : VoiceColors.processing)
                 .rotationEffect(.degrees(viewModel.isProcessing ? 360 : 0))
                 .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: viewModel.isProcessing)
 
-            Text("Processando...")
+            Text(viewModel.isTransformMode
+                    ? L10n.transforming
+                    : (settings.isVoxActive ? L10n.voxProcessing : L10n.processing))
                 .font(.system(size: 13, weight: .medium))
-                .foregroundColor(VoiceColors.processing)
+                .foregroundColor(viewModel.isTransformMode ? VoiceColors.transform : VoiceColors.processing)
         }
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
     }
@@ -289,11 +309,32 @@ struct ModernVoiceOverlay: View {
     // MARK: - Right Section (Language + Mode)
     private var rightSection: some View {
         HStack(spacing: 8) {
+            // Offline badge
+            if settings.offlineMode {
+                Text("OFFLINE")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundColor(.orange)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5)
+                            .fill(Color.orange.opacity(0.15))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+            }
+
             // Language indicator (elegant, no emoji)
             LanguagePill(language: settings.outputLanguage)
 
-            // Mode indicator
-            ModePill(mode: viewModel.selectedMode)
+            // Mode indicator — show Transform pill when in transform mode
+            if viewModel.isTransformMode {
+                TransformPill()
+            } else {
+                ModePill(mode: settings.offlineMode ? .text : viewModel.selectedMode)
+            }
         }
     }
 }
@@ -455,6 +496,31 @@ struct ModePill: View {
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(modeColor)
+        )
+    }
+}
+// MARK: - Transform Pill
+struct TransformPill: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "wand.and.stars")
+                .font(.system(size: 9, weight: .semibold))
+
+            Text("Transform")
+                .font(.system(size: 10, weight: .semibold))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(
+                    LinearGradient(
+                        colors: [VoiceColors.transform, VoxTheme.accent],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
         )
     }
 }

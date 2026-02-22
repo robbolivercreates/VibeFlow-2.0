@@ -186,6 +186,117 @@ class GeminiService: ObservableObject {
         return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    // MARK: - Vox Transform: Text-to-Text
+
+    /// Transforms selected text based on a voice instruction (no audio needed).
+    /// If `mode` is provided, uses that mode's system prompt adapted for transformation.
+    /// Otherwise, treats `instruction` as a free-form command for the AI.
+    static func transformText(
+        selectedText: String,
+        instruction: String,
+        mode: TranscriptionMode?,
+        outputLanguage: SpeechLanguage,
+        apiKey: String
+    ) async throws -> String {
+        let systemPrompt: String
+
+        if let mode = mode {
+            // Use the mode's template adapted for text transformation
+            systemPrompt = """
+            You are an AI text transformation assistant. The user has selected existing text and wants you to rewrite it.
+
+            TASK: Rewrite the provided text in the style of "\(mode.localizedName)" mode.
+            \(mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: false)
+                .replacingOccurrences(of: "O usuário está ditando", with: "O usuário selecionou um texto e quer")
+                .replacingOccurrences(of: "Transcreva o áudio", with: "Reescreva o texto")
+                .replacingOccurrences(of: "audio", with: "text"))
+
+            CRITICAL RULES:
+            1. Output ONLY the transformed text, no explanations, no greetings
+            2. Do NOT say "Aqui está", "Claro", "Here is" or any introduction
+            3. Transform the ENTIRE selected text, don't summarize unless asked
+            4. Keep the output in \(outputLanguage.fullName)
+            """
+        } else {
+            // Free-form instruction
+            systemPrompt = """
+            You are an AI text transformation assistant. The user has selected existing text and given a voice instruction about what to do with it.
+
+            INSTRUCTION FROM USER: "\(instruction)"
+
+            CRITICAL RULES:
+            1. Execute the user's instruction on the provided text
+            2. Output ONLY the result, no explanations, no greetings, no "Aqui está"
+            3. If the instruction is unclear, interpret it as best you can
+            4. Output in \(outputLanguage.fullName) unless the instruction specifies otherwise
+            """
+        }
+
+        let prompt = """
+        [SELECTED TEXT]
+        \(selectedText)
+        [END SELECTED TEXT]
+
+        Execute the transformation as instructed. Output ONLY the result:
+        """
+
+        let body: [String: Any] = [
+            "system_instruction": ["parts": [["text": systemPrompt]]],
+            "contents": [["parts": [["text": prompt]]]],
+            "generationConfig": [
+                "temperature": mode?.temperature ?? 0.3,
+                "maxOutputTokens": mode?.maxOutputTokens ?? 2048,
+                "thinkingConfig": ["thinkingBudget": 0]
+            ]
+        ]
+
+        guard let url = URL(string: "\(baseURL)/\(model):generateContent?key=\(apiKey)") else {
+            throw GeminiError.invalidRequest
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let code = (response as? HTTPURLResponse)?.statusCode ?? 0
+            throw GeminiError.apiError(statusCode: code, message: "Transform failed (HTTP \(code))")
+        }
+
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let candidates = json["candidates"] as? [[String: Any]],
+              let firstCandidate = candidates.first,
+              let content = firstCandidate["content"] as? [String: Any],
+              let parts = content["parts"] as? [[String: Any]] else {
+            throw GeminiError.noResponse
+        }
+
+        let textParts = parts.compactMap { part -> String? in
+            if part["thought"] as? Bool == true { return nil }
+            return part["text"] as? String
+        }
+
+        guard !textParts.isEmpty else {
+            throw GeminiError.noResponse
+        }
+
+        // Clean markdown artifacts
+        var result = textParts.joined()
+        result = result.replacingOccurrences(of: "```", with: "")
+        let greetings = ["Aqui está:", "Aqui está o texto:", "Claro!", "Claro,", "Here is:", "Sure!"]
+        for greeting in greetings {
+            if result.lowercased().hasPrefix(greeting.lowercased()) {
+                result = String(result.dropFirst(greeting.count))
+                break
+            }
+        }
+
+        return result.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     // MARK: - Private REST API
 
     /// Constrói o body JSON para a API do Gemini

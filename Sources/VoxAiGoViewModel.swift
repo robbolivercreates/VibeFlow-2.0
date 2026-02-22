@@ -14,6 +14,10 @@ class VoxAiGoViewModel: ObservableObject {
     @Published var needsAuth = false
     @Published var showUpgradePrompt = false
     @Published var audioLevel: CGFloat = 0.0
+    @Published var isTransformMode = false
+
+    /// Text captured from user's selection when recording started (set by AppDelegate)
+    var pendingSelectedText: String?
 
     private let settings = SettingsManager.shared
     private let snippets = SnippetsManager.shared
@@ -25,6 +29,10 @@ class VoxAiGoViewModel: ObservableObject {
     // Conversation Reply mode: set by AppDelegate when ⌥⌘ is pressed during conversation HUD
     var isConversationReplyMode = false
     var conversationReplyTargetLanguage: String = ""
+
+    // Character limits for text transformation
+    static let transformLimitFree = 500
+    static let transformLimitPro = 3000
 
     init() {
         loadSettings()
@@ -54,21 +62,39 @@ class VoxAiGoViewModel: ObservableObject {
                 self?.needsAuth = !isAuth && !(self?.settings.hasByokKey ?? false)
             }
             .store(in: &cancellables)
+
+        // Keep selectedMode in sync with SettingsManager
+        settings.$selectedMode
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] mode in
+                if self?.selectedMode != mode {
+                    self?.selectedMode = mode
+                }
+            }
+            .store(in: &cancellables)
     }
 
     /// Determines which transcription service to use
     private func getTranscriptionService() -> TranscriptionServiceType {
-        // Priority 1: Supabase (authenticated user)
-        if auth.isAuthenticated {
-            return .supabase
-        }
-
-        // Priority 2: BYOK (easter egg)
+        // Priority 1: BYOK (easter egg — always wins)
         if settings.hasByokKey {
             return .byok(apiKey: settings.byokApiKey)
         }
 
-        return .none
+        // Must be authenticated
+        guard auth.isAuthenticated else { return .none }
+
+        // Priority 2: Manual offline toggle (Pro users can force Whisper local)
+        if settings.offlineMode { return .whisper }
+
+        // Priority 3: Pro subscriber → Gemini cloud
+        if subscription.isPro { return .supabase }
+
+        // Priority 4: Trial active → Gemini cloud
+        if TrialManager.shared.isTrialActive() { return .supabase }
+
+        // Priority 5: Free → Whisper local
+        return .whisper
     }
 
     func checkAuth() {
@@ -77,7 +103,7 @@ class VoxAiGoViewModel: ObservableObject {
         case .none:
             needsAuth = true
             error = L10n.loginRequired
-        case .supabase, .byok:
+        case .supabase, .byok, .whisper:
             needsAuth = false
             error = nil
         }
@@ -103,31 +129,67 @@ class VoxAiGoViewModel: ObservableObject {
             return
         }
 
-        // Feature gating: mode restriction (only for Supabase users, not BYOK)
+        // Feature gating applies to Supabase and Whisper users (not BYOK)
+        let needsGating = { if case .byok = service { return false }; return true }()
+
         print("[ViewModel] toggleRecording: mode=\(selectedMode.rawValue) service=\(service) isPro=\(subscription.isPro) devMode=\(subscription.devModeActive)")
-        if case .supabase = service, !subscription.canUseMode(selectedMode) {
+
+        // Feature gating: mode restriction
+        if needsGating, !subscription.canUseMode(selectedMode) {
             error = L10n.proModeRequired
             print("[ViewModel] BLOCKED: proModeRequired for \(selectedMode.rawValue)")
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             return
         }
 
-        // Feature gating: language restriction (only for Supabase users, not BYOK)
-        if case .supabase = service, !subscription.canUseLanguage(settings.outputLanguage) {
+        // Feature gating: language restriction
+        if needsGating, !subscription.canUseLanguage(settings.outputLanguage) {
             error = L10n.proLanguageRequired
             print("[ViewModel] BLOCKED: proLanguageRequired for \(settings.outputLanguage.rawValue)")
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             return
         }
 
-        // Feature gating: free limit (only for Supabase users, not BYOK)
+        // Feature gating: trial limit (50 transcriptions)
+        if case .supabase = service, !subscription.isPro, TrialManager.shared.hasReachedTrialLimit {
+            error = L10n.freeLimitReached
+            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                NotificationCenter.default.post(name: .showTrialExpired, object: nil)
+            }
+            return
+        }
+
+        // Feature gating: free limit (Supabase — server enforced)
         if case .supabase = service, subscription.hasReachedFreeLimit {
             error = L10n.freeLimitReached
             showUpgradePrompt = true
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
-            // Show upgrade window after HUD closes
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
+            }
+            return
+        }
+
+        // Feature gating: whisper free limit (client-side)
+        if case .whisper = service, subscription.hasReachedWhisperLimit {
+            error = L10n.freeLimitReached
+            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+
+            // If trial hasn't been used → offer 7-day Pro trial
+            // If trial already expired → show upgrade/purchase modal
+            Task {
+                let eligible = await TrialManager.shared.checkTrialEligibility()
+                await MainActor.run {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        if eligible {
+                            NotificationCenter.default.post(name: .showTrialOffer, object: nil)
+                        } else {
+                            self.showUpgradePrompt = true
+                            NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
+                        }
+                    }
+                }
             }
             return
         }
@@ -215,6 +277,11 @@ class VoxAiGoViewModel: ObservableObject {
                             toLanguage: targetLanguage
                         )
 
+                    case .whisper:
+                        // Whisper can't translate — transcribe in user's language
+                        let langCode = self.settings.outputLanguage.rawValue
+                        translatedReply = try await WhisperEngine.shared.transcribe(audioData: audioData, language: langCode)
+
                     case .none:
                         throw NSError(
                             domain: "ConversationReply",
@@ -261,6 +328,7 @@ class VoxAiGoViewModel: ObservableObject {
 
             do {
                 let transcribedText: String
+                print("[DEBUG] Starting transcription with service: \(service)")
 
                 switch service {
                 case .supabase:
@@ -270,6 +338,21 @@ class VoxAiGoViewModel: ObservableObject {
                         language: currentLanguage,
                         clarifyText: currentClarify
                     )
+                    // Track trial transcription if on trial
+                    if TrialManager.shared.isTrialActive() {
+                        TrialManager.shared.recordTrialTranscription()
+                        // Show downgrade message if trial limit just reached
+                        if TrialManager.shared.hasReachedTrialLimit {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                                NotificationCenter.default.post(name: .showTrialExpired, object: nil)
+                            }
+                        }
+                    }
+
+                case .whisper:
+                    // Pass raw text — formatting applied AFTER wake word detection
+                    transcribedText = try await transcribeViaWhisper(audioData: audioData)
+                    subscription.recordWhisperTranscription()
 
                 case .byok(let apiKey):
                     transcribedText = try await transcribeViaBYOK(
@@ -290,6 +373,7 @@ class VoxAiGoViewModel: ObservableObject {
                     return
                 }
 
+                print("[DEBUG] Transcription succeeded: '\(transcribedText.prefix(100))' (\(transcribedText.count) chars)")
                 await handleTranscriptionSuccess(
                     text: transcribedText,
                     mode: currentMode,
@@ -297,6 +381,7 @@ class VoxAiGoViewModel: ObservableObject {
                 )
 
             } catch {
+                print("[DEBUG] ❌ Transcription FAILED: \(error) — \(error.localizedDescription)")
                 // Fallback: if Supabase fails and BYOK key exists, try direct Gemini
                 if case .supabase = service, self.settings.hasByokKey {
                     print("[VoxAiGo] Supabase failed, falling back to BYOK: \(error.localizedDescription)")
@@ -346,6 +431,13 @@ class VoxAiGoViewModel: ObservableObject {
 
     // MARK: - Transcription Methods
 
+    private func transcribeViaWhisper(audioData: Data) async throws -> String {
+        // Pass current language so Whisper transcribes in the user's native language
+        // instead of auto-detecting (which often translates to English)
+        let langCode = settings.outputLanguage.rawValue
+        return try await WhisperEngine.shared.transcribe(audioData: audioData, language: langCode)
+    }
+
     private func transcribeViaSupabase(
         audioData: Data,
         mode: TranscriptionMode,
@@ -379,18 +471,22 @@ class VoxAiGoViewModel: ObservableObject {
     ) async {
         await MainActor.run {
             self.isProcessing = false
+            print("[DEBUG] handleTranscriptionSuccess called with text: '\(text.prefix(80))' (\(text.count) chars)")
 
             if text.isEmpty {
                 self.error = L10n.noText
                 self.statusText = L10n.error
+                print("[DEBUG] Text is empty → showing error")
             } else {
                 // Expandir snippets
                 let finalText = self.snippets.expand(text)
+                print("[DEBUG] wakeWordEnabled=\(self.settings.wakeWordEnabled), wakeWord='\(self.settings.wakeWord)', finalText='\(finalText.prefix(80))'")
 
-                // ── Wake word detection ─────────────────────────────────────────
-                // Only activates if text STARTS with the configured wake word.
-                // Tries mode match first, language match second.
-                // Does NOT paste — fires a notification for the AppDelegate HUD.
+                // ── Wake word routing ────────────────────────────────────────
+                // Mode command   → ALWAYS switch mode
+                // Language command → ALWAYS switch language
+                // Wake word alone → IGNORE (don't paste "Hey Vox")
+                // ─────────────────────────────────────────────────────────────────
                 if self.settings.wakeWordEnabled {
                     let result = VoxAiGoViewModel.detectWakeWordCommand(
                         in: finalText,
@@ -426,37 +522,244 @@ class VoxAiGoViewModel: ObservableObject {
                             )
                         }
 
-                        // Close the recording HUD immediately — AppDelegate shows a dedicated toast
-                        NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        if AppDelegate.shared?.isWizardActive == true {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                AppDelegate.shared?.wizardWindow?.makeKeyAndOrderFront(nil)
+                                NSApp.activate(ignoringOtherApps: true)
+                            }
+                        } else {
+                            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        }
                         return
                     }
+
+                    // ── Wake word detected but no valid command → IGNORE ──
+                    let wakeBase = self.settings.wakeWord.lowercased()
+                    let textLower = finalText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                    let wakeVariants = wakeBase == "hey vox"
+                        ? [wakeBase, "ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
+                        : [wakeBase]
+                    if wakeVariants.contains(where: { textLower.hasPrefix($0) }) {
+                        print("[DEBUG] Wake word prefix matched in '\(textLower)' → ignoring (NOT pasting)")
+                        if AppDelegate.shared?.isWizardActive == true {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                AppDelegate.shared?.wizardWindow?.makeKeyAndOrderFront(nil)
+                                NSApp.activate(ignoringOtherApps: true)
+                            }
+                        } else {
+                            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        }
+                        return
+                    }
+                    print("[DEBUG] Not a wake word → proceeding to paste")
                 }
                 // ───────────────────────────────────────────────────────────────
 
-                // Copiar e colar
-                ClipboardHelper.copyAndPaste(finalText)
-                self.statusText = L10n.pasted
+                // Apply local mode formatting for Whisper offline (after wake word check)
+                var outputText = finalText
+                let currentService = self.getTranscriptionService()
+                if case .whisper = currentService {
+                    if self.subscription.isPro || TrialManager.shared.isTrialActive() {
+                        outputText = LocalModeFormatter.format(finalText, mode: mode)
+                        print("[DEBUG] Whisper Pro offline → applied mode formatting")
+                    } else {
+                        outputText = LocalModeFormatter.fixPunctuation(finalText)
+                        print("[DEBUG] Whisper Free → applied punctuation fix")
+                    }
+                }
+
+                let isWizardActive = AppDelegate.shared?.isWizardActive ?? false
+
+                if isWizardActive {
+                    // During wizard test: show result but DON'T paste or close
+                    print("[DEBUG] Wizard active → skipping paste, posting transcriptionComplete only")
+                    self.statusText = L10n.pasted
+
+                    NotificationCenter.default.post(
+                        name: .transcriptionComplete,
+                        object: nil,
+                        userInfo: ["text": outputText, "mode": mode]
+                    )
+
+                    // Re-activate wizard window
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        AppDelegate.shared?.wizardWindow?.makeKeyAndOrderFront(nil)
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
+                } else {
+                    // Normal flow: paste text
+                    print("[DEBUG] About to copyAndPaste: '\(outputText.prefix(80))'")
+                    ClipboardHelper.copyAndPaste(outputText)
+                    self.statusText = L10n.pasted
+                    print("[DEBUG] ✅ Pasted successfully")
+                }
 
                 // Registrar analytics (with mode and recording duration)
                 AnalyticsManager.shared.recordTranscription(
-                    characters: finalText.count,
+                    characters: outputText.count,
                     mode: mode,
                     recordingDuration: recordingDuration
                 )
 
                 // Learn from successful transcription for style personalization
-                WritingStyleManager.shared.learnFromTranscription(finalText, mode: mode)
+                WritingStyleManager.shared.learnFromTranscription(outputText, mode: mode)
 
-                // Notificar AppDelegate sobre transcrição completa
+                // Notificar AppDelegate sobre transcrição completa (already done for wizard above)
+                if !isWizardActive {
+                    NotificationCenter.default.post(
+                        name: .transcriptionComplete,
+                        object: nil,
+                        userInfo: ["text": outputText, "mode": mode]
+                    )
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                    self?.statusText = L10n.ready
+                }
+            }
+        }
+    }
+
+    // MARK: - Vox Transform
+
+    /// Extracts the instruction portion after the wake word from transcribed text.
+    static func extractInstruction(from text: String, wakeWord: String) -> String? {
+        let normalized = text
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: " ")
+            .replacingOccurrences(of: ".", with: " ")
+            .replacingOccurrences(of: "!", with: " ")
+            .components(separatedBy: .whitespaces).filter { !$0.isEmpty }.joined(separator: " ")
+
+        let base = wakeWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        var candidates: [String] = [base]
+        if base == "hey vox" {
+            candidates += ["ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
+        }
+
+        guard let wake = candidates.first(where: { normalized.hasPrefix($0) }) else {
+            return nil
+        }
+
+        let instruction = normalized
+            .dropFirst(wake.count)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // Strip fillers
+        let fillers = ["ãh", "ah", "uh", "um", "hmm", "hm", "né", "tipo", "então", "er", "bem", "sabe"]
+        var cleaned = instruction
+        for filler in fillers {
+            cleaned = cleaned
+                .replacingOccurrences(of: filler + " ", with: "")
+                .replacingOccurrences(of: " " + filler + " ", with: " ")
+        }
+        for filler in fillers where cleaned == filler {
+            cleaned = ""
+        }
+        cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return cleaned.isEmpty ? nil : cleaned
+    }
+
+    /// Performs text transformation via Gemini (text-to-text, no audio needed).
+    private func performTransform(
+        selectedText: String,
+        instruction: String,
+        wakeWordResult: WakeWordResult,
+        recordingDuration: TimeInterval
+    ) async {
+        let service = getTranscriptionService()
+
+        do {
+            let transformedText: String
+
+            // Determine which mode to use for the transform prompt
+            let transformMode: TranscriptionMode?
+            switch wakeWordResult {
+            case .mode(let mode): transformMode = mode
+            default: transformMode = nil
+            }
+
+            switch service {
+            case .byok(let apiKey):
+                transformedText = try await GeminiService.transformText(
+                    selectedText: selectedText,
+                    instruction: instruction,
+                    mode: transformMode,
+                    outputLanguage: settings.outputLanguage,
+                    apiKey: apiKey
+                )
+
+            case .supabase:
+                transformedText = try await SupabaseService.transformText(
+                    selectedText: selectedText,
+                    instruction: instruction,
+                    mode: transformMode,
+                    outputLanguage: settings.outputLanguage
+                )
+
+            case .whisper:
+                // Whisper is transcription-only — text transformation requires Gemini (Pro)
+                await MainActor.run {
+                    self.error = "Text transformation requires Pro plan"
+                    self.statusText = L10n.error
+                    self.isProcessing = false
+                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                }
+                return
+
+            case .none:
+                await MainActor.run {
+                    self.error = L10n.loginRequired
+                    self.statusText = L10n.error
+                    self.isProcessing = false
+                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                }
+                return
+            }
+
+            // Safety: don't paste empty results
+            guard !transformedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                await MainActor.run {
+                    self.isProcessing = false
+                    self.statusText = L10n.ready
+                    print("[VoxTransform] Empty result from Gemini → ignoring")
+                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                }
+                return
+            }
+
+            await MainActor.run {
+                self.isProcessing = false
+                ClipboardHelper.copyAndPaste(transformedText)
+                self.statusText = L10n.pasted
+
+                // Analytics
+                AnalyticsManager.shared.recordTranscription(
+                    characters: transformedText.count,
+                    mode: transformMode ?? .text,
+                    recordingDuration: recordingDuration
+                )
+
                 NotificationCenter.default.post(
                     name: .transcriptionComplete,
                     object: nil,
-                    userInfo: ["text": finalText, "mode": mode]
+                    userInfo: ["text": transformedText, "mode": transformMode ?? TranscriptionMode.text]
                 )
 
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                     self?.statusText = L10n.ready
                 }
+            }
+
+        } catch {
+            await MainActor.run {
+                self.isProcessing = false
+                self.error = "\(L10n.error): \(error.localizedDescription)"
+                self.statusText = L10n.error
+                print("[VoxTransform] Error: \(error.localizedDescription)")
+                NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             }
         }
     }

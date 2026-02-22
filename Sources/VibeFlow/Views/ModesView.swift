@@ -194,6 +194,7 @@ struct ModeCard2: View {
 
     @State private var isHovered = false
     @State private var isExpanded = false
+    @StateObject private var settings = SettingsManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -300,6 +301,48 @@ struct ModeCard2: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                         .lineSpacing(2)
+
+                    // Custom prompt editor (only for Meu Modo)
+                    if mode == .custom {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Divider()
+                                .padding(.vertical, 4)
+
+                            Text("SEU PROMPT")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.secondary)
+
+                            TextEditor(text: $settings.customModePrompt)
+                                .font(.system(size: 13))
+                                .scrollContentBackground(.hidden)
+                                .padding(10)
+                                .frame(minHeight: 100, maxHeight: 200)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(VoxTheme.background)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
+                                )
+
+                            if settings.customModePrompt.isEmpty {
+                                Text("Ex: \"Transcreva como legendas para YouTube, com timestamps a cada 30 segundos\"")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                                    .italic()
+                            }
+
+                            HStack(spacing: 6) {
+                                Image(systemName: "info.circle")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(mode.color)
+                                Text("Escreva instrucoes claras e diretas. A IA vai seguir exatamente o que voce pedir.")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 14)

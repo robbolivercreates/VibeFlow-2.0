@@ -55,21 +55,21 @@ struct ConversationReplyView: View {
                 processingContent
             }
         }
-        .frame(width: 380)
+        .frame(width: 440)
         .background(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(Color(white: 0.12, opacity: 0.85))
+                .fill(Color(white: 0.08, opacity: 0.95))
         )
         .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 30, style: .continuous)
                 .stroke(
                     LinearGradient(
-                        colors: [.white.opacity(0.3), .clear, borderColor],
+                        colors: [.white.opacity(0.35), .clear, borderColor],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 1.5
                 )
         )
     }
@@ -101,21 +101,21 @@ struct ConversationReplyView: View {
     private var translatingContent: some View {
         HStack(spacing: 14) {
             Image(systemName: "globe")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundColor(VoxTheme.accent)
 
             Text("Reading message...")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.65))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.85))
 
             Spacer()
 
             ProgressView()
-                .scaleEffect(0.75)
-                .tint(Color.white.opacity(0.35))
+                .scaleEffect(0.8)
+                .tint(Color.white.opacity(0.5))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 
     // MARK: - State: Ready
@@ -124,7 +124,7 @@ struct ConversationReplyView: View {
         VStack(alignment: .leading, spacing: 0) {
 
             // ── Header: from → to + dismiss ──────────────────────────────
-            HStack(spacing: 8) {
+            HStack(spacing: 10) {
                 languageBadge(
                     name: context.fromLanguageName,
                     code: context.fromLanguageCode,
@@ -132,8 +132,8 @@ struct ConversationReplyView: View {
                 )
 
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundColor(Color.white.opacity(0.22))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.35))
 
                 languageBadge(
                     name: context.toLanguageName,
@@ -145,48 +145,48 @@ struct ConversationReplyView: View {
 
                 dismissButton
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
 
             // ── Translated text (scrollable for long content) ─────────
             ScrollView {
                 Text(context.translation)
-                    .font(.system(size: 13.5, weight: .regular))
-                    .foregroundColor(Color.white.opacity(0.88))
-                    .lineSpacing(2)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(Color.white.opacity(0.95))
+                    .lineSpacing(4)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxHeight: 180)
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
-            .padding(.bottom, 12)
+            .frame(maxHeight: 220)
+            .padding(.horizontal, 20)
+            .padding(.top, 12)
+            .padding(.bottom, 14)
 
             // ── Separator ────────────────────────────────────────────────
             Rectangle()
-                .fill(Color.white.opacity(0.06))
+                .fill(Color.white.opacity(0.08))
                 .frame(height: 1)
 
             // ── CTA ──────────────────────────────────────────────────────
-            HStack(spacing: 5) {
+            HStack(spacing: 6) {
                 Image(systemName: "mic.fill")
-                    .font(.system(size: 10))
-                    .foregroundColor(Color.white.opacity(0.28))
+                    .font(.system(size: 12))
+                    .foregroundColor(Color.white.opacity(0.4))
 
                 Text("Hold")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.white.opacity(0.5))
 
                 shortcutBadge
 
                 Text("to reply in \(context.fromLanguageName)")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color.white.opacity(0.35))
+                    .font(.system(size: 13))
+                    .foregroundColor(Color.white.opacity(0.5))
 
                 Spacer()
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
 
             // ── Countdown bar ────────────────────────────────────────────
             countdownBar
@@ -196,21 +196,21 @@ struct ConversationReplyView: View {
     // MARK: - State: Recording
 
     private var recordingContent: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             // Pulsing mic circle
             ZStack {
                 Circle()
                     .fill(Color(red: 0.95, green: 0.25, blue: 0.25))
-                    .frame(width: 32, height: 32)
+                    .frame(width: 36, height: 36)
                     .shadow(
                         color: Color(red: 0.95, green: 0.25, blue: 0.25).opacity(0.5),
-                        radius: recordingPulse ? 10 : 6
+                        radius: recordingPulse ? 12 : 7
                     )
                     .scaleEffect(recordingPulse ? 1.08 : 1.0)
                     .animation(.easeInOut(duration: 0.5).repeatForever(autoreverses: true), value: recordingPulse)
 
                 Image(systemName: "mic.fill")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white)
             }
             .onAppear { recordingPulse = true }
@@ -218,16 +218,16 @@ struct ConversationReplyView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Replying in \(manager.detectedLanguageName)...")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color.white.opacity(0.9))
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color.white.opacity(0.95))
 
                 SoundWaveView(audioLevel: viewModel.audioLevel)
             }
 
             Spacer()
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 
     // MARK: - State: Processing
@@ -235,7 +235,7 @@ struct ConversationReplyView: View {
     private var processingContent: some View {
         HStack(spacing: 14) {
             Image(systemName: "sparkles")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundColor(VoxTheme.accent)
                 .rotationEffect(.degrees(processingRotation))
                 .onAppear {
@@ -245,40 +245,40 @@ struct ConversationReplyView: View {
                 }
 
             Text("Translating your reply...")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(Color.white.opacity(0.65))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(Color.white.opacity(0.85))
 
             Spacer()
 
             ProgressView()
-                .scaleEffect(0.75)
-                .tint(Color.white.opacity(0.35))
+                .scaleEffect(0.8)
+                .tint(Color.white.opacity(0.5))
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 18)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 
     // MARK: - Reusable Components
 
     private func languageBadge(name: String, code: String?, color: Color) -> some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             if let code = code {
                 Text(code.uppercased())
-                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundColor(color)
             }
             Text(name)
-                .font(.system(size: 10, weight: .medium))
-                .foregroundColor(color.opacity(0.9))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(color.opacity(0.95))
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(color.opacity(0.1))
+                .fill(color.opacity(0.12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(color.opacity(0.22), lineWidth: 1)
+                        .stroke(color.opacity(0.28), lineWidth: 1)
                 )
         )
     }
@@ -288,16 +288,16 @@ struct ConversationReplyView: View {
             Text("⌥")
             Text("⌘")
         }
-        .font(.system(size: 10, weight: .medium, design: .rounded))
-        .foregroundColor(Color.white.opacity(0.85))
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
+        .font(.system(size: 12, weight: .medium, design: .rounded))
+        .foregroundColor(Color.white.opacity(0.9))
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(Color.white.opacity(0.1))
+                .fill(Color.white.opacity(0.12))
                 .overlay(
                     RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
                 )
         )
     }
@@ -308,10 +308,10 @@ struct ConversationReplyView: View {
             NotificationCenter.default.post(name: .conversationReplyTimedOut, object: nil)
         }) {
             Image(systemName: "xmark")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundColor(Color.white.opacity(0.3))
-                .frame(width: 22, height: 22)
-                .background(Circle().fill(Color.white.opacity(0.06)))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundColor(Color.white.opacity(0.4))
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(Color.white.opacity(0.08)))
         }
         .buttonStyle(.plain)
     }
@@ -351,7 +351,7 @@ struct ConversationReplyView: View {
     let viewModel = VoxAiGoViewModel()
 
     ConversationReplyView(manager: manager, viewModel: viewModel)
-        .frame(width: 380, height: 220)
+        .frame(width: 440, height: 260)
         .background(Color.black.opacity(0.6))
         .onAppear {
             manager.showReady(ConversationContext(
@@ -369,7 +369,7 @@ struct ConversationReplyView: View {
     let viewModel = VoxAiGoViewModel()
 
     ConversationReplyView(manager: manager, viewModel: viewModel)
-        .frame(width: 380, height: 120)
+        .frame(width: 440, height: 140)
         .background(Color.black.opacity(0.6))
         .onAppear {
             manager.beginRecordingReply()

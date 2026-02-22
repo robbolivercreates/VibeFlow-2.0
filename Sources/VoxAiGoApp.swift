@@ -17,6 +17,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var loginOnboardingWindow: NSWindow?
     var viewModel: VoxAiGoViewModel?
     var isHoldToTalkActive = false
+    var isWizardActive = false
     var globalKeyMonitor: Any?
     var localKeyMonitor: Any?
     var localKeyDownMonitor: Any?
@@ -77,7 +78,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Criar view model
         let viewModel = VoxAiGoViewModel()
         self.viewModel = viewModel
-        
+
+        // Initialize WhisperEngine in background (loads model for offline transcription)
+        Task {
+            await WhisperEngine.shared.setup()
+        }
+
         // Update menu after viewModel is created
         updateMenu()
         
@@ -113,6 +119,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Delay reduzido: 0.3s suficiente para app inicializar sem deixar menu acessível
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             self?.checkFirstLaunch()
+        }
+
+        // Check if trial just expired → show downgrade message once
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.checkTrialExpiredOnLaunch()
         }
     }
     
@@ -250,6 +261,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         wizardWindow?.center()
         wizardWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        isWizardActive = true
         
         // Observar fechamento
         NotificationCenter.default.addObserver(
@@ -257,6 +269,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: wizardWindow,
             queue: .main
         ) { [weak self] _ in
+            self?.isWizardActive = false
             self?.viewModel?.reloadSettings()
         }
     }
@@ -274,6 +287,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let titleItem = NSMenuItem(title: "VoxAiGo \(AppVersion.current)", action: nil, keyEquivalent: "")
         titleItem.isEnabled = false
         menu.addItem(titleItem)
+
+        // Offline indicator
+        if settings.offlineMode {
+            let offlineItem = NSMenuItem(title: "✈️ Modo Offline — transcrição simplificada", action: nil, keyEquivalent: "")
+            offlineItem.isEnabled = false
+            menu.addItem(offlineItem)
+        }
 
         // Se não autenticado: menu mínimo — apenas Login e Sair
         if !AuthManager.shared.isAuthenticated {
@@ -416,10 +436,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
+        // Offline toggle (Pro only)
+        if SubscriptionManager.shared.isPro {
+            let offlineToggle = NSMenuItem(
+                title: settings.offlineMode ? "✈️ Modo Offline (ativo)" : "Modo Offline",
+                action: #selector(toggleOfflineMode),
+                keyEquivalent: ""
+            )
+            offlineToggle.target = self
+            offlineToggle.state = settings.offlineMode ? .on : .off
+            menu.addItem(offlineToggle)
+            menu.addItem(NSMenuItem.separator())
+        }
+
         // Quick access items
         menu.addItem(NSMenuItem(title: "Historico", action: #selector(showHistory), keyEquivalent: "y"))
         menu.addItem(NSMenuItem(title: "Snippets", action: #selector(showSnippets), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(showAnalytics), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: "Estatísticas", action: #selector(openDashboard), keyEquivalent: ""))
         let pasteLastItem = NSMenuItem(
             title: "Colar Última Transcrição (⌃⇧V)",
             action: #selector(pasteLastTranscription),
@@ -429,8 +462,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(pasteLastItem)
         menu.addItem(NSMenuItem.separator())
 
-        // Settings
+        // Settings & Support
         menu.addItem(NSMenuItem(title: L10n.settings, action: #selector(showSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: "Suporte", action: #selector(openSupport), keyEquivalent: ""))
         menu.addItem(NSMenuItem.separator())
         menu.addItem(NSMenuItem(title: L10n.quit, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         
@@ -447,6 +481,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func selectLanguage(_ sender: NSMenuItem) {
         guard let language = sender.representedObject as? SpeechLanguage else { return }
         settings.outputLanguage = language
+        updateMenu()
+    }
+
+    @objc func toggleOfflineMode() {
+        settings.offlineMode.toggle()
+        if settings.offlineMode {
+            // Auto-switch to Text mode if current mode is Pro-only
+            if !SubscriptionManager.freeModes.contains(settings.selectedMode) {
+                settings.selectedMode = .text
+                viewModel?.updateMode(.text)
+            }
+        }
         updateMenu()
     }
 
@@ -605,31 +651,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
     
-    var analyticsWindow: NSWindow?
-    
-    @objc func showAnalytics() {
-        if let existingWindow = analyticsWindow, existingWindow.isVisible {
-            existingWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
+    @objc func openDashboard() {
+        if let url = URL(string: "https://www.voxaigo.com/dashboard") {
+            NSWorkspace.shared.open(url)
         }
-        
-        let analyticsView = AnalyticsView()
-        let hostingView = NSHostingView(rootView: analyticsView)
-        
-        analyticsWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 500, height: 550),
-            styleMask: [.titled, .closable],
-            backing: .buffered,
-            defer: false
-        )
-        analyticsWindow?.contentView = hostingView
-        analyticsWindow?.title = "VoxAiGo - Estatísticas"
-        analyticsWindow?.center()
-        analyticsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
     }
-    
+
+    @objc func openSupport() {
+        if let url = URL(string: "https://www.voxaigo.com/suporte") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+
     // MARK: - Global Shortcuts
     
     
@@ -1306,6 +1339,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Salvar app anterior
             ClipboardHelper.savePreviousApp()
 
+
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
@@ -1390,6 +1424,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        // Atualizar menu quando offline mode muda
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateMenu),
+            name: .offlineModeChanged,
+            object: nil
+        )
+
         // Handle wake word commands (mode or language switch via voice)
         NotificationCenter.default.addObserver(
             forName: .wakeWordCommand,
@@ -1409,8 +1451,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             if !AuthManager.shared.isAuthenticated {
+                // Close all active windows when logging out to prevent UI bugs or crashes
                 self?.mainAppWindow?.close()
                 self?.mainAppWindow = nil
+                self?.settingsWindow?.close()
+                self?.settingsWindow = nil
+                self?.historyWindow?.close()
+                self?.historyWindow = nil
+                self?.snippetsWindow?.close()
+                self?.snippetsWindow = nil
+                self?.window?.orderOut(nil)
+                
                 self?.showLoginOnboarding()
             }
         }
@@ -1444,6 +1495,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(handleShowUpgradePrompt),
             name: .showUpgradePrompt,
+            object: nil
+        )
+
+        // Show trial offer when whisper limit reached + trial eligible
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowTrialOffer),
+            name: .showTrialOffer,
+            object: nil
+        )
+
+        // Show trial expired / downgrade message
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowTrialExpired),
+            name: .showTrialExpired,
             object: nil
         )
     }
@@ -1487,7 +1554,100 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.upgradeWindow = window
         }
     }
-    
+
+    var trialOfferWindow: NSWindow?
+    var trialExpiredWindow: NSWindow?
+
+    @objc func handleShowTrialOffer() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            self.trialOfferWindow?.close()
+            self.trialOfferWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.trialOfferWindow?.close()
+                    self.trialOfferWindow = nil
+                }
+            })
+
+            let view = TrialOfferView(isPresented: binding)
+            let hostingView = NSHostingView(rootView: view)
+
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = L10n.trialOfferTitle
+            window.isReleasedWhenClosed = false
+            window.center()
+            window.level = .floating
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.trialOfferWindow = window
+        }
+    }
+
+    @objc func handleShowTrialExpired() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            self.trialExpiredWindow?.close()
+            self.trialExpiredWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.trialExpiredWindow?.close()
+                    self.trialExpiredWindow = nil
+                }
+            })
+
+            let view = TrialExpiredView(isPresented: binding)
+            let hostingView = NSHostingView(rootView: view)
+
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = L10n.trialExpiredTitle
+            window.isReleasedWhenClosed = false
+            window.center()
+            window.level = .floating
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.trialExpiredWindow = window
+        }
+    }
+
+    /// Check on launch if the trial just expired and show downgrade message once
+    func checkTrialExpiredOnLaunch() {
+        let trial = TrialManager.shared
+        guard case .expired = trial.trialState else { return }
+
+        // Only show once per expiry — use a flag
+        let key = "trial_expired_shown"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+
+        // Don't show if user is already Pro (purchased after trial)
+        guard !SubscriptionManager.shared.isPro else { return }
+
+        UserDefaults.standard.set(true, forKey: key)
+        NotificationCenter.default.post(name: .showTrialExpired, object: nil)
+    }
+
     @objc func handleRecordingCancelled() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -1651,8 +1811,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let width: CGFloat = 360
-        let height: CGFloat = 56   // Start small (translating state)
+        let width: CGFloat = 460
+        let height: CGFloat = 64   // Start small (translating state)
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
@@ -1701,8 +1861,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let window = conversationReplyWindow,
               let screen = NSScreen.main else { return }
 
-        let width: CGFloat = 360
-        let height: CGFloat = forRecording ? 68 : 160
+        let width: CGFloat = 460
+        let height: CGFloat = forRecording ? 80 : 200
         let screenFrame = screen.visibleFrame
         let x = screenFrame.midX - width / 2
         // Keep same vertical anchor as speech HUD (25% from bottom)

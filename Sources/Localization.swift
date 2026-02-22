@@ -66,6 +66,9 @@ struct L10n {
     static var ready: String { t("Ready", "Pronto", "Listo") }
     static var listening: String { t("Listening...", "Ouvindo...", "Escuchando...") }
     static var processing: String { t("Processing...", "Processando...", "Procesando...") }
+    static var voxListening: String { t("Vox listening...", "Vox ouvindo...", "Vox escuchando...") }
+    static var voxProcessing: String { t("Vox processing...", "Vox processando...", "Vox procesando...") }
+    static var transforming: String { t("Transforming...", "Transformando...", "Transformando...") }
     static var pasted: String { t("✓ Pasted!", "✓ Colado!", "✓ ¡Pegado!") }
     static var error: String { t("Error", "Erro", "Error") }
     static var configureAPIKey: String { t("Configure API Key", "Configure API Key", "Configurar API Key") }

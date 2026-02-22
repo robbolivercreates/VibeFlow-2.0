@@ -33,7 +33,8 @@ struct LanguagesView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     currentLanguageSection
                     favoritesSection
-                    allLanguagesSection
+                    addLanguageSection
+                    voxTipSection
                 }
                 .padding(32)
             }
@@ -148,12 +149,12 @@ struct LanguagesView: View {
         }
     }
 
-    // MARK: - All Languages
+    // MARK: - Add Language (search-only)
 
-    private var allLanguagesSection: some View {
+    private var addLanguageSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Todos os Idiomas")
+                Text("Adicionar Idioma")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
 
@@ -168,7 +169,7 @@ struct LanguagesView: View {
                     TextField("Buscar...", text: $searchText)
                         .textFieldStyle(.plain)
                         .font(.system(size: 13))
-                        .frame(width: 120)
+                        .frame(width: 150)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
@@ -176,26 +177,94 @@ struct LanguagesView: View {
                 .cornerRadius(6)
             }
 
-            // Languages grid
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 8) {
-                ForEach(filteredLanguages) { language in
-                    LanguageRow(
-                        language: language,
-                        isSelected: language == settings.outputLanguage,
-                        isFavorite: settings.favoriteLanguages.contains(language),
-                        onSelect: { settings.outputLanguage = language },
-                        onToggleFavorite: { toggleFavorite(language) }
+            if searchText.isEmpty {
+                // Placeholder when not searching
+                HStack(spacing: 8) {
+                    Image(systemName: "globe.badge.chevron.backward")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.secondary)
+
+                    Text("Digite o nome de um idioma para adicionar aos favoritos")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(VoxTheme.surface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
+                        )
+                )
+            } else {
+                // Search results grid
+                if filteredLanguages.isEmpty {
+                    Text("Nenhum idioma encontrado")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 20)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(VoxTheme.surface)
+                        )
+                } else {
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 8) {
+                        ForEach(filteredLanguages) { language in
+                            LanguageRow(
+                                language: language,
+                                isSelected: language == settings.outputLanguage,
+                                isFavorite: settings.favoriteLanguages.contains(language),
+                                onSelect: { settings.outputLanguage = language },
+                                onToggleFavorite: { toggleFavorite(language) }
+                            )
+                        }
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(VoxTheme.surface)
                     )
                 }
             }
+        }
+    }
+
+    // MARK: - Vox Tip
+
+    @ViewBuilder
+    private var voxTipSection: some View {
+        if settings.isVoxActive {
+            HStack(spacing: 12) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(VoxTheme.accent)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Dica Vox")
+                        .font(.system(size: 13, weight: .semibold))
+
+                    Text("Com o Vox ativo, voce pode trocar o idioma durante a gravacao dizendo o nome do idioma. Ex: \"em ingles\", \"in Portuguese\"")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
             .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(VoxTheme.surface)
+                    .fill(VoxTheme.accent.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(VoxTheme.accent.opacity(0.15), lineWidth: 1)
+                    )
             )
         }
     }

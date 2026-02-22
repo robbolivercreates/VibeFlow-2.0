@@ -38,6 +38,7 @@ enum NavigationSection: String, CaseIterable, Identifiable {
 struct MainWindowView: View {
     @State private var selectedSection: NavigationSection = .home
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
 
     var body: some View {
         NavigationSplitView {
@@ -81,11 +82,18 @@ struct MainWindowView: View {
                     Divider()
                         .padding(.horizontal, 16)
 
-                    // Quick Stats
-                    if AnalyticsManager.shared.totalTranscriptions > 0 {
+                    // Quick Stats (from Supabase when available, local fallback)
+                    let totalTx = subscription.cloudTotalTranscriptions > 0
+                        ? subscription.cloudTotalTranscriptions
+                        : AnalyticsManager.shared.totalTranscriptions
+                    let totalRec = subscription.cloudTotalRecordingSeconds > 0
+                        ? subscription.cloudTotalRecordingSeconds
+                        : AnalyticsManager.shared.totalRecordingTime
+
+                    if totalTx > 0 {
                         HStack(spacing: 16) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("\(AnalyticsManager.shared.totalTranscriptions)")
+                                Text("\(totalTx)")
                                     .font(.system(size: 14, weight: .semibold))
                                 Text("transcricoes")
                                     .font(.system(size: 10))
@@ -93,7 +101,7 @@ struct MainWindowView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(formatTime(AnalyticsManager.shared.totalRecordingTime))
+                                Text(formatTime(totalRec))
                                     .font(.system(size: 14, weight: .semibold))
                                 Text("gravado")
                                     .font(.system(size: 10))
