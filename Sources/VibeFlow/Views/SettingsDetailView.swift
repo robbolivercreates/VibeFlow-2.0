@@ -576,7 +576,7 @@ struct SettingsDetailView: View {
                         devInfoRow("Offline", settings.offlineMode ? "ON" : "OFF")
                         devInfoRow("Trial", trialStateLabel)
                         devInfoRow("Auth", AuthManager.shared.isAuthenticated ? (AuthManager.shared.userEmail ?? "yes") : "NO")
-                        devInfoRow("Whisper ready", WhisperEngine.shared.isReady ? "YES" : "NO")
+                        devInfoRow("Offline engine", WhisperEngine.shared.isReady ? "YES" : "NO")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -670,9 +670,9 @@ struct SettingsDetailView: View {
 
                 Divider().padding(.leading, 44)
 
-                // Whisper usage counter
+                // Free tier usage counter
                 SettingsRow(
-                    title: "Whisper (local)",
+                    title: "Transcricoes (free)",
                     subtitle: "\(subscription.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit) usados"
                 ) {
                     HStack(spacing: 6) {
@@ -684,31 +684,6 @@ struct SettingsDetailView: View {
                             .buttonStyle(.bordered).controlSize(.mini)
                         Button("200") { subscription.devSetWhisperUsage(200) }
                             .buttonStyle(.bordered).controlSize(.mini)
-                    }
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Free (server) usage counter — writes to Supabase
-                SettingsRow(
-                    title: "Uso Free (Supabase)",
-                    subtitle: "\(subscription.freeTranscriptionsUsed)/\(SubscriptionManager.freeMonthlyLimit) usados"
-                ) {
-                    HStack(spacing: 6) {
-                        ForEach([0, 50, 99, 100], id: \.self) { count in
-                            Button("\(count)") {
-                                devLoading = true
-                                Task {
-                                    let ok = await subscription.devSetFreeUsageOnSupabase(count)
-                                    await MainActor.run {
-                                        devLoading = false
-                                        devStatusMessage = ok ? "uso → \(count)" : "ERRO"
-                                    }
-                                }
-                            }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                            .disabled(devLoading)
-                        }
                     }
                 }
 
@@ -727,15 +702,90 @@ struct SettingsDetailView: View {
                         .disabled(trial.isTrialActive())
 
                         Button("Expire") {
-                            UserDefaults.standard.set(
-                                Date().addingTimeInterval(-1).timeIntervalSince1970,
-                                forKey: "trial_ends_at"
-                            )
-                            // Force refresh
-                            trial.trialState = .expired
+                            trial.devExpireTrial()
                         }
                         .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(!trial.isTrialActive())
+                        .foregroundStyle(.orange)
+
+                        Button("Reset") {
+                            trial.devResetTrial()
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .foregroundStyle(.red)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Quick simulation: simulate a pure free account
+                SettingsRow(
+                    title: "Simular Free",
+                    subtitle: "Expira trial + Force Free + Transcricoes 0"
+                ) {
+                    Button("Ativar") {
+                        trial.devExpireTrial()
+                        subscription.activateForceFree()
+                        subscription.devSetWhisperUsage(0)
+                        devStatusMessage = "Simulando FREE"
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .foregroundStyle(.orange)
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Trial transcription counter
+                SettingsRow(
+                    title: "Trial Transcricoes",
+                    subtitle: "\(trial.trialTranscriptionsUsed)/\(TrialManager.trialTranscriptionLimit) usadas"
+                ) {
+                    HStack(spacing: 6) {
+                        Button("0") {
+                            trial.trialTranscriptionsUsed = 0
+                            UserDefaults.standard.set(0, forKey: "trial_transcriptions_used")
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                        Button("49") {
+                            trial.trialTranscriptionsUsed = 49
+                            UserDefaults.standard.set(49, forKey: "trial_transcriptions_used")
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                        Button("50") {
+                            trial.trialTranscriptionsUsed = 50
+                            UserDefaults.standard.set(50, forKey: "trial_transcriptions_used")
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Test notification modals
+                SettingsRow(
+                    title: "Testar Modais",
+                    subtitle: "Abre as telas de aviso do fluxo"
+                ) {
+                    VStack(spacing: 4) {
+                        HStack(spacing: 6) {
+                            Button("Welcome") {
+                                NotificationCenter.default.post(name: .showWelcomeTrial, object: nil)
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                            Button("Expired") {
+                                NotificationCenter.default.post(name: .showTrialExpired, object: nil)
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                            Button("Locked") {
+                                NotificationCenter.default.post(name: .showMonthlyLimit, object: nil)
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                        }
+                        HStack(spacing: 6) {
+                            Button("Reminder") {
+                                NotificationCenter.default.post(name: .showUpgradeReminder, object: nil)
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                        }
                     }
                 }
 
@@ -744,7 +794,7 @@ struct SettingsDetailView: View {
                 // Offline mode quick toggle
                 SettingsRow(
                     title: "Modo Offline",
-                    subtitle: settings.offlineMode ? "Whisper local ativo" : "Vox AI na nuvem"
+                    subtitle: settings.offlineMode ? "Motor local ativo" : "Vox AI na nuvem"
                 ) {
                     Toggle("", isOn: $settings.offlineMode)
                         .toggleStyle(.switch)

@@ -33,10 +33,22 @@ class TrialManager: ObservableObject {
 
     // MARK: - Public API
 
-    /// Check if trial is currently active
+    /// Check if trial is currently active (always re-evaluates in real time)
     func isTrialActive() -> Bool {
+        updateTrialState()
         if case .active = trialState { return true }
         return false
+    }
+
+    /// Force-expire the trial (called when user clicks "Continue with Free").
+    /// Persists by setting end date to now so it survives app restarts.
+    func forceExpireTrial() {
+        let now = Date()
+        defaults.set(now.addingTimeInterval(-Self.trialDuration).timeIntervalSince1970, forKey: Keys.trialStartedAt)
+        defaults.set(now.addingTimeInterval(-1).timeIntervalSince1970, forKey: Keys.trialEndsAt)
+        defaults.set(true, forKey: Keys.trialDeviceRegistered)
+        trialState = .expired
+        print("[TrialManager] Trial force-expired by user (persisted)")
     }
 
     /// Days remaining in trial (0 if expired or not started)
@@ -76,20 +88,74 @@ class TrialManager: ObservableObject {
         await MainActor.run {
             self.trialTranscriptionsUsed = 0
             self.updateTrialState()
+
+            // Reset Whisper counter so user gets fresh 200 after trial ends
+            SubscriptionManager.shared.devSetWhisperUsage(0)
         }
 
-        print("[TrialManager] Trial started — ends at \(endsAt)")
+        print("[TrialManager] Trial started — ends at \(endsAt), Whisper counter reset")
     }
 
-    /// Increment trial transcription counter
+    /// Auto-start trial for new users right after first signup/login.
+    /// Called once after authentication — checks eligibility then starts if device is new.
+    func autoStartTrialIfEligible() async {
+        // Skip if trial already started or expired on this device
+        guard case .unknown = trialState else {
+            print("[TrialManager] autoStart skipped — state is \(trialState)")
+            return
+        }
+
+        let eligible = await checkTrialEligibility()
+        guard eligible else {
+            print("[TrialManager] autoStart skipped — device already used trial")
+            await MainActor.run { trialState = .expired }
+            return
+        }
+
+        await startTrial()
+        print("[TrialManager] autoStart — trial started for new user!")
+
+        // Show welcome message after short delay (so login window closes first)
+        try? await Task.sleep(nanoseconds: 1_500_000_000) // 1.5s
+        await MainActor.run {
+            NotificationCenter.default.post(name: .showWelcomeTrial, object: nil)
+        }
+    }
+
+    /// Increment trial transcription counter and refresh state
     func recordTrialTranscription() {
         trialTranscriptionsUsed += 1
         defaults.set(trialTranscriptionsUsed, forKey: Keys.trialTranscriptionsUsed)
+        updateTrialState()  // Re-evaluate so isTrialActive() reflects limit
     }
 
     /// Whether trial has hit the transcription limit
     var hasReachedTrialLimit: Bool {
         trialTranscriptionsUsed >= Self.trialTranscriptionLimit
+    }
+
+    // MARK: - Dev Tools
+
+    /// Reset all trial state — simulate a brand-new device (dev only)
+    func devResetTrial() {
+        defaults.removeObject(forKey: Keys.trialStartedAt)
+        defaults.removeObject(forKey: Keys.trialEndsAt)
+        defaults.removeObject(forKey: Keys.trialDeviceRegistered)
+        defaults.removeObject(forKey: Keys.trialTranscriptionsUsed)
+        trialTranscriptionsUsed = 0
+        trialState = .unknown
+        print("[TrialManager] DEV: Trial fully reset — state=unknown")
+    }
+
+    /// Simulate trial expired — sets trial as registered but ended
+    func devExpireTrial() {
+        let past = Date().addingTimeInterval(-1)  // 1 second ago
+        defaults.set(past.addingTimeInterval(-Self.trialDuration).timeIntervalSince1970, forKey: Keys.trialStartedAt)
+        defaults.set(past.timeIntervalSince1970, forKey: Keys.trialEndsAt)
+        defaults.set(true, forKey: Keys.trialDeviceRegistered)
+        trialTranscriptionsUsed = defaults.integer(forKey: Keys.trialTranscriptionsUsed)
+        updateTrialState()
+        print("[TrialManager] DEV: Trial force-expired — state=\(trialState)")
     }
 
     // MARK: - State Management

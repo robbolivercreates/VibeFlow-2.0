@@ -91,21 +91,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let contentView = ContentView()
             .environmentObject(viewModel)
 
-        // Window size: max expanded width (460) + padding, height for compact overlay
-        window = NSWindow(
+        // NSPanel + nonactivatingPanel: floats above maximized/fullscreen apps without stealing focus
+        window = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 500, height: 100),
-            styleMask: [.borderless, .fullSizeContentView],
+            styleMask: [.borderless, .fullSizeContentView, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
         window?.contentView = NSHostingView(rootView: contentView)
         window?.isReleasedWhenClosed = false
-        window?.level = .floating
+        window?.level = .screenSaver  // Above everything including maximized apps
         window?.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window?.backgroundColor = .clear
         window?.isOpaque = false
         window?.hasShadow = false // Clean look, no window shadow
         window?.ignoresMouseEvents = false
+        (window as? NSPanel)?.hidesOnDeactivate = false  // Stay visible when app loses focus
         centerWindow()
         window?.orderOut(nil)
         
@@ -310,7 +311,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Account info
         if AuthManager.shared.isAuthenticated {
             let sub = SubscriptionManager.shared
-            let planLabel = sub.isPro ? "PRO" : "Free (\(sub.freeTranscriptionsUsed)/\(SubscriptionManager.freeMonthlyLimit))"
+            let planLabel: String
+            if sub.isPro {
+                planLabel = "PRO"
+            } else if TrialManager.shared.isTrialActive() {
+                planLabel = "Trial (\(TrialManager.shared.trialDaysRemaining)d)"
+            } else {
+                planLabel = "Free (\(sub.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit))"
+            }
             let accountItem = NSMenuItem(title: "\(AuthManager.shared.userEmail ?? "") - \(planLabel)", action: nil, keyEquivalent: "")
             accountItem.isEnabled = false
             menu.addItem(accountItem)
@@ -1227,33 +1235,36 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - HUD Window Helpers
 
-    /// Creates a floating HUD notification window, positioned at top-center of screen
-    private func createHUDWindow<Content: View>(contentView: Content, width: CGFloat, height: CGFloat) -> NSWindow {
-        let notificationWindow = NSWindow(
+    /// Creates a floating HUD notification panel, positioned at lower-center of screen.
+    /// Uses NSPanel + nonactivatingPanel so it floats above maximized/fullscreen apps
+    /// without stealing focus — the macOS-native approach for overlay HUDs.
+    private func createHUDWindow<Content: View>(contentView: Content, width: CGFloat, height: CGFloat) -> NSPanel {
+        let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
-        notificationWindow.contentView = NSHostingView(rootView: contentView)
-        notificationWindow.level = .screenSaver  // Above everything
-        notificationWindow.backgroundColor = .clear
-        notificationWindow.isOpaque = false
-        notificationWindow.hasShadow = false  // Shadow handled by SwiftUI
-        notificationWindow.isReleasedWhenClosed = false
-        notificationWindow.ignoresMouseEvents = true  // Click-through
-        notificationWindow.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        panel.contentView = NSHostingView(rootView: contentView)
+        panel.level = .screenSaver  // Above everything
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false  // Shadow handled by SwiftUI
+        panel.isReleasedWhenClosed = false
+        panel.ignoresMouseEvents = true  // Click-through
+        panel.hidesOnDeactivate = false  // Stay visible when app loses focus
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
         // Position in lower portion of screen (25% from bottom) exactly like recording HUD
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let x = screenFrame.midX - width / 2
             let y = screenFrame.minY + (screenFrame.height * 0.25)
-            notificationWindow.setFrameOrigin(NSPoint(x: x, y: y))
+            panel.setFrameOrigin(NSPoint(x: x, y: y))
         }
 
-        return notificationWindow
+        return panel
     }
 
     /// Fade out a window then close it
@@ -1343,11 +1354,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
 
-                // Mostrar janela
+                // NSPanel + nonactivatingPanel floats above maximized apps without stealing focus
                 if !(self.window?.isVisible ?? false) {
                     self.centerWindow()
-                    self.window?.makeKeyAndOrderFront(nil)
-                    NSApp.activate(ignoringOtherApps: true)
+                    self.window?.orderFrontRegardless()
                 }
 
                 // Iniciar gravação
@@ -1498,11 +1508,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        // Show trial offer when whisper limit reached + trial eligible
+        // Show welcome trial after signup
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleShowTrialOffer),
-            name: .showTrialOffer,
+            selector: #selector(handleShowWelcomeTrial),
+            name: .showWelcomeTrial,
             object: nil
         )
 
@@ -1511,6 +1521,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self,
             selector: #selector(handleShowTrialExpired),
             name: .showTrialExpired,
+            object: nil
+        )
+
+        // Show monthly limit locked (200 Whisper exhausted)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowMonthlyLimit),
+            name: .showMonthlyLimit,
+            object: nil
+        )
+
+        // Show soft upgrade reminder (every 25 Whisper transcriptions)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleShowUpgradeReminder),
+            name: .showUpgradeReminder,
             object: nil
         )
     }
@@ -1537,17 +1563,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let upgradeView = UpgradeModalView(isPresented: binding)
             let hostingView = NSHostingView(rootView: upgradeView)
 
-            let window = NSWindow(
+            let window = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
-                styleMask: [.titled, .closable],
+                styleMask: [.titled, .closable, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
             window.contentView = hostingView
             window.title = "Upgrade para Pro"
             window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
             window.center()
-            window.level = .floating
+            window.level = .screenSaver
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
 
@@ -1555,43 +1582,45 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    var trialOfferWindow: NSWindow?
+    var welcomeTrialWindow: NSWindow?
     var trialExpiredWindow: NSWindow?
+    var monthlyLimitWindow: NSWindow?
 
-    @objc func handleShowTrialOffer() {
+    @objc func handleShowWelcomeTrial() {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
 
-            self.trialOfferWindow?.close()
-            self.trialOfferWindow = nil
+            self.welcomeTrialWindow?.close()
+            self.welcomeTrialWindow = nil
 
             var isPresented = true
             let binding = Binding(get: { isPresented }, set: { val in
                 isPresented = val
                 if !val {
-                    self.trialOfferWindow?.close()
-                    self.trialOfferWindow = nil
+                    self.welcomeTrialWindow?.close()
+                    self.welcomeTrialWindow = nil
                 }
             })
 
-            let view = TrialOfferView(isPresented: binding)
+            let view = WelcomeTrialView(isPresented: binding)
             let hostingView = NSHostingView(rootView: view)
 
-            let window = NSWindow(
+            let window = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 420, height: 560),
-                styleMask: [.titled, .closable],
+                styleMask: [.titled, .closable, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
             window.contentView = hostingView
-            window.title = L10n.trialOfferTitle
+            window.title = L10n.welcomeTrialTitle
             window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
             window.center()
-            window.level = .floating
+            window.level = .screenSaver
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
 
-            self.trialOfferWindow = window
+            self.welcomeTrialWindow = window
         }
     }
 
@@ -1614,21 +1643,100 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             let view = TrialExpiredView(isPresented: binding)
             let hostingView = NSHostingView(rootView: view)
 
-            let window = NSWindow(
+            let window = NSPanel(
                 contentRect: NSRect(x: 0, y: 0, width: 440, height: 620),
-                styleMask: [.titled, .closable],
+                styleMask: [.titled, .closable, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
             )
             window.contentView = hostingView
             window.title = L10n.trialExpiredTitle
             window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
             window.center()
-            window.level = .floating
+            window.level = .screenSaver
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
 
             self.trialExpiredWindow = window
+        }
+    }
+
+    @objc func handleShowMonthlyLimit() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            self.monthlyLimitWindow?.close()
+            self.monthlyLimitWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.monthlyLimitWindow?.close()
+                    self.monthlyLimitWindow = nil
+                }
+            })
+
+            let view = MonthlyLimitView(isPresented: binding)
+            let hostingView = NSHostingView(rootView: view)
+
+            let window = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: 560),
+                styleMask: [.titled, .closable, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = L10n.monthlyLimitTitle
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.center()
+            window.level = .screenSaver
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.monthlyLimitWindow = window
+        }
+    }
+
+    var upgradeReminderWindow: NSWindow?
+
+    @objc func handleShowUpgradeReminder() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            self.upgradeReminderWindow?.close()
+            self.upgradeReminderWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.upgradeReminderWindow?.close()
+                    self.upgradeReminderWindow = nil
+                }
+            })
+
+            let view = UpgradeReminderView(isPresented: binding)
+            let hostingView = NSHostingView(rootView: view)
+
+            let window = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
+                styleMask: [.titled, .closable, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = L10n.upgradeReminderTitle
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.center()
+            window.level = .screenSaver
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.upgradeReminderWindow = window
         }
     }
 
@@ -1814,9 +1922,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let width: CGFloat = 460
         let height: CGFloat = 64   // Start small (translating state)
 
-        let window = NSWindow(
+        let window = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
-            styleMask: [.borderless],
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
@@ -1827,7 +1935,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         window.hasShadow = false
         window.isReleasedWhenClosed = false
         window.ignoresMouseEvents = false     // Needs clicks for the X button
-        window.collectionBehavior = [.canJoinAllSpaces, .stationary]
+        window.hidesOnDeactivate = false      // Stay visible when app loses focus
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
 
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame

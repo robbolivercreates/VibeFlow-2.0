@@ -450,7 +450,14 @@ struct LoginOnboardingWrapper: View {
     var body: some View {
         LoginView()
             .onChange(of: auth.isAuthenticated) { isAuth in
-                if isAuth { onAuthenticated() }
+                if isAuth {
+                    onAuthenticated()
+
+                    // Auto-start 7-day Pro trial for new users
+                    Task {
+                        await TrialManager.shared.autoStartTrialIfEligible()
+                    }
+                }
             }
     }
 }

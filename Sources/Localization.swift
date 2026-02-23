@@ -98,7 +98,7 @@ struct L10n {
     static var speakNaturally: String { t("Speak Naturally", "Fale Naturalmente", "Habla Naturalmente") }
     static var speakNaturallyDesc: String { t("Use your voice to write code, emails and texts", "Use sua voz para escrever codigo, emails e textos", "Usa tu voz para escribir código, correos y textos") }
     static var ultraFast: String { t("Ultra Fast", "Ultra Rapido", "Ultra Rápido") }
-    static var ultraFastDesc: String { t("Instant transcription with Gemini 2.0 Flash", "Transcricao instantanea com Gemini 2.0 Flash", "Transcripción instantánea con Gemini 2.0 Flash") }
+    static var ultraFastDesc: String { t("Instant AI-powered transcription", "Transcricao instantanea com I.A.", "Transcripcion instantanea con I.A.") }
     static var simpleShortcut: String { t("Simple Shortcut", "Atalho Simples", "Atajo Simple") }
     static var simpleShortcutDesc: String { t("Hold ⌥⌘ to record, release to transcribe", "Segure ⌥⌘ para gravar, solte para transcrever", "Mantén ⌥⌘ para grabar, suelta para transcribir") }
     static var autoPaste: String { t("Auto Paste", "Cola Automatico", "Pegar Automático") }
@@ -216,7 +216,7 @@ struct L10n {
     static var clearHistory: String { t("Clear history", "Limpar histórico", "Limpiar historial") }
     
     // Settings - Mode
-    static var modeDescription: String { t("The mode determines how Gemini processes your audio.", "O modo determina como o Gemini processa seu áudio.", "El modo determina cómo Gemini procesa tu audio.") }
+    static var modeDescription: String { t("The mode determines how Agente Vox processes your audio.", "O modo determina como o Agente Vox processa seu audio.", "El modo determina como el Agente Vox procesa tu audio.") }
     static var outputLanguage: String { t("The transcribed text will be generated in this language, regardless of the language spoken.", "O texto transcrito sera gerado neste idioma, independente do idioma falado.", "El texto transcrito se generará en este idioma, independientemente del idioma hablado.") }
     static var shortcutToChangeLanguage: String { t("Shortcut to change language", "Atalho para mudar idioma", "Atajo para cambiar idioma") }
     static var pressCtrlShiftL: String { t("Press ⌃⇧L (Control+Shift+L) to switch between favorite languages", "Pressione ⌃⇧L (Control+Shift+L) para alternar entre idiomas favoritos", "Presiona ⌃⇧L (Control+Shift+L) para alternar entre idiomas favoritos") }

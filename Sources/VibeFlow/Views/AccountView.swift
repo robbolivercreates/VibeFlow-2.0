@@ -89,7 +89,7 @@ struct AccountView: View {
                             .tint(trial.hasReachedTrialLimit ? .red : VoxTheme.accent)
                         }
 
-                        // Whisper local usage
+                        // Free tier usage (200/month)
                         HStack {
                             Text(L10n.transcriptionsUsed)
                                 .font(.system(size: 13))
@@ -265,12 +265,12 @@ extension L10n {
     static var usageThisMonth: String { t("Usage This Month", "Uso Este Mes", "Uso Este Mes") }
     static var transcriptionsUsed: String { t("Transcriptions used", "Transcricoes usadas", "Transcripciones usadas") }
     static var remaining: String { t("remaining", "restantes", "restantes") }
-    static var freeLimitReached: String { t("Free limit reached. Upgrade to Pro for unlimited!", "Limite gratuito atingido. Faca upgrade para Pro!", "Limite gratuito alcanzado. Actualiza a Pro!") }
+    static var freeLimitReached: String { t("Free limit reached. Upgrade to Pro for AI features!", "Limite gratuito atingido. Faca upgrade para desbloquear I.A.!", "Limite gratuito alcanzado. Actualiza para desbloquear I.A.!") }
     static var upgradeToPro: String { t("Upgrade to Pro", "Fazer Upgrade para Pro", "Actualizar a Pro") }
-    static var proFeatures: String { t("Pro Features", "Recursos Pro", "Funciones Pro") }
-    static var unlimitedTranscriptions: String { t("Unlimited transcriptions", "Transcricoes ilimitadas", "Transcripciones ilimitadas") }
-    static var allFiveModes: String { t("All 5 modes (Code, Text, Email, UX, Command)", "Todos os 5 modos (Code, Text, Email, UX, Command)", "Los 5 modos (Code, Text, Email, UX, Command)") }
-    static var fifteenPlusLanguages: String { t("15+ languages", "15+ idiomas", "15+ idiomas") }
+    static var proFeatures: String { t("Agente Vox + Pro Features", "Agente Vox + Recursos Pro", "Agente Vox + Funciones Pro") }
+    static var unlimitedTranscriptions: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
+    static var allFiveModes: String { t("All 15 AI modes (Vibe Coder, Email, Meeting...)", "Todos os 15 modos com I.A. (Vibe Coder, Email, Reuniao...)", "Los 15 modos con I.A. (Vibe Coder, Email, Reunion...)") }
+    static var fifteenPlusLanguages: String { t("30 languages", "30 idiomas", "30 idiomas") }
     static var monthly: String { t("Monthly", "Mensal", "Mensual") }
     static var annual: String { t("Annual", "Anual", "Anual") }
     static var month: String { t("month", "mes", "mes") }

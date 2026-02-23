@@ -134,6 +134,30 @@ class VoxAiGoViewModel: ObservableObject {
 
         print("[ViewModel] toggleRecording: mode=\(selectedMode.rawValue) service=\(service) isPro=\(subscription.isPro) devMode=\(subscription.devModeActive)")
 
+        // Online validation enforcement: block if >48h without server check
+        if needsGating {
+            subscription.checkOnlineValidationStatus()
+            if subscription.needsOnlineValidation {
+                // Try to validate now
+                Task {
+                    await subscription.fetchProfile()
+                    await subscription.syncWhisperUsageToServer()
+                    await MainActor.run {
+                        if subscription.needsOnlineValidation {
+                            // Still can't reach server — block
+                            error = L10n.onlineValidationRequired
+                            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        }
+                    }
+                }
+                if subscription.needsOnlineValidation {
+                    error = L10n.onlineValidationRequired
+                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                    return
+                }
+            }
+        }
+
         // Feature gating: mode restriction
         if needsGating, !subscription.canUseMode(selectedMode) {
             error = L10n.proModeRequired
@@ -150,9 +174,9 @@ class VoxAiGoViewModel: ObservableObject {
             return
         }
 
-        // Feature gating: trial limit (50 transcriptions)
+        // Feature gating: trial limit (50 transcriptions) — trial expired, goes to free
         if case .supabase = service, !subscription.isPro, TrialManager.shared.hasReachedTrialLimit {
-            error = L10n.freeLimitReached
+            error = L10n.trialExpiredTitle
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 NotificationCenter.default.post(name: .showTrialExpired, object: nil)
@@ -160,36 +184,15 @@ class VoxAiGoViewModel: ObservableObject {
             return
         }
 
-        // Feature gating: free limit (Supabase — server enforced)
-        if case .supabase = service, subscription.hasReachedFreeLimit {
-            error = L10n.freeLimitReached
-            showUpgradePrompt = true
+        // Note: Legacy Supabase 100 free limit removed — free users now use
+        // Whisper local only (200/month). Supabase path is only for Pro/Trial.
+
+        // Feature gating: whisper free limit (200/month — LOCKED)
+        if case .whisper = service, subscription.hasReachedWhisperLimit {
+            error = L10n.monthlyLimitTitle
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
-            }
-            return
-        }
-
-        // Feature gating: whisper free limit (client-side)
-        if case .whisper = service, subscription.hasReachedWhisperLimit {
-            error = L10n.freeLimitReached
-            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
-
-            // If trial hasn't been used → offer 7-day Pro trial
-            // If trial already expired → show upgrade/purchase modal
-            Task {
-                let eligible = await TrialManager.shared.checkTrialEligibility()
-                await MainActor.run {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        if eligible {
-                            NotificationCenter.default.post(name: .showTrialOffer, object: nil)
-                        } else {
-                            self.showUpgradePrompt = true
-                            NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
-                        }
-                    }
-                }
+                NotificationCenter.default.post(name: .showMonthlyLimit, object: nil)
             }
             return
         }
@@ -288,6 +291,19 @@ class VoxAiGoViewModel: ObservableObject {
                             code: 2,
                             userInfo: [NSLocalizedDescriptionKey: L10n.loginRequired]
                         )
+                    }
+
+                    // Count usage for Conversation Reply
+                    await MainActor.run {
+                        switch service {
+                        case .supabase:
+                            if TrialManager.shared.isTrialActive() {
+                                TrialManager.shared.recordTrialTranscription()
+                            }
+                        case .whisper:
+                            self.subscription.recordWhisperTranscription()
+                        default: break
+                        }
                     }
 
                     await MainActor.run {
@@ -406,22 +422,8 @@ class VoxAiGoViewModel: ObservableObject {
 
                 await MainActor.run {
                     self.isProcessing = false
-
-                    // Special handling for free limit reached — show upgrade prompt
-                    if case SupabaseTranscriptionError.freeLimitReached = error {
-                        self.error = L10n.freeLimitReached
-                        self.statusText = L10n.error
-                        self.showUpgradePrompt = true
-                        // Refresh profile to sync counter
-                        Task { await SubscriptionManager.shared.fetchProfile() }
-                        // Show upgrade window after HUD closes
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            NotificationCenter.default.post(name: .showUpgradePrompt, object: nil)
-                        }
-                    } else {
-                        self.error = "\(L10n.error): \(error.localizedDescription)"
-                        self.statusText = L10n.error
-                    }
+                    self.error = "\(L10n.error): \(error.localizedDescription)"
+                    self.statusText = L10n.error
                     // Close the HUD window — without this, it stays stuck showing "Segure"
                     NotificationCenter.default.post(name: .recordingCancelled, object: nil)
                 }
@@ -730,6 +732,13 @@ class VoxAiGoViewModel: ObservableObject {
                 return
             }
 
+            // Count usage for text transforms (consumes trial quota)
+            await MainActor.run {
+                if case .supabase = service, TrialManager.shared.isTrialActive() {
+                    TrialManager.shared.recordTrialTranscription()
+                }
+            }
+
             await MainActor.run {
                 self.isProcessing = false
                 ClipboardHelper.copyAndPaste(transformedText)
@@ -878,6 +887,7 @@ extension L10n {
     static var loginRequired: String { t("Login required to use VoxAiGo", "Faça login para usar o VoxAiGo", "Inicia sesión para usar VoxAiGo") }
     static var proModeRequired: String { t("This mode requires Pro plan", "Este modo requer plano Pro", "Este modo requiere plan Pro") }
     static var proLanguageRequired: String { t("This language requires Pro plan", "Este idioma requer plano Pro", "Este idioma requiere plan Pro") }
+    static var onlineValidationRequired: String { t("Internet connection required. Connect to continue using VoxAiGo.", "Conexão com a internet necessária. Conecte-se para continuar usando o VoxAiGo.", "Conexión a internet necesaria. Conéctese para continuar usando VoxAiGo.") }
 }
 
 

@@ -369,39 +369,38 @@ struct ModeCard2: View {
 
 struct UpgradeModalView: View {
     @Binding var isPresented: Bool
+    @State private var isAnnual = true
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
+            // Header with app logo
             VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(VoxTheme.goldGradient)
-                        .frame(width: 64, height: 64)
-                    Image(systemName: "diamond.fill")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(.white)
-                }
+                Image(nsImage: NSApp.applicationIconImage)
+                    .resizable()
+                    .interpolation(.high)
+                    .frame(width: 72, height: 72)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
 
-                Text("Recurso Pro")
+                Text(L10n.upgradeProFeature)
                     .font(.system(size: 22, weight: .bold))
 
-                Text("Este modo está disponível apenas no plano Pro.\nDesbloqueie acesso ilimitado a todos os recursos.")
+                Text(L10n.upgradeProDescription)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 32)
+            .padding(.top, 28)
             .padding(.horizontal, 32)
 
             // Features list
             VStack(alignment: .leading, spacing: 10) {
-                ModeProFeatureRow(icon: "infinity", text: "Transcrições ilimitadas por mês")
-                ModeProFeatureRow(icon: "waveform.and.mic", text: "Todos os 15 modos (Vibe Coder, Social, Reunião...)")
-                ModeProFeatureRow(icon: "globe", text: "15+ idiomas disponíveis")
-                ModeProFeatureRow(icon: "sparkles", text: "Aprendizado de estilo pessoal")
-                ModeProFeatureRow(icon: "text.badge.plus", text: "Snippets personalizados")
+                ModeProFeatureRow(icon: "sparkles", text: L10n.upgradeFeatureSmartFormatting)
+                ModeProFeatureRow(icon: "infinity", text: L10n.upgradeFeatureUnlimited)
+                ModeProFeatureRow(icon: "waveform.and.mic", text: L10n.upgradeFeatureAllModes)
+                ModeProFeatureRow(icon: "globe", text: L10n.upgradeFeatureAllLanguages)
+                ModeProFeatureRow(icon: "text.badge.plus", text: L10n.upgradeFeatureSnippets)
             }
             .padding(24)
             .background(
@@ -411,66 +410,92 @@ struct UpgradeModalView: View {
             .padding(.horizontal, 24)
             .padding(.top, 20)
 
-            // Pricing
-            VStack(spacing: 8) {
-                Text("A partir de")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+            // Pricing toggle
+            upgradeToggle
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 28)
+        }
+        .frame(width: 420)
+        .background(VoxTheme.background)
+    }
+
+    private var upgradeToggle: some View {
+        VStack(spacing: 14) {
+            // Toggle
+            HStack(spacing: 0) {
+                toggleBtn(title: L10n.pricingMonthly, selected: !isAnnual) { isAnnual = false }
+                toggleBtn(title: L10n.pricingAnnual, selected: isAnnual, badge: "-25%") { isAnnual = true }
+            }
+            .background(Color.gray.opacity(0.15))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            // Price
+            VStack(spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("R$14,90")
-                        .font(.system(size: 32, weight: .bold))
-                    Text("/mês")
+                    Text(isAnnual ? "R$14,90" : "R$19,90")
+                        .font(.system(size: 36, weight: .bold))
+                    Text("/\(L10n.month)")
                         .font(.system(size: 14))
                         .foregroundStyle(.secondary)
                 }
-                Text("(plano anual) · ou R$19,90/mês")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 20)
-
-            // Buttons
-            VStack(spacing: 10) {
-                Button(action: {
-                    SubscriptionManager.shared.openUpgradeURL(annual: false)
-                    isPresented = false
-                }) {
-                    HStack {
-                        Image(systemName: "diamond.fill")
-                        Text("Assinar Pro — R$19,90/mês")
-                            .fontWeight(.semibold)
+                if isAnnual {
+                    HStack(spacing: 4) {
+                        Text("R$19,90")
+                            .font(.system(size: 12))
+                            .strikethrough()
+                            .foregroundStyle(.secondary)
+                        Text(L10n.pricingAnnualBilled)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(
-                        VoxTheme.goldGradient
-                    )
-                    .foregroundStyle(.white)
-                    .cornerRadius(10)
                 }
-                .buttonStyle(.borderless)
-
-                Button(action: {
-                    SubscriptionManager.shared.openUpgradeURL(annual: true)
-                    isPresented = false
-                }) {
-                    Text("Plano Anual — R$14,90/mês (economize 25%)")
-                        .font(.system(size: 13))
-                        .foregroundStyle(VoxTheme.accent)
-                }
-                .buttonStyle(.borderless)
-
-                Button("Agora não") { isPresented = false }
-                    .buttonStyle(.borderless)
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 13))
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 28)
+
+            // Subscribe
+            Button(action: {
+                SubscriptionManager.shared.openUpgradeURL(annual: isAnnual)
+                isPresented = false
+            }) {
+                HStack {
+                    Image(systemName: "diamond.fill")
+                    Text(isAnnual ? L10n.pricingSubscribeAnnual : L10n.pricingSubscribeMonthly)
+                        .fontWeight(.semibold)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(VoxTheme.goldGradient)
+                .foregroundStyle(.white)
+                .cornerRadius(10)
+            }
+            .buttonStyle(.borderless)
+
+            Button(L10n.upgradeNotNow) { isPresented = false }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
         }
-        .frame(width: 380)
-        .background(VoxTheme.background)
+    }
+
+    private func toggleBtn(title: String, selected: Bool, badge: String? = nil, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(title).font(.system(size: 13, weight: selected ? .semibold : .regular))
+                if let badge = badge {
+                    Text(badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(VoxTheme.accent.opacity(0.2))
+                        .foregroundStyle(VoxTheme.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
+            .background(selected ? Color.white.opacity(0.1) : Color.clear)
+            .clipShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.borderless)
     }
 }
 
@@ -647,6 +672,23 @@ private struct CRModeStepRow: View {
             Spacer()
         }
     }
+}
+
+// MARK: - Upgrade Modal Localization
+
+extension L10n {
+    static var upgradeProFeature: String { t("AI Feature — Pro Only", "Funcionalidade I.A. — Exclusivo Pro", "Funcion I.A. — Exclusivo Pro") }
+    static var upgradeProDescription: String { t(
+        "This AI mode requires the Pro plan.\nUnlock the Agente Vox inteligente and all features.",
+        "Este modo com I.A. requer o plano Pro.\nDesbloqueie o Agente Vox inteligente e todos os recursos.",
+        "Este modo con I.A. requiere el plan Pro.\nDesbloquea el Agente Vox inteligente y todas las funciones."
+    ) }
+    static var upgradeFeatureUnlimited: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
+    static var upgradeFeatureAllModes: String { t("All 15 AI modes (Vibe Coder, Social, Meeting...)", "Todos os 15 modos com I.A. (Vibe Coder, Social, Reuniao...)", "Los 15 modos con I.A. (Vibe Coder, Social, Reunion...)") }
+    static var upgradeFeatureAllLanguages: String { t("30 languages available", "30 idiomas disponiveis", "30 idiomas disponibles") }
+    static var upgradeFeatureSmartFormatting: String { t("Agente Vox — intelligent formatting", "Agente Vox — formatacao inteligente", "Agente Vox — formato inteligente") }
+    static var upgradeFeatureSnippets: String { t("Custom snippets", "Snippets personalizados", "Fragmentos personalizados") }
+    static var upgradeNotNow: String { t("Continue without AI", "Continuar sem I.A.", "Continuar sin I.A.") }
 }
 
 #Preview {

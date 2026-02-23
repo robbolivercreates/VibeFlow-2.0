@@ -76,8 +76,8 @@ struct UserProfile: Codable {
         case freeTranscriptionsResetAt = "free_transcriptions_reset_at"
     }
 
-    var isPro: Bool { plan == "pro" }
-    var isFree: Bool { plan == "free" }
+    var isPro: Bool { plan == "pro" && subscriptionStatus == "active" }
+    var isFree: Bool { plan == "free" || subscriptionStatus != "active" }
 }
 
 // MARK: - Transcription Response

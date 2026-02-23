@@ -375,6 +375,8 @@ extension Notification.Name {
     static let showUpgradePrompt = Notification.Name("showUpgradePrompt")
     static let wakeWordCommand = Notification.Name("wakeWordCommand")
     static let offlineModeChanged = Notification.Name("offlineModeChanged")
-    static let showTrialOffer = Notification.Name("showTrialOffer")
+    static let showWelcomeTrial = Notification.Name("showWelcomeTrial")
     static let showTrialExpired = Notification.Name("showTrialExpired")
+    static let showMonthlyLimit = Notification.Name("showMonthlyLimit")
+    static let showUpgradeReminder = Notification.Name("showUpgradeReminder")
 }
