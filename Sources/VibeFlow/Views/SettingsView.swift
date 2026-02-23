@@ -16,14 +16,22 @@ struct SettingsView: View {
     @State private var versionTapCount = 0
     @State private var showEasterEggPrompt = false
     @State private var easterEggPassword = ""
+    @State private var easterEggWrongPassword = false
+    @State private var showDevModeActivatedAlert = false
     @StateObject private var subscription = SubscriptionManager.shared
+    @State private var showUpgradeForWakeWord = false
 
     private func activateEasterEgg() {
         if easterEggPassword == "voxdev" {
             subscription.activateDevMode()
+            showEasterEggPrompt = false
+            easterEggPassword = ""
+            easterEggWrongPassword = false
+            showDevModeActivatedAlert = true
+        } else {
+            easterEggWrongPassword = true
+            easterEggPassword = ""
         }
-        showEasterEggPrompt = false
-        easterEggPassword = ""
     }
     
     var body: some View {
@@ -59,6 +67,14 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingWizard) {
             SetupWizardView()
+        }
+        .sheet(isPresented: $showUpgradeForWakeWord) {
+            UpgradeModalView(isPresented: $showUpgradeForWakeWord, context: .wakeWord)
+        }
+        .alert("🛠️ Dev Mode Ativado", isPresented: $showDevModeActivatedAlert) {
+            Button("OK") {}
+        } message: {
+            Text("Bem-vindo, dev!\n\nAcesse Settings → Developer Tools para simular planos, uso e modo offline.\n\nSenha: voxdev (sessão apenas — reseta ao reiniciar)")
         }
     }
     
@@ -196,13 +212,17 @@ struct SettingsView: View {
 
     private var accountTab: some View {
         Form {
-            AccountView(onVersionTap: {
-                versionTapCount += 1
-                if versionTapCount >= 5 {
-                    versionTapCount = 0
-                    showEasterEggPrompt = true
-                }
-            })
+            AccountView(
+                onVersionTap: {
+                    versionTapCount += 1
+                    if versionTapCount >= 5 {
+                        versionTapCount = 0
+                        showEasterEggPrompt = true
+                        easterEggWrongPassword = false
+                    }
+                },
+                versionTapCount: versionTapCount
+            )
 
             // Easter egg: BYOK section (hidden by default)
             if settings.byokEnabled {
@@ -221,17 +241,44 @@ struct SettingsView: View {
             // Easter egg prompt
             if showEasterEggPrompt {
                 Section {
-                    HStack {
-                        SecureField("Password", text: $easterEggPassword)
-                            .textFieldStyle(.roundedBorder)
-                            .onSubmit {
-                                activateEasterEgg()
-                            }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("🔐 Dev Access")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
 
-                        Button("OK") {
-                            activateEasterEgg()
+                        HStack {
+                            SecureField("senha secreta", text: $easterEggPassword)
+                                .textFieldStyle(.roundedBorder)
+                                .onSubmit { activateEasterEgg() }
+
+                            Button("OK") { activateEasterEgg() }
+                                .buttonStyle(.borderedProminent)
                         }
-                        .buttonStyle(.bordered)
+
+                        if easterEggWrongPassword {
+                            Text("❌ Senha incorreta. Tente novamente.")
+                                .font(.caption)
+                                .foregroundStyle(.red)
+                        }
+                    }
+                }
+            }
+
+            // Dev mode active indicator
+            if subscription.devModeActive {
+                Section {
+                    HStack(spacing: 8) {
+                        Image(systemName: "hammer.fill")
+                            .foregroundStyle(.orange)
+                        Text("Dev Mode ativo")
+                            .font(.callout.weight(.medium))
+                            .foregroundStyle(.orange)
+                        Spacer()
+                        Button("Desativar") {
+                            subscription.deactivateDevMode()
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -368,12 +415,39 @@ struct SettingsView: View {
         Form {
             // MARK: Voice Commands (Wake Word)
             Section {
-                // Enable toggle
-                Toggle(isOn: $settings.wakeWordEnabled) {
-                    Label(L10n.wakeWordEnabled, systemImage: "waveform.badge.mic")
+                // Enable toggle — Pro/Trial only
+                HStack {
+                    Toggle(isOn: Binding(
+                        get: { settings.wakeWordEnabled },
+                        set: { newValue in
+                            if subscription.isPro || TrialManager.shared.isTrialActive() {
+                                settings.wakeWordEnabled = newValue
+                            }
+                        }
+                    )) {
+                        Label(L10n.wakeWordEnabled, systemImage: "waveform.badge.mic")
+                    }
+                    .disabled(!subscription.isPro && !TrialManager.shared.isTrialActive())
+
+                    if !subscription.isPro && !TrialManager.shared.isTrialActive() {
+                        Button(action: { showUpgradeForWakeWord = true }) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 8))
+                                Text("PRO")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(VoxTheme.goldGradient)
+                            .cornerRadius(4)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
 
-                if settings.wakeWordEnabled {
+                if settings.wakeWordEnabled && (subscription.isPro || TrialManager.shared.isTrialActive()) {
                     // Wake word text field
                     HStack {
                         Text(L10n.wakeWordLabel)

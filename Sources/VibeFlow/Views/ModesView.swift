@@ -6,6 +6,7 @@ struct ModesView: View {
     @StateObject private var analytics = AnalyticsManager.shared
     @StateObject private var subscription = SubscriptionManager.shared
     @State private var showUpgradeModal = false
+    @State private var upgradeContext: UpgradeContext = .generic
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -34,7 +35,7 @@ struct ModesView: View {
         }
         .background(VoxTheme.background)
         .sheet(isPresented: $showUpgradeModal) {
-            UpgradeModalView(isPresented: $showUpgradeModal)
+            UpgradeModalView(isPresented: $showUpgradeModal, context: upgradeContext)
         }
     }
 
@@ -138,6 +139,7 @@ struct ModesView: View {
                             if subscription.canUseMode(mode) {
                                 settings.selectedMode = mode
                             } else {
+                                upgradeContext = .mode(mode)
                                 showUpgradeModal = true
                             }
                         }
@@ -234,7 +236,7 @@ struct ModeCard2: View {
                             if isPro {
                                 // Pro badge
                                 HStack(spacing: 3) {
-                                    Image(systemName: "diamond.fill")
+                                    Image(systemName: "crown.fill")
                                         .font(.system(size: 7))
                                     Text("PRO")
                                         .font(.system(size: 9, weight: .bold))
@@ -367,8 +369,19 @@ struct ModeCard2: View {
 
 // MARK: - Upgrade Modal
 
+// MARK: - Upgrade Context
+
+enum UpgradeContext: Equatable {
+    case mode(TranscriptionMode)
+    case language(SpeechLanguage)
+    case snippets
+    case wakeWord
+    case generic
+}
+
 struct UpgradeModalView: View {
     @Binding var isPresented: Bool
+    var context: UpgradeContext = .generic
     @State private var isAnnual = true
 
     var body: some View {
@@ -382,10 +395,11 @@ struct UpgradeModalView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
 
-                Text(L10n.upgradeProFeature)
+                Text(L10n.upgradeTitle(for: context))
                     .font(.system(size: 22, weight: .bold))
+                    .multilineTextAlignment(.center)
 
-                Text(L10n.upgradeProDescription)
+                Text(L10n.upgradeDescription(for: context))
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -433,7 +447,7 @@ struct UpgradeModalView: View {
             // Price
             VStack(spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(isAnnual ? "R$14,90" : "R$19,90")
+                    Text(isAnnual ? "R$22,40" : "R$29,90")
                         .font(.system(size: 36, weight: .bold))
                     Text("/\(L10n.month)")
                         .font(.system(size: 14))
@@ -441,7 +455,7 @@ struct UpgradeModalView: View {
                 }
                 if isAnnual {
                     HStack(spacing: 4) {
-                        Text("R$19,90")
+                        Text("R$29,90")
                             .font(.system(size: 12))
                             .strikethrough()
                             .foregroundStyle(.secondary)
@@ -458,7 +472,7 @@ struct UpgradeModalView: View {
                 isPresented = false
             }) {
                 HStack {
-                    Image(systemName: "diamond.fill")
+                    Image(systemName: "crown.fill")
                     Text(isAnnual ? L10n.pricingSubscribeAnnual : L10n.pricingSubscribeMonthly)
                         .fontWeight(.semibold)
                 }
@@ -550,7 +564,7 @@ struct ConversationReplyFeatureCard: View {
                         // Pro badge
                         if !subscription.isPro {
                             HStack(spacing: 3) {
-                                Image(systemName: "diamond.fill")
+                                Image(systemName: "crown.fill")
                                     .font(.system(size: 7))
                                 Text("PRO")
                                     .font(.system(size: 9, weight: .bold))
@@ -689,6 +703,24 @@ extension L10n {
     static var upgradeFeatureSmartFormatting: String { t("Agente Vox — intelligent formatting", "Agente Vox — formatacao inteligente", "Agente Vox — formato inteligente") }
     static var upgradeFeatureSnippets: String { t("Custom snippets", "Snippets personalizados", "Fragmentos personalizados") }
     static var upgradeNotNow: String { t("Continue without AI", "Continuar sem I.A.", "Continuar sin I.A.") }
+    static func upgradeTitle(for ctx: UpgradeContext) -> String {
+        switch ctx {
+        case .mode(let m): return t("Mode \(m.localizedName) — Pro Only", "Modo \(m.localizedName) — Exclusivo Pro", "Modo \(m.localizedName) — Exclusivo Pro")
+        case .language(let l): return t("\(l.flag) \(l.displayName) — Pro Only", "\(l.flag) \(l.displayName) — Exclusivo Pro", "\(l.flag) \(l.displayName) — Exclusivo Pro")
+        case .snippets: return t("Snippets — Pro Only", "Snippets — Exclusivo Pro", "Fragmentos — Exclusivo Pro")
+        case .wakeWord: return t("Voice Commands — Pro Only", "Comandos de Voz — Exclusivo Pro", "Comandos de Voz — Exclusivo Pro")
+        case .generic: return upgradeProFeature
+        }
+    }
+    static func upgradeDescription(for ctx: UpgradeContext) -> String {
+        switch ctx {
+        case .mode(let m): return t("The \(m.localizedName) mode uses advanced AI.\nUnlock all 15 modes with Pro.", "O modo \(m.localizedName) usa I.A. avancada.\nDesbloqueie todos os 15 modos com o Pro.", "El modo \(m.localizedName) usa I.A. avanzada.\nDesbloquea los 15 modos con Pro.")
+        case .language(let l): return t("\(l.displayName) requires Pro.\nFree: Portuguese and English.", "\(l.displayName) requer o plano Pro.\nGratuitos: Portugues e Ingles.", "\(l.displayName) requiere Pro.\nGratuitos: Portugues e Ingles.")
+        case .snippets: return t("Custom snippets require Pro.", "Snippets personalizados requerem o Pro.", "Fragmentos personalizados requieren Pro.")
+        case .wakeWord: return t("Voice commands require Pro.\nSwitch modes hands-free while recording.", "Comandos de voz requerem o Pro.\nAlterne modos sem as maos durante a gravacao.", "Comandos de voz requieren Pro.\nAlterna modos sin manos durante la grabacion.")
+        case .generic: return upgradeProDescription
+        }
+    }
 }
 
 #Preview {

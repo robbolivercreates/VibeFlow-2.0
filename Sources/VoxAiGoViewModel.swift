@@ -132,30 +132,23 @@ class VoxAiGoViewModel: ObservableObject {
         // Feature gating applies to Supabase and Whisper users (not BYOK)
         let needsGating = { if case .byok = service { return false }; return true }()
 
+        // Offline mode with internet: trigger background subscription validation before each recording.
+        // This ensures that if connectivity is available, subscription expiry is caught quickly.
+        // Non-blocking — doesn't delay recording start, but updates state for the next attempt.
+        if case .whisper = service, settings.offlineMode {
+            Task { await subscription.fetchProfile() }
+        }
+
         print("[ViewModel] toggleRecording: mode=\(selectedMode.rawValue) service=\(service) isPro=\(subscription.isPro) devMode=\(subscription.devModeActive)")
 
-        // Online validation enforcement: block if >48h without server check
-        if needsGating {
-            subscription.checkOnlineValidationStatus()
-            if subscription.needsOnlineValidation {
-                // Try to validate now
-                Task {
-                    await subscription.fetchProfile()
-                    await subscription.syncWhisperUsageToServer()
-                    await MainActor.run {
-                        if subscription.needsOnlineValidation {
-                            // Still can't reach server — block
-                            error = L10n.onlineValidationRequired
-                            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
-                        }
-                    }
-                }
-                if subscription.needsOnlineValidation {
-                    error = L10n.onlineValidationRequired
-                    NotificationCenter.default.post(name: .recordingCancelled, object: nil)
-                    return
-                }
-            }
+        // Online validation enforcement: block if >48h without server check.
+        // Uses cached value only — async refresh happens in background (every 5 min).
+        if needsGating, subscription.needsOnlineValidation {
+            // Try to revalidate in background (non-blocking)
+            Task { await subscription.fetchProfile() }
+            error = L10n.onlineValidationRequired
+            NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+            return
         }
 
         // Feature gating: mode restriction
@@ -185,10 +178,14 @@ class VoxAiGoViewModel: ObservableObject {
         }
 
         // Note: Legacy Supabase 100 free limit removed — free users now use
-        // Whisper local only (200/month). Supabase path is only for Pro/Trial.
+        // Whisper local only (75/month). Supabase path is only for Pro/Trial.
 
-        // Feature gating: whisper free limit (200/month — LOCKED)
-        if case .whisper = service, subscription.hasReachedWhisperLimit {
+        // Feature gating: whisper free limit (75/month — LOCKED for free tier only)
+        // Pro users and trial users using offline mode are exempt from the local counter.
+        if case .whisper = service,
+           !subscription.isPro,
+           !TrialManager.shared.isTrialActive(),
+           subscription.hasReachedWhisperLimit {
             error = L10n.monthlyLimitTitle
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -489,7 +486,7 @@ class VoxAiGoViewModel: ObservableObject {
                 // Language command → ALWAYS switch language
                 // Wake word alone → IGNORE (don't paste "Hey Vox")
                 // ─────────────────────────────────────────────────────────────────
-                if self.settings.wakeWordEnabled {
+                if self.settings.wakeWordEnabled, (self.subscription.isPro || TrialManager.shared.isTrialActive()) {
                     let result = VoxAiGoViewModel.detectWakeWordCommand(
                         in: finalText,
                         wakeWord: self.settings.wakeWord

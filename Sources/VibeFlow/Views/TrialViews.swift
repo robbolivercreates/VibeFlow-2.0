@@ -38,7 +38,7 @@ private struct PricingToggle: View {
             // Price display
             VStack(spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text(isAnnual ? "R$14,90" : "R$19,90")
+                    Text(isAnnual ? "R$22,40" : "R$29,90")
                         .font(.system(size: 36, weight: .bold))
                     Text("/\(L10n.month)")
                         .font(.system(size: 14))
@@ -46,7 +46,7 @@ private struct PricingToggle: View {
                 }
                 if isAnnual {
                     HStack(spacing: 4) {
-                        Text("R$19,90")
+                        Text("R$29,90")
                             .font(.system(size: 12))
                             .strikethrough()
                             .foregroundStyle(.secondary)
@@ -60,7 +60,7 @@ private struct PricingToggle: View {
             // Subscribe button
             Button(action: { onSubscribe(isAnnual) }) {
                 HStack {
-                    Image(systemName: "diamond.fill")
+                    Image(systemName: "crown.fill")
                     Text(isAnnual ? L10n.pricingSubscribeAnnual : L10n.pricingSubscribeMonthly)
                         .fontWeight(.semibold)
                 }
@@ -261,6 +261,16 @@ struct TrialExpiredView: View {
                 },
                 onDismiss: {
                     TrialManager.shared.forceExpireTrial()
+
+                    // Auto-switch to free mode/language so user isn't stuck in a Pro-only mode
+                    let settings = SettingsManager.shared
+                    if !SubscriptionManager.freeModes.contains(settings.selectedMode) {
+                        settings.selectedMode = .text
+                    }
+                    if !SubscriptionManager.freeLanguages.contains(settings.outputLanguage) {
+                        settings.outputLanguage = .portuguese
+                    }
+
                     isPresented = false
                 },
                 dismissLabel: L10n.trialExpiredContinueFree
@@ -314,7 +324,7 @@ struct MonthlyLimitView: View {
                     .foregroundStyle(VoxTheme.accent)
 
                 TrialFeatureRow(icon: "clock.arrow.circlepath", text: L10n.monthlyLimitWaitReset)
-                TrialFeatureRow(icon: "diamond.fill", text: L10n.monthlyLimitUpgradePro)
+                TrialFeatureRow(icon: "crown.fill", text: L10n.monthlyLimitUpgradePro)
             }
             .padding(24)
             .background(
@@ -470,9 +480,9 @@ extension L10n {
     // Pricing toggle (shared)
     static var pricingMonthly: String { t("Monthly", "Mensal", "Mensual") }
     static var pricingAnnual: String { t("Annual", "Anual", "Anual") }
-    static var pricingAnnualBilled: String { t("R$178.80 billed yearly", "R$178,80 cobrado anualmente", "R$178,80 cobrado anualmente") }
-    static var pricingSubscribeMonthly: String { t("Subscribe — R$19.90/month", "Assinar — R$19,90/mes", "Suscribir — R$19,90/mes") }
-    static var pricingSubscribeAnnual: String { t("Subscribe — R$14.90/month", "Assinar — R$14,90/mes", "Suscribir — R$14,90/mes") }
+    static var pricingAnnualBilled: String { t("R$268.80 billed yearly", "R$268,80 cobrado anualmente", "R$268,80 cobrado anualmente") }
+    static var pricingSubscribeMonthly: String { t("Subscribe — R$29.90/month", "Assinar — R$29,90/mes", "Suscribir — R$29,90/mes") }
+    static var pricingSubscribeAnnual: String { t("Subscribe — R$22.40/month", "Assinar — R$22,40/mes", "Suscribir — R$22,40/mes") }
 
     // Welcome Trial (shown after signup — trial already active)
     static var welcomeTrialTitle: String { t("Your Pro Trial is Active!", "Seu Trial Pro Esta Ativo!", "Tu Prueba Pro Esta Activa!") }
@@ -489,9 +499,9 @@ extension L10n {
     static var welcomeTrialDuration: String { t("7 days free — no credit card needed", "7 dias gratis — sem cartao de credito", "7 dias gratis — sin tarjeta de credito") }
     static var welcomeTrialLimit: String { t("Up to 50 AI transcriptions during trial", "Ate 50 transcricoes com I.A. durante o trial", "Hasta 50 transcripciones con I.A. durante la prueba") }
     static var welcomeTrialAfter: String { t(
-        "After the trial, you keep Text mode with 200 free transcriptions/month.\nAI features require Pro.",
-        "Apos o trial, voce mantem o modo Texto com 200 transcricoes gratis/mes.\nFuncionalidades de I.A. requerem Pro.",
-        "Despues de la prueba, mantendras el modo Texto con 200 transcripciones gratis/mes.\nFunciones de I.A. requieren Pro."
+        "After the trial, you keep Text mode with 75 free transcriptions/month.\nAI features require Pro.",
+        "Apos o trial, voce mantem o modo Texto com 75 transcricoes gratis/mes.\nFuncionalidades de I.A. requerem Pro.",
+        "Despues de la prueba, mantendras el modo Texto con 75 transcripciones gratis/mes.\nFunciones de I.A. requieren Pro."
     ) }
     static var welcomeTrialStartButton: String { t("Got it, let's go!", "Entendi, vamos la!", "Entendido, vamos!") }
 
@@ -511,16 +521,16 @@ extension L10n {
     static var trialExpiredDowngradeEngine: String { t("No AI — basic transcription only", "Sem I.A. — apenas transcricao basica", "Sin I.A. — solo transcripcion basica") }
     static var trialExpiredDowngradeMode: String { t("Text mode only (no Agente Vox)", "Somente modo Texto (sem Agente Vox)", "Solo modo Texto (sin Agente Vox)") }
     static var trialExpiredDowngradeLanguages: String { t("Portuguese and English only", "Somente Portugues e Ingles", "Solo Portugues e Ingles") }
-    static var trialExpiredKeepTranscriptions: String { t("200 transcriptions/month — always free", "200 transcricoes/mes — sempre gratis", "200 transcripciones/mes — siempre gratis") }
+    static var trialExpiredKeepTranscriptions: String { t("75 transcriptions/month — always free", "75 transcricoes/mes — sempre gratis", "75 transcripciones/mes — siempre gratis") }
     static var trialExpiredKeepPro: String { t("Want to keep AI features?", "Quer manter as funcionalidades de I.A.?", "Quieres mantener las funciones de I.A.?") }
-    static var trialExpiredContinueFree: String { t("Continue without AI (Free plan)", "Continuar sem I.A. (plano Gratuito)", "Continuar sin I.A. (plan Gratuito)") }
+    static var trialExpiredContinueFree: String { t("Continue without AI (Grátis)", "Continuar sem I.A. (plano Grátis)", "Continuar sin I.A. (plan Grátis)") }
 
-    // Monthly Limit (200 free exhausted — LOCKED)
+    // Monthly Limit (75 free exhausted — LOCKED)
     static var monthlyLimitTitle: String { t("Monthly Limit Reached", "Limite Mensal Atingido", "Limite Mensual Alcanzado") }
     static var monthlyLimitSubtitle: String { t(
-        "You've used all 200 free transcriptions this month.\nTranscriptions are locked until next month.",
-        "Voce usou todas as 200 transcricoes gratis deste mes.\nTranscricoes bloqueadas ate o proximo mes.",
-        "Usaste las 200 transcripciones gratis de este mes.\nTranscripciones bloqueadas hasta el proximo mes."
+        "You've used all 75 free transcriptions this month.\nTranscriptions are locked until next month.",
+        "Voce usou todas as 75 transcricoes gratis deste mes.\nTranscricoes bloqueadas ate o proximo mes.",
+        "Usaste las 75 transcripciones gratis de este mes.\nTranscripciones bloqueadas hasta el proximo mes."
     ) }
     static var monthlyLimitOptions: String { t("Your options:", "Suas opcoes:", "Tus opciones:") }
     static var monthlyLimitWaitReset: String { t("Wait for monthly reset (free)", "Aguardar reset mensal (gratis)", "Esperar el reinicio mensual (gratis)") }
@@ -528,16 +538,16 @@ extension L10n {
     static var monthlyLimitUnlock: String { t("Unlock Agente Vox + unlimited access", "Desbloqueie o Agente Vox + acesso ilimitado", "Desbloquea el Agente Vox + acceso ilimitado") }
     static var monthlyLimitDismiss: String { t("I'll wait", "Vou aguardar", "Voy a esperar") }
 
-    // Upgrade Reminder (soft, every 25 transcriptions)
+    // Upgrade Reminder (soft, every 15 transcriptions)
     static var upgradeReminderTitle: String { t("You're doing great!", "Voce esta arrasando!", "Lo estas haciendo genial!") }
     static func upgradeReminderSubtitle(used: Int, remaining: Int) -> String {
         t(
-            "You've used \(used) of your 200 free transcriptions.\n\(remaining) remaining this month — you can keep going!",
-            "Voce usou \(used) de 200 transcricoes gratis.\n\(remaining) restantes este mes — pode continuar!",
-            "Usaste \(used) de 200 transcripciones gratis.\n\(remaining) restantes este mes — puedes continuar!"
+            "You've used \(used) of your 75 free transcriptions.\n\(remaining) remaining this month — you can keep going!",
+            "Voce usou \(used) de 75 transcricoes gratis.\n\(remaining) restantes este mes — pode continuar!",
+            "Usaste \(used) de 75 transcripciones gratis.\n\(remaining) restantes este mes — puedes continuar!"
         )
     }
-    static var upgradeReminderFreeForever: String { t("200/month — Text mode only, always free", "200/mes — apenas modo Texto, sempre gratis", "200/mes — solo modo Texto, siempre gratis") }
+    static var upgradeReminderFreeForever: String { t("75/month — Text mode only, always free", "75/mes — apenas modo Texto, sempre gratis", "75/mes — solo modo Texto, siempre gratis") }
     static var upgradeReminderUnlimited: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
     static var upgradeReminderGemini: String { t("Agente Vox — intelligent formatting", "Agente Vox — formatacao inteligente", "Agente Vox — formato inteligente") }
     static var upgradeReminderAllModes: String { t("All 15 AI modes + 30 languages", "Todos os 15 modos com I.A. + 30 idiomas", "Los 15 modos con I.A. + 30 idiomas") }

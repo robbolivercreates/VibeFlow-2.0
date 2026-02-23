@@ -24,10 +24,54 @@ class TrialManager: ObservableObject {
         static let trialEndsAt = "trial_ends_at"
         static let trialDeviceRegistered = "trial_device_registered"
         static let trialTranscriptionsUsed = "trial_transcriptions_used"
+        static let trialIntegrityHash = "ttu_h"  // Anti-tamper hash for trial counter
+    }
+
+    // Anti-tamper: mirrors the Whisper counter protection
+    private static let trialHashSalt = "v0x41g0_tr14l"
+
+    private func trialIntegrityHash(for count: Int) -> String {
+        let input = "\(Self.trialHashSalt)_\(count)"
+        var hash: UInt64 = 0
+        for char in input.utf8 {
+            hash = hash &* 31 &+ UInt64(char)
+        }
+        return String(hash, radix: 36)
+    }
+
+    private func verifyTrialIntegrity() {
+        let stored = defaults.integer(forKey: Keys.trialTranscriptionsUsed)
+        let storedHash = defaults.string(forKey: Keys.trialIntegrityHash) ?? ""
+        let expected = trialIntegrityHash(for: stored)
+
+        if storedHash != expected && stored < trialTranscriptionsUsed {
+            // Counter was tampered down — restore in-memory value
+            print("[TrialManager] ⚠️ Trial counter tampered! stored=\(stored) known=\(trialTranscriptionsUsed)")
+            defaults.set(trialTranscriptionsUsed, forKey: Keys.trialTranscriptionsUsed)
+            defaults.set(trialIntegrityHash(for: trialTranscriptionsUsed), forKey: Keys.trialIntegrityHash)
+        } else {
+            trialTranscriptionsUsed = stored
+        }
+    }
+
+    private func saveTrialCount(_ count: Int) {
+        defaults.set(count, forKey: Keys.trialTranscriptionsUsed)
+        defaults.set(trialIntegrityHash(for: count), forKey: Keys.trialIntegrityHash)
     }
 
     private init() {
-        trialTranscriptionsUsed = defaults.integer(forKey: Keys.trialTranscriptionsUsed)
+        // Load and verify integrity on init
+        let stored = defaults.integer(forKey: Keys.trialTranscriptionsUsed)
+        let storedHash = defaults.string(forKey: Keys.trialIntegrityHash) ?? ""
+        let expected = trialIntegrityHash(for: stored)
+        if !storedHash.isEmpty && storedHash != expected {
+            print("[TrialManager] ⚠️ Trial counter integrity check failed on load — keeping stored value")
+        }
+        trialTranscriptionsUsed = stored
+        // Ensure hash exists (migration for existing users)
+        if storedHash.isEmpty {
+            saveTrialCount(stored)
+        }
         updateTrialState()
     }
 
@@ -83,7 +127,7 @@ class TrialManager: ObservableObject {
         defaults.set(now.timeIntervalSince1970, forKey: Keys.trialStartedAt)
         defaults.set(endsAt.timeIntervalSince1970, forKey: Keys.trialEndsAt)
         defaults.set(true, forKey: Keys.trialDeviceRegistered)
-        defaults.set(0, forKey: Keys.trialTranscriptionsUsed)
+        saveTrialCount(0)  // Also writes integrity hash for 0
 
         await MainActor.run {
             self.trialTranscriptionsUsed = 0
@@ -124,8 +168,9 @@ class TrialManager: ObservableObject {
 
     /// Increment trial transcription counter and refresh state
     func recordTrialTranscription() {
+        verifyTrialIntegrity()  // Detect tampering before incrementing
         trialTranscriptionsUsed += 1
-        defaults.set(trialTranscriptionsUsed, forKey: Keys.trialTranscriptionsUsed)
+        saveTrialCount(trialTranscriptionsUsed)  // Persists counter + hash atomically
         updateTrialState()  // Re-evaluate so isTrialActive() reflects limit
     }
 
@@ -142,6 +187,7 @@ class TrialManager: ObservableObject {
         defaults.removeObject(forKey: Keys.trialEndsAt)
         defaults.removeObject(forKey: Keys.trialDeviceRegistered)
         defaults.removeObject(forKey: Keys.trialTranscriptionsUsed)
+        defaults.removeObject(forKey: Keys.trialIntegrityHash)
         trialTranscriptionsUsed = 0
         trialState = .unknown
         print("[TrialManager] DEV: Trial fully reset — state=unknown")
@@ -161,25 +207,28 @@ class TrialManager: ObservableObject {
     // MARK: - State Management
 
     private func updateTrialState() {
+        let newState: TrialState
         let endsAtTimestamp = defaults.double(forKey: Keys.trialEndsAt)
-        guard endsAtTimestamp > 0 else {
+
+        if endsAtTimestamp <= 0 {
             // No trial started — check if device was registered (used trial before)
-            if defaults.bool(forKey: Keys.trialDeviceRegistered) {
-                trialState = .expired
+            newState = defaults.bool(forKey: Keys.trialDeviceRegistered) ? .expired : .unknown
+        } else {
+            let endsAt = Date(timeIntervalSince1970: endsAtTimestamp)
+            let now = Date()
+
+            if now < endsAt && !hasReachedTrialLimit {
+                let remaining = Calendar.current.dateComponents([.day], from: now, to: endsAt).day ?? 0
+                newState = .active(daysRemaining: max(1, remaining))
             } else {
-                trialState = .unknown
+                newState = .expired
             }
-            return
         }
 
-        let endsAt = Date(timeIntervalSince1970: endsAtTimestamp)
-        let now = Date()
-
-        if now < endsAt && !hasReachedTrialLimit {
-            let remaining = Calendar.current.dateComponents([.day], from: now, to: endsAt).day ?? 0
-            trialState = .active(daysRemaining: max(1, remaining))
-        } else {
-            trialState = .expired
+        // Only update @Published if value actually changed — prevents infinite
+        // SwiftUI re-render loops when isTrialActive() is called from view bodies.
+        if trialState != newState {
+            trialState = newState
         }
     }
 

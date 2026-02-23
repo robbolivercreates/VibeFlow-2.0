@@ -3,7 +3,10 @@ import SwiftUI
 /// Languages management view
 struct LanguagesView: View {
     @StateObject private var settings = SettingsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
     @State private var searchText = ""
+    @State private var showUpgradeModal = false
+    @State private var upgradeContext: UpgradeContext = .generic
 
     private var filteredLanguages: [SpeechLanguage] {
         if searchText.isEmpty {
@@ -41,6 +44,13 @@ struct LanguagesView: View {
             .clipped()
         }
         .background(VoxTheme.background)
+        .sheet(isPresented: $showUpgradeModal) {
+            UpgradeModalView(isPresented: $showUpgradeModal, context: upgradeContext)
+        }
+    }
+
+    private var isFreeTier: Bool {
+        !subscription.isPro && !TrialManager.shared.isTrialActive()
     }
 
     // MARK: - Header
@@ -133,10 +143,19 @@ struct LanguagesView: View {
             // Favorites list
             FlowLayout(spacing: 8) {
                 ForEach(settings.favoriteLanguages) { language in
+                    let locked = isFreeTier && !SubscriptionManager.freeLanguages.contains(language)
                     FavoriteLanguageChip(
                         language: language,
                         isSelected: language == settings.outputLanguage,
-                        onSelect: { settings.outputLanguage = language },
+                        isLocked: locked,
+                        onSelect: {
+                            if locked {
+                                upgradeContext = .language(language)
+                                showUpgradeModal = true
+                            } else {
+                                settings.outputLanguage = language
+                            }
+                        },
                         onRemove: { removeFavorite(language) }
                     )
                 }
@@ -217,11 +236,20 @@ struct LanguagesView: View {
                         GridItem(.flexible())
                     ], spacing: 8) {
                         ForEach(filteredLanguages) { language in
+                            let locked = isFreeTier && !SubscriptionManager.freeLanguages.contains(language)
                             LanguageRow(
                                 language: language,
                                 isSelected: language == settings.outputLanguage,
                                 isFavorite: settings.favoriteLanguages.contains(language),
-                                onSelect: { settings.outputLanguage = language },
+                                isLocked: locked,
+                                onSelect: {
+                                    if locked {
+                                        upgradeContext = .language(language)
+                                        showUpgradeModal = true
+                                    } else {
+                                        settings.outputLanguage = language
+                                    }
+                                },
                                 onToggleFavorite: { toggleFavorite(language) }
                             )
                         }
@@ -240,7 +268,7 @@ struct LanguagesView: View {
 
     @ViewBuilder
     private var voxTipSection: some View {
-        if settings.isVoxActive {
+        if settings.isVoxActive && !isFreeTier {
             HStack(spacing: 12) {
                 Image(systemName: "lightbulb.fill")
                     .font(.system(size: 16))
@@ -291,6 +319,7 @@ struct LanguagesView: View {
 struct FavoriteLanguageChip: View {
     let language: SpeechLanguage
     let isSelected: Bool
+    var isLocked: Bool = false
     let onSelect: () -> Void
     let onRemove: () -> Void
 
@@ -305,6 +334,13 @@ struct FavoriteLanguageChip: View {
 
                     Text(language.displayName)
                         .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isLocked ? .secondary : .primary)
+
+                    if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .buttonStyle(.plain)
@@ -343,6 +379,7 @@ struct LanguageRow: View {
     let language: SpeechLanguage
     let isSelected: Bool
     let isFavorite: Bool
+    var isLocked: Bool = false
     let onSelect: () -> Void
     let onToggleFavorite: () -> Void
 
@@ -354,9 +391,21 @@ struct LanguageRow: View {
                 .font(.system(size: 18))
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(language.displayName)
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? VoxTheme.accent : .primary)
+                HStack(spacing: 4) {
+                    Text(language.displayName)
+                        .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
+                        .foregroundStyle(isLocked ? .secondary : (isSelected ? VoxTheme.accent : .primary))
+
+                    if isLocked {
+                        Text("PRO")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(VoxTheme.accent)
+                            .cornerRadius(3)
+                    }
+                }
 
                 Text(language.rawValue.uppercased())
                     .font(.system(size: 10, design: .monospaced))
@@ -365,14 +414,20 @@ struct LanguageRow: View {
 
             Spacer()
 
-            // Favorite star
-            Button(action: onToggleFavorite) {
-                Image(systemName: isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 12))
-                    .foregroundStyle(isFavorite ? VoxTheme.accent : .secondary)
+            if isLocked {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            } else {
+                // Favorite star
+                Button(action: onToggleFavorite) {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                        .font(.system(size: 12))
+                        .foregroundStyle(isFavorite ? VoxTheme.accent : .secondary)
+                }
+                .buttonStyle(.plain)
+                .opacity(isHovered || isFavorite ? 1 : 0)
             }
-            .buttonStyle(.plain)
-            .opacity(isHovered || isFavorite ? 1 : 0)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

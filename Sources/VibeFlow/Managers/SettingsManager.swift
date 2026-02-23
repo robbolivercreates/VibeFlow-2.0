@@ -315,39 +315,61 @@ class SettingsManager: ObservableObject {
             return
         }
 
-        // Debug current state
+        let isFreeTier = !SubscriptionManager.shared.isPro && !TrialManager.shared.isTrialActive()
+        let freeLanguages = SubscriptionManager.freeLanguages
+
+        // Filter available languages for the current tier
+        let availableLanguages = isFreeTier
+            ? favoriteLanguages.filter { freeLanguages.contains($0) }
+            : favoriteLanguages
+
+        guard !availableLanguages.isEmpty else { return }
+
         print("[SettingsManager] cycleToNextLanguage called")
         print("[SettingsManager] Current language: \(outputLanguage.displayName)")
-        print("[SettingsManager] Favorites (\(favoriteLanguages.count)): \(favoriteLanguages.map { $0.displayName })")
+        print("[SettingsManager] Available (\(availableLanguages.count)): \(availableLanguages.map { $0.displayName })")
 
-        // Find current language in favorites, or start from beginning
-        if let currentIndex = favoriteLanguages.firstIndex(of: outputLanguage) {
+        // Find current language in available set
+        if let currentIndex = availableLanguages.firstIndex(of: outputLanguage) {
             currentFavoriteIndex = currentIndex
+        } else {
+            currentFavoriteIndex = -1
         }
 
-        // Move to next index
-        currentFavoriteIndex = (currentFavoriteIndex + 1) % favoriteLanguages.count
-        let nextLanguage = favoriteLanguages[currentFavoriteIndex]
+        // Move to next index within available set
+        let nextIndex = (currentFavoriteIndex + 1) % availableLanguages.count
+        let nextLanguage = availableLanguages[nextIndex]
 
-        print("[SettingsManager] Next index: \(currentFavoriteIndex), Next language: \(nextLanguage.displayName)")
+        // Update global index to match favorites array
+        if let globalIndex = favoriteLanguages.firstIndex(of: nextLanguage) {
+            currentFavoriteIndex = globalIndex
+        }
 
-        // Only update if different to avoid unnecessary notifications
+        print("[SettingsManager] Next language: \(nextLanguage.displayName)")
+
         if outputLanguage != nextLanguage {
             outputLanguage = nextLanguage
-        } else if favoriteLanguages.count > 1 {
-            // If same (shouldn't happen), force move to next
-            currentFavoriteIndex = (currentFavoriteIndex + 1) % favoriteLanguages.count
-            outputLanguage = favoriteLanguages[currentFavoriteIndex]
-            print("[SettingsManager] Forced next: \(outputLanguage.displayName)")
         }
     }
 
-    /// Cycles to the next transcription mode
+    /// Cycles to the next transcription mode (skips Pro modes for Free users)
     func cycleToNextMode() {
         let allModes = TranscriptionMode.allCases
-        guard let currentIndex = allModes.firstIndex(of: selectedMode) else { return }
-        let nextIndex = (currentIndex + 1) % allModes.count
-        let nextMode = allModes[nextIndex]
+        let isFreeTier = !SubscriptionManager.shared.isPro && !TrialManager.shared.isTrialActive()
+
+        // Filter to available modes for current tier
+        let availableModes = isFreeTier
+            ? allModes.filter { SubscriptionManager.freeModes.contains($0) }
+            : allModes
+
+        guard !availableModes.isEmpty else { return }
+        guard let currentIndex = availableModes.firstIndex(of: selectedMode) else {
+            // Current mode is Pro-only for a Free user — jump to first free mode
+            selectedMode = availableModes[0]
+            return
+        }
+        let nextIndex = (currentIndex + 1) % availableModes.count
+        let nextMode = availableModes[nextIndex]
         print("[SettingsManager] Mode changed: \(selectedMode.localizedName) → \(nextMode.localizedName)")
         selectedMode = nextMode
     }

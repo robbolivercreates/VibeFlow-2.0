@@ -3,8 +3,14 @@ import SwiftUI
 /// View de gerenciamento de snippets — matches the visual pattern of other sidebar pages
 struct SnippetsView: View {
     @StateObject private var snippets = SnippetsManager.shared
+    @StateObject private var subscription = SubscriptionManager.shared
     @State private var showingAddSheet = false
     @State private var editingSnippet: Snippet?
+    @State private var showUpgradeModal = false
+
+    private var isFreeTier: Bool {
+        !subscription.isPro && !TrialManager.shared.isTrialActive()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -42,6 +48,9 @@ struct SnippetsView: View {
         .sheet(item: $editingSnippet) { snippet in
             SnippetEditView(snippet: snippet)
         }
+        .sheet(isPresented: $showUpgradeModal) {
+            UpgradeModalView(isPresented: $showUpgradeModal, context: .snippets)
+        }
     }
 
     // MARK: - Header
@@ -54,17 +63,35 @@ struct SnippetsView: View {
 
                 Spacer()
 
-                Button(action: { showingAddSheet = true }) {
+                Button(action: {
+                    if isFreeTier {
+                        showUpgradeModal = true
+                    } else {
+                        showingAddSheet = true
+                    }
+                }) {
                     HStack(spacing: 6) {
-                        Image(systemName: "plus")
+                        Image(systemName: isFreeTier ? "lock.fill" : "plus")
                             .font(.system(size: 12, weight: .semibold))
                         Text("Novo")
                             .font(.system(size: 13, weight: .medium))
+                        if isFreeTier {
+                            HStack(spacing: 2) {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 7))
+                                Text("PRO")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.white.opacity(0.3))
+                            .cornerRadius(3)
+                        }
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 7)
-                    .background(VoxTheme.accent)
+                    .background(isFreeTier ? VoxTheme.accent.opacity(0.5) : VoxTheme.accent)
                     .cornerRadius(8)
                 }
                 .buttonStyle(.plain)
@@ -80,22 +107,49 @@ struct SnippetsView: View {
     // MARK: - Add Snippet Card
 
     private var addSnippetCard: some View {
-        Button(action: { showingAddSheet = true }) {
+        Button(action: {
+            if isFreeTier {
+                showUpgradeModal = true
+            } else {
+                showingAddSheet = true
+            }
+        }) {
             HStack(spacing: 16) {
                 ZStack {
                     Circle()
-                        .fill(VoxTheme.accent.opacity(0.15))
+                        .fill(isFreeTier ? Color.gray.opacity(0.15) : VoxTheme.accent.opacity(0.15))
                         .frame(width: 44, height: 44)
 
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(VoxTheme.accent)
+                    if isFreeTier {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(VoxTheme.accent)
+                    }
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Criar Snippet")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.primary)
+                    HStack(spacing: 6) {
+                        Text("Criar Snippet")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(isFreeTier ? .secondary : .primary)
+                        if isFreeTier {
+                            HStack(spacing: 3) {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 8))
+                                Text("PRO")
+                                    .font(.system(size: 9, weight: .bold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(VoxTheme.goldGradient)
+                            .cornerRadius(4)
+                        }
+                    }
 
                     Text("Adicione uma abreviacao para expandir automaticamente")
                         .font(.system(size: 12))
@@ -144,22 +198,32 @@ struct SnippetsView: View {
                         SnippetRow(snippet: snippet)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                editingSnippet = snippet
-                            }
-                            .contextMenu {
-                                Button("Editar") {
+                                if isFreeTier {
+                                    showUpgradeModal = true
+                                } else {
                                     editingSnippet = snippet
                                 }
+                            }
+                            .contextMenu {
+                                if !isFreeTier {
+                                    Button("Editar") {
+                                        editingSnippet = snippet
+                                    }
 
-                                Toggle("Ativado", isOn: .init(
-                                    get: { snippet.isEnabled },
-                                    set: { _ in snippets.toggleEnabled(snippet) }
-                                ))
+                                    Toggle("Ativado", isOn: .init(
+                                        get: { snippet.isEnabled },
+                                        set: { _ in snippets.toggleEnabled(snippet) }
+                                    ))
 
-                                Divider()
+                                    Divider()
 
-                                Button("Excluir") {
-                                    snippets.delete(snippet)
+                                    Button("Excluir") {
+                                        snippets.delete(snippet)
+                                    }
+                                } else {
+                                    Button("Upgrade para Pro") {
+                                        showUpgradeModal = true
+                                    }
                                 }
                             }
 

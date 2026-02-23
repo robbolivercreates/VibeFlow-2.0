@@ -9,6 +9,8 @@ struct AccountView: View {
 
     /// Easter egg: callback when version is tapped
     var onVersionTap: (() -> Void)?
+    /// Easter egg: current tap count (0-4) for visual feedback
+    var versionTapCount: Int = 0
 
     var body: some View {
         Form {
@@ -138,7 +140,7 @@ struct AccountView: View {
                         HStack(spacing: 12) {
                             Button(action: { subscription.openUpgradeURL(annual: false) }) {
                                 VStack(spacing: 2) {
-                                    Text("R$19,90/\(L10n.month)")
+                                    Text("R$29,90/\(L10n.month)")
                                         .font(.system(size: 13, weight: .semibold))
                                     Text(L10n.monthly)
                                         .font(.system(size: 10))
@@ -151,7 +153,7 @@ struct AccountView: View {
 
                             Button(action: { subscription.openUpgradeURL(annual: true) }) {
                                 VStack(spacing: 2) {
-                                    Text("R$178,80/\(L10n.year)")
+                                    Text("R$268,80/\(L10n.year)")
                                         .font(.system(size: 13, weight: .semibold))
                                     Text(L10n.annual + " (-25%)")
                                         .font(.system(size: 10))
@@ -200,9 +202,22 @@ struct AccountView: View {
                 HStack {
                     Text(L10n.version)
                     Spacer()
-                    Text(AppVersion.current)
-                        .foregroundStyle(.secondary)
+                    if versionTapCount > 0 {
+                        // Show progress dots while counting taps
+                        HStack(spacing: 4) {
+                            ForEach(0..<5, id: \.self) { i in
+                                Circle()
+                                    .fill(i < versionTapCount ? Color.orange : Color.gray.opacity(0.3))
+                                    .frame(width: 5, height: 5)
+                            }
+                        }
+                        .animation(.easeInOut(duration: 0.15), value: versionTapCount)
+                    } else {
+                        Text(AppVersion.current)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .contentShape(Rectangle())
                 .onTapGesture {
                     onVersionTap?()
                 }

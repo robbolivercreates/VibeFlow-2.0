@@ -198,6 +198,8 @@ struct SettingsDetailView: View {
                                         settings.selectedMode = .text
                                     }
                                     showingOfflineAlert = true
+                                    // Validate subscription immediately when offline mode is enabled
+                                    Task { await SubscriptionManager.shared.fetchProfile() }
                                 }
                                 // Rebuild menu bar to show/hide offline indicator
                                 NotificationCenter.default.post(name: .offlineModeChanged, object: nil)
@@ -569,14 +571,19 @@ struct SettingsDetailView: View {
 
                     Group {
                         devInfoRow("Plan (DB)", subscription.plan)
+                        devInfoRow("Sub Status", subscription.subscriptionStatus ?? "nil")
                         devInfoRow("DevMode", subscription.devModeActive ? "ON" : "OFF")
                         devInfoRow("Force Free", subscription.forceFreeMode ? "ON" : "OFF")
                         devInfoRow("isPro (efetivo)", subscription.isPro ? "YES" : "NO")
                         devInfoRow("isVoxActive", settings.isVoxActive ? "YES" : "NO")
                         devInfoRow("Offline", settings.offlineMode ? "ON" : "OFF")
                         devInfoRow("Trial", trialStateLabel)
+                        devInfoRow("Online Valid.", subscription.devOnlineValidationLabel)
+                        devInfoRow("Needs Online", subscription.needsOnlineValidation ? "YES ⚠️" : "NO ✓")
                         devInfoRow("Auth", AuthManager.shared.isAuthenticated ? (AuthManager.shared.userEmail ?? "yes") : "NO")
                         devInfoRow("Offline engine", WhisperEngine.shared.isReady ? "YES" : "NO")
+                        devInfoRow("Mode", "\(settings.selectedMode.rawValue)")
+                        devInfoRow("Language", "\(settings.outputLanguage.displayName)")
                     }
                 }
                 .padding(.horizontal, 16)
@@ -609,8 +616,9 @@ struct SettingsDetailView: View {
                         Button("Pro (DB)") {
                             devLoading = true
                             Task {
+                                // deactivateForceFree() is called inside devSetPlanOnSupabase("pro")
+                                // BEFORE fetchProfile(), so enforceFreeTierDefaults sees isPro=true
                                 let ok = await subscription.devSetPlanOnSupabase("pro")
-                                subscription.deactivateForceFree()
                                 await MainActor.run {
                                     devLoading = false
                                     devStatusMessage = ok ? "plan → pro" : "ERRO"
@@ -717,16 +725,45 @@ struct SettingsDetailView: View {
 
                 Divider().padding(.leading, 44)
 
+                // Online validation controls
+                SettingsRow(
+                    title: "Online Validation (48h)",
+                    subtitle: subscription.devOnlineValidationLabel
+                ) {
+                    HStack(spacing: 6) {
+                        Button("Expirar") {
+                            subscription.devExpireOnlineValidation()
+                            devStatusMessage = "Online validation → EXPIRED"
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .foregroundStyle(.orange)
+
+                        Button("Reset") {
+                            subscription.devResetOnlineValidation()
+                            devStatusMessage = "Online validation → OK"
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                    }
+                }
+
+                Divider().padding(.leading, 44)
+
                 // Quick simulation: simulate a pure free account
                 SettingsRow(
                     title: "Simular Free",
-                    subtitle: "Expira trial + Force Free + Transcricoes 0"
+                    subtitle: "Expira trial + Force Free + Modo Texto + PT + Transcricoes 0"
                 ) {
                     Button("Ativar") {
                         trial.devExpireTrial()
                         subscription.activateForceFree()
                         subscription.devSetWhisperUsage(0)
-                        devStatusMessage = "Simulando FREE"
+                        subscription.devResetOnlineValidation()
+                        // Auto-switch to free mode/language
+                        settings.selectedMode = .text
+                        settings.outputLanguage = .portuguese
+                        // Reset trial_expired_shown so launch check can trigger again
+                        UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
+                        devStatusMessage = "Simulando FREE (Texto + PT)"
                     }
                     .buttonStyle(.bordered).controlSize(.small)
                     .foregroundStyle(.orange)
@@ -756,6 +793,29 @@ struct SettingsDetailView: View {
                         }
                         .buttonStyle(.bordered).controlSize(.mini)
                     }
+                }
+
+                Divider().padding(.leading, 44)
+
+                // Quick simulation: simulate trial active
+                SettingsRow(
+                    title: "Simular Trial Ativo",
+                    subtitle: "Inicia trial + desativa Force Free + 0 transcricoes"
+                ) {
+                    Button("Ativar") {
+                        subscription.deactivateForceFree()
+                        subscription.devResetOnlineValidation()
+                        subscription.devSetWhisperUsage(0)
+                        UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
+                        Task {
+                            await trial.startTrial()
+                            await MainActor.run {
+                                devStatusMessage = "Trial ATIVO (7 dias)"
+                            }
+                        }
+                    }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .foregroundStyle(.green)
                 }
 
                 Divider().padding(.leading, 44)

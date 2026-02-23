@@ -9,8 +9,8 @@ class SubscriptionManager: ObservableObject {
     static let proMonthlyCheckoutURL = "https://chk.eduzz.com/39ZQ2OYE9E"
     static let proAnnualCheckoutURL = "https://chk.eduzz.com/Z0B57NQ3WA"
 
-    // Free tier limits (Whisper local — 200 transcriptions/month)
-    static let whisperMonthlyLimit = 200
+    // Free tier limits (Whisper local — 75 transcriptions/month)
+    static let whisperMonthlyLimit = 75
     static let freeModes: [TranscriptionMode] = [.text]
     static let freeLanguages: [SpeechLanguage] = [.portuguese, .english]
 
@@ -185,7 +185,7 @@ class SubscriptionManager: ObservableObject {
         return freeTranscriptionsUsed >= Self.freeMonthlyLimit
     }
 
-    /// Client-side Whisper free limit (200/month).
+    /// Client-side Whisper free limit (75/month).
     /// Re-checks monthly reset on every access to handle month boundaries without restart.
     var hasReachedWhisperLimit: Bool {
         guard !isPro else { return false }
@@ -212,7 +212,7 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Whisper Usage Tracking
 
     /// How often to show a soft upgrade reminder (every N Whisper transcriptions)
-    static let upgradeReminderInterval = 25
+    static let upgradeReminderInterval = 15
 
     func recordWhisperTranscription() {
         verifyWhisperIntegrity()  // Detect tampering before incrementing
@@ -247,6 +247,34 @@ class SubscriptionManager: ObservableObject {
         freeTranscriptionsUsed = count
     }
 
+    // Dev tools: online validation manipulation
+    func devExpireOnlineValidation() {
+        let expired = Date().addingTimeInterval(-(Self.onlineValidationGracePeriod + 3600))  // 49h ago
+        lastOnlineValidation = expired
+        defaults.set(expired, forKey: WhisperKeys.lastOnlineValidation)
+        checkOnlineValidationStatus()
+        print("[DevTools] Online validation expired (set to 49h ago)")
+    }
+
+    func devResetOnlineValidation() {
+        markOnlineValidation()
+        print("[DevTools] Online validation reset to now")
+    }
+
+    /// Human-readable string of last online validation status
+    var devOnlineValidationLabel: String {
+        guard let last = lastOnlineValidation else { return "never" }
+        let elapsed = Date().timeIntervalSince(last)
+        let hours = Int(elapsed / 3600)
+        let mins = Int((elapsed.truncatingRemainder(dividingBy: 3600)) / 60)
+        let remaining = Self.onlineValidationGracePeriod - elapsed
+        if remaining > 0 {
+            return "OK (\(hours)h\(mins)m ago, \(Int(remaining / 3600))h left)"
+        } else {
+            return "EXPIRED (\(hours)h\(mins)m ago)"
+        }
+    }
+
     // MARK: - Dev Tools: Supabase Mutations
 
     /// Changes plan in Supabase profiles table (real server-side change)
@@ -264,7 +292,9 @@ class SubscriptionManager: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("return=minimal", forHTTPHeaderField: "Prefer")
 
-        let body: [String: Any] = ["plan": newPlan]
+        // When setting to pro, also set subscription_status=active so isPro works correctly
+        var body: [String: Any] = ["plan": newPlan]
+        if newPlan == "pro" { body["subscription_status"] = "active" }
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
@@ -272,6 +302,9 @@ class SubscriptionManager: ObservableObject {
             guard let http = response as? HTTPURLResponse else { return false }
             print("[DevTools] PATCH plan=\(newPlan) → \(http.statusCode)")
             if http.statusCode == 204 || http.statusCode == 200 {
+                // Deactivate force free BEFORE fetchProfile so enforceFreeTierDefaults
+                // sees isPro=true and doesn't reset mode/language back to free tier.
+                await MainActor.run { deactivateForceFree() }
                 await fetchProfile()
                 return true
             }
@@ -317,8 +350,18 @@ class SubscriptionManager: ObservableObject {
 
     /// Checks if a new month started and resets Whisper counter if so.
     /// Called on every limit check to handle month boundaries without app restart.
+    /// Clock-manipulation protection: ignores reset if device clock went backward
+    /// relative to the last server-validated timestamp.
     private func checkWhisperMonthlyReset() {
         let now = Date()
+
+        // VUL-02 fix: if device clock is behind the last server validation,
+        // the user likely manipulated the clock → refuse to reset.
+        if let lastValidation = lastOnlineValidation, now < lastValidation {
+            print("[SubscriptionManager] ⚠️ Device clock behind server validation time — ignoring monthly reset")
+            return
+        }
+
         if let resetDate = defaults.object(forKey: WhisperKeys.resetDate) as? Date {
             let calendar = Calendar.current
             if !calendar.isDate(now, equalTo: resetDate, toGranularity: .month) {
@@ -333,15 +376,24 @@ class SubscriptionManager: ObservableObject {
     private func loadWhisperUsage() {
         // Check if we need to reset (new month)
         let now = Date()
+        // VUL-02 fix: load lastOnlineValidation here to protect against clock manipulation on startup
+        let lastValidation = defaults.object(forKey: WhisperKeys.lastOnlineValidation) as? Date
+        let clockSeemsManipulated = lastValidation.map { now < $0 } ?? false
+
         if let resetDate = defaults.object(forKey: WhisperKeys.resetDate) as? Date {
             let calendar = Calendar.current
             if !calendar.isDate(now, equalTo: resetDate, toGranularity: .month) {
-                // New month — reset counter
-                whisperTranscriptionsUsed = 0
-                saveWhisperCount(0)
-                defaults.set(now, forKey: WhisperKeys.resetDate)
-                print("[SubscriptionManager] Whisper counter reset (new month)")
-                return
+                if clockSeemsManipulated {
+                    // Device clock is behind last server check — refuse reset
+                    print("[SubscriptionManager] ⚠️ Clock manipulation detected on load — monthly reset refused")
+                } else {
+                    // New month — reset counter
+                    whisperTranscriptionsUsed = 0
+                    saveWhisperCount(0)
+                    defaults.set(now, forKey: WhisperKeys.resetDate)
+                    print("[SubscriptionManager] Whisper counter reset (new month)")
+                    return
+                }
             }
         } else {
             // First time — set reset date
@@ -396,6 +448,9 @@ class SubscriptionManager: ObservableObject {
 
                     // Mark successful online validation
                     self.markOnlineValidation()
+
+                    // Auto-downgrade mode/language if user is Free (no Pro, no trial)
+                    self.enforceFreeTierDefaults()
                 }
             }
         } catch {
@@ -423,13 +478,24 @@ class SubscriptionManager: ObservableObject {
         }
 
         guard let lastValidation = lastOnlineValidation else {
-            // Never validated — needs online check
-            needsOnlineValidation = true
-            print("[SubscriptionManager] No previous online validation found — requires connection")
+            // First time (migration from older version) — grant grace period.
+            // Mark now as baseline so the 48h clock starts from this moment.
+            markOnlineValidation()
+            needsOnlineValidation = false
+            print("[SubscriptionManager] First online validation — grace period started (48h)")
             return
         }
 
         let elapsed = Date().timeIntervalSince(lastValidation)
+
+        // VUL-03 fix: if device clock went backward (elapsed < 0), the user
+        // manipulated the system clock. Treat as expired to force a server check.
+        if elapsed < 0 {
+            needsOnlineValidation = true
+            print("[SubscriptionManager] ⚠️ Device clock jumped backward — treating online validation as expired")
+            return
+        }
+
         if elapsed > Self.onlineValidationGracePeriod {
             needsOnlineValidation = true
             print("[SubscriptionManager] Online validation expired (\(Int(elapsed / 3600))h ago) — requires connection")
@@ -585,6 +651,33 @@ class SubscriptionManager: ObservableObject {
     }
 
     // MARK: - Private
+
+    /// Auto-downgrade mode/language to free-compatible when user is not Pro and trial is expired.
+    /// Called after every fetchProfile() to ensure the UI reflects the correct tier.
+    private func enforceFreeTierDefaults() {
+        // Skip if user has Pro access or active trial
+        guard !isPro, !TrialManager.shared.isTrialActive() else { return }
+
+        let settings = SettingsManager.shared
+
+        // Switch to Text mode if current mode requires Pro
+        if !Self.freeModes.contains(settings.selectedMode) {
+            print("[SubscriptionManager] Auto-downgrade: mode \(settings.selectedMode.rawValue) → Text")
+            settings.selectedMode = .text
+        }
+
+        // Switch to Portuguese if current language requires Pro
+        if !Self.freeLanguages.contains(settings.outputLanguage) {
+            print("[SubscriptionManager] Auto-downgrade: language \(settings.outputLanguage.rawValue) → Portuguese")
+            settings.outputLanguage = .portuguese
+        }
+
+        // Disable wake word for free users
+        if settings.wakeWordEnabled {
+            print("[SubscriptionManager] Auto-downgrade: wake word disabled")
+            settings.wakeWordEnabled = false
+        }
+    }
 
     private func resetToFree() {
         plan = "free"

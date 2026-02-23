@@ -198,8 +198,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             // Not logged in: show blocking login window first
             showLoginOnboarding()
         } else if !settings.onboardingCompleted {
-            // Logged in but never completed wizard: run wizard
-            showWizard()
+            // Already authenticated (returning user after reinstall) — skip wizard.
+            // onboardingCompleted resets with UserDefaults on fresh install, but if
+            // the user is already logged in they've already been onboarded before.
+            // Wizard is only shown to new users via showLoginOnboarding() callback.
+            settings.onboardingCompleted = true
         }
         // else: normal launch — everything is set up
     }
@@ -308,18 +311,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        // Account info
+        // Account info + plan status indicator
         if AuthManager.shared.isAuthenticated {
             let sub = SubscriptionManager.shared
+            let trial = TrialManager.shared
+            let email = AuthManager.shared.userEmail ?? ""
+
             let planLabel: String
             if sub.isPro {
-                planLabel = "PRO"
-            } else if TrialManager.shared.isTrialActive() {
-                planLabel = "Trial (\(TrialManager.shared.trialDaysRemaining)d)"
+                // Pro: no usage indicator — just the email
+                planLabel = ""
+            } else if trial.isTrialActive() {
+                let days = trial.trialDaysRemaining
+                let used = trial.trialTranscriptionsUsed
+                planLabel = " — Pro Trial: \(days)d (\(used)/50)"
+            } else if sub.hasReachedWhisperLimit {
+                planLabel = " — Grátis: limite atingido"
             } else {
-                planLabel = "Free (\(sub.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit))"
+                planLabel = " — Grátis: \(sub.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit)"
             }
-            let accountItem = NSMenuItem(title: "\(AuthManager.shared.userEmail ?? "") - \(planLabel)", action: nil, keyEquivalent: "")
+
+            let accountItem = NSMenuItem(title: "\(email)\(planLabel)", action: nil, keyEquivalent: "")
             accountItem.isEnabled = false
             menu.addItem(accountItem)
         }
@@ -331,13 +343,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         
         // Modos
+        let isFreeTier = !SubscriptionManager.shared.isPro && !TrialManager.shared.isTrialActive()
         let modesMenu = NSMenu()
         for mode in TranscriptionMode.allCases {
-            let item = NSMenuItem(title: mode.localizedName, action: #selector(selectMode(_:)), keyEquivalent: "")
+            let isProMode = !SubscriptionManager.freeModes.contains(mode)
+            let isLocked = isFreeTier && isProMode
+            let title = isLocked ? "◆ \(mode.localizedName)" : mode.localizedName
+            let action = isLocked ? #selector(showUpgradeForMode(_:)) : #selector(selectMode(_:))
+            let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
             item.target = self
             item.representedObject = mode
             if settings.selectedMode == mode {
                 item.state = .on
+            }
+            if isLocked {
+                // Dim the title to signal it's unavailable
+                let attrs: [NSAttributedString.Key: Any] = [
+                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .font: NSFont.systemFont(ofSize: 13)
+                ]
+                item.attributedTitle = NSAttributedString(string: title, attributes: attrs)
             }
             modesMenu.addItem(item)
         }
@@ -368,15 +393,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         if settings.favoriteLanguages.count > 1 {
             let langMenu = NSMenu()
             for language in settings.favoriteLanguages {
+                let isProLang = !SubscriptionManager.freeLanguages.contains(language)
+                let isLockedLang = isFreeTier && isProLang
+                let langTitle = isLockedLang ? "🔒 \(language.displayWithFlag)" : language.displayWithFlag
+                let langAction = isLockedLang ? #selector(showUpgradeForLanguage(_:)) : #selector(selectLanguage(_:))
                 let item = NSMenuItem(
-                    title: language.displayWithFlag,
-                    action: #selector(selectLanguage(_:)),
+                    title: langTitle,
+                    action: langAction,
                     keyEquivalent: ""
                 )
                 item.target = self
                 item.representedObject = language
                 if settings.outputLanguage == language {
                     item.state = .on
+                }
+                if isLockedLang {
+                    let attrs: [NSAttributedString.Key: Any] = [
+                        .foregroundColor: NSColor.secondaryLabelColor,
+                        .font: NSFont.systemFont(ofSize: 13)
+                    ]
+                    item.attributedTitle = NSAttributedString(string: langTitle, attributes: attrs)
                 }
                 langMenu.addItem(item)
             }
@@ -444,8 +480,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         menu.addItem(NSMenuItem.separator())
 
-        // Offline toggle (Pro only)
-        if SubscriptionManager.shared.isPro {
+        // Offline toggle: show when Pro, dev mode, OR when offline is already active
+        // (must always be able to turn it OFF regardless of plan state)
+        if SubscriptionManager.shared.isPro || SubscriptionManager.shared.devModeActive || settings.offlineMode {
             let offlineToggle = NSMenuItem(
                 title: settings.offlineMode ? "✈️ Modo Offline (ativo)" : "Modo Offline",
                 action: #selector(toggleOfflineMode),
@@ -481,15 +518,77 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     
     @objc func selectMode(_ sender: NSMenuItem) {
         guard let mode = sender.representedObject as? TranscriptionMode else { return }
+        let isFreeTier = !SubscriptionManager.shared.isPro && !TrialManager.shared.isTrialActive()
+        if isFreeTier && !SubscriptionManager.freeModes.contains(mode) {
+            showContextualUpgrade(context: .mode(mode))
+            return
+        }
         settings.selectedMode = mode
         viewModel?.updateMode(mode)
         updateMenu()
     }
+
+    @objc func showUpgradeForMode(_ sender: NSMenuItem) {
+        guard let mode = sender.representedObject as? TranscriptionMode else { return }
+        showContextualUpgrade(context: .mode(mode))
+    }
+
+    @objc func showUpgradeForLanguage(_ sender: NSMenuItem) {
+        guard let language = sender.representedObject as? SpeechLanguage else { return }
+        showContextualUpgrade(context: .language(language))
+    }
     
     @objc func selectLanguage(_ sender: NSMenuItem) {
         guard let language = sender.representedObject as? SpeechLanguage else { return }
+        let isFreeTier = !SubscriptionManager.shared.isPro && !TrialManager.shared.isTrialActive()
+        if isFreeTier && !SubscriptionManager.freeLanguages.contains(language) {
+            showContextualUpgrade(context: .language(language))
+            return
+        }
         settings.outputLanguage = language
         updateMenu()
+    }
+
+    // MARK: - Contextual Upgrade Window
+
+    /// Shows a floating upgrade modal for a specific Pro feature
+    func showContextualUpgrade(context: UpgradeContext) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+
+            // Reuse existing window if present
+            self.upgradeWindow?.close()
+            self.upgradeWindow = nil
+
+            var isPresented = true
+            let binding = Binding(get: { isPresented }, set: { val in
+                isPresented = val
+                if !val {
+                    self.upgradeWindow?.close()
+                    self.upgradeWindow = nil
+                }
+            })
+
+            let upgradeView = UpgradeModalView(isPresented: binding, context: context)
+            let hostingView = NSHostingView(rootView: upgradeView)
+
+            let window = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
+                styleMask: [.titled, .closable, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            window.contentView = hostingView
+            window.title = "Upgrade para Pro"
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.center()
+            window.level = .screenSaver
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            self.upgradeWindow = window
+        }
     }
 
     @objc func toggleOfflineMode() {
@@ -500,6 +599,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 settings.selectedMode = .text
                 viewModel?.updateMode(.text)
             }
+            // Immediately validate subscription when offline mode is enabled.
+            // If internet is available, this catches any expiry before the first offline recording.
+            Task { await SubscriptionManager.shared.fetchProfile() }
         }
         updateMenu()
     }
@@ -1544,42 +1646,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var upgradeWindow: NSWindow?
 
     @objc func handleShowUpgradePrompt() {
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-
-            // Close existing if any
-            self.upgradeWindow?.close()
-            self.upgradeWindow = nil
-
-            var isPresented = true
-            let binding = Binding(get: { isPresented }, set: { val in
-                isPresented = val
-                if !val {
-                    self.upgradeWindow?.close()
-                    self.upgradeWindow = nil
-                }
-            })
-
-            let upgradeView = UpgradeModalView(isPresented: binding)
-            let hostingView = NSHostingView(rootView: upgradeView)
-
-            let window = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 520),
-                styleMask: [.titled, .closable, .nonactivatingPanel],
-                backing: .buffered,
-                defer: false
-            )
-            window.contentView = hostingView
-            window.title = "Upgrade para Pro"
-            window.isReleasedWhenClosed = false
-            window.hidesOnDeactivate = false
-            window.center()
-            window.level = .screenSaver
-            window.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-
-            self.upgradeWindow = window
-        }
+        showContextualUpgrade(context: .generic)
     }
 
     var welcomeTrialWindow: NSWindow?
