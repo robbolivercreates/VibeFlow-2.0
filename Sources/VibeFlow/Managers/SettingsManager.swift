@@ -401,4 +401,6 @@ extension Notification.Name {
     static let showTrialExpired = Notification.Name("showTrialExpired")
     static let showMonthlyLimit = Notification.Name("showMonthlyLimit")
     static let showUpgradeReminder = Notification.Name("showUpgradeReminder")
+    static let subscriptionChanged = Notification.Name("subscriptionChanged")
+    static let wakeWordProLocked = Notification.Name("wakeWordProLocked")
 }

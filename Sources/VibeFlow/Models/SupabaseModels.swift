@@ -68,12 +68,14 @@ struct UserProfile: Codable {
     let subscriptionStatus: String?
     let freeTranscriptionsUsed: Int
     let freeTranscriptionsResetAt: String?
+    let expiresAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id, email, plan
         case subscriptionStatus = "subscription_status"
         case freeTranscriptionsUsed = "free_transcriptions_used"
         case freeTranscriptionsResetAt = "free_transcriptions_reset_at"
+        case expiresAt = "expires_at"
     }
 
     var isPro: Bool { plan == "pro" && subscriptionStatus == "active" }

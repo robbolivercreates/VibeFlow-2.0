@@ -551,92 +551,132 @@ struct SettingsDetailView: View {
     private var developerSection: some View {
         SettingsSection(title: "Developer Tools", icon: "hammer.fill") {
             VStack(spacing: 0) {
-                // Current state overview
+
+                // MARK: Status
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Text("STATUS")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text(subscription.isPro ? "PRO" : "FREE")
+                        Text(subscription.isPro ? "PRO" : (trial.isTrialActive() ? "TRIAL" : "FREE"))
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(subscription.isPro ? VoxTheme.accent : .orange)
+                            .foregroundStyle(subscription.isPro ? VoxTheme.accent : (trial.isTrialActive() ? .green : .orange))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 2)
                             .background(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .fill(subscription.isPro ? VoxTheme.accent.opacity(0.15) : Color.orange.opacity(0.15))
+                                    .fill(subscription.isPro ? VoxTheme.accent.opacity(0.15) : (trial.isTrialActive() ? Color.green.opacity(0.15) : Color.orange.opacity(0.15)))
                             )
                     }
-
-                    Group {
-                        devInfoRow("Plan (DB)", subscription.plan)
-                        devInfoRow("Sub Status", subscription.subscriptionStatus ?? "nil")
-                        devInfoRow("DevMode", subscription.devModeActive ? "ON" : "OFF")
-                        devInfoRow("Force Free", subscription.forceFreeMode ? "ON" : "OFF")
-                        devInfoRow("isPro (efetivo)", subscription.isPro ? "YES" : "NO")
-                        devInfoRow("isVoxActive", settings.isVoxActive ? "YES" : "NO")
-                        devInfoRow("Offline", settings.offlineMode ? "ON" : "OFF")
-                        devInfoRow("Trial", trialStateLabel)
-                        devInfoRow("Online Valid.", subscription.devOnlineValidationLabel)
-                        devInfoRow("Needs Online", subscription.needsOnlineValidation ? "YES ⚠️" : "NO ✓")
-                        devInfoRow("Auth", AuthManager.shared.isAuthenticated ? (AuthManager.shared.userEmail ?? "yes") : "NO")
-                        devInfoRow("Offline engine", WhisperEngine.shared.isReady ? "YES" : "NO")
-                        devInfoRow("Mode", "\(settings.selectedMode.rawValue)")
-                        devInfoRow("Language", "\(settings.outputLanguage.displayName)")
-                    }
+                    devInfoRow("isPro (efetivo)", subscription.isPro ? "YES" : "NO")
+                    devInfoRow("Trial", trialStateLabel)
+                    devInfoRow("Online Valid.", subscription.needsOnlineValidation ? "EXPIRADO ⚠️" : subscription.devOnlineValidationLabel)
+                    devInfoRow("Auth", AuthManager.shared.userEmail ?? "não autenticado")
+                    devInfoRow("Offline engine", WhisperEngine.shared.isReady ? "pronto ✓" : "não carregado")
+                    devInfoRow("Free tx usadas", "\(subscription.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit)")
+                    devInfoRow("Trial tx usadas", "\(trial.trialTranscriptionsUsed)/\(TrialManager.trialTranscriptionLimit)")
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
 
                 Divider().padding(.leading, 16)
 
-                // Plan toggle — changes REAL Supabase data
+                // MARK: Novo Usuário — simula primeiro acesso completo
                 SettingsRow(
-                    title: "Plano (Supabase)",
-                    subtitle: subscription.forceFreeMode
-                        ? "Force Free local ativo"
-                        : "Plano real: \(subscription.plan) | isPro: \(subscription.isPro ? "YES" : "NO")"
+                    title: "Novo usuário",
+                    subtitle: "Wizard + trial auto-inicia + HUD boas-vindas (1.5s)"
                 ) {
-                    HStack(spacing: 6) {
-                        Button("Free (DB)") {
-                            devLoading = true
+                    Button("Simular") {
+                        // Reset tudo para estado de dispositivo novo
+                        subscription.deactivateDevGrantPro()
+                        subscription.deactivateForceFree()
+                        subscription.devSetWhisperUsage(0)
+                        subscription.devResetOnlineValidation()
+                        settings.selectedMode = .text
+                        settings.outputLanguage = .portuguese
+                        UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
+                        // Reset wizard para abrir novamente
+                        settings.onboardingCompleted = false
+                        Task {
+                            // Reset trial para .unknown (novo dispositivo)
+                            trial.devResetTrial()
+                            // Abre wizard
+                            await MainActor.run {
+                                NotificationCenter.default.post(name: .openSetupWizard, object: nil)
+                            }
+                            // autoStartTrialIfEligible: inicia trial + posta showWelcomeTrial após 1.5s
+                            await trial.autoStartTrialIfEligible()
+                            await MainActor.run { devStatusMessage = "→ NOVO USUÁRIO (wizard + trial)" }
+                        }
+                    }
+                    .buttonStyle(.borderedProminent).controlSize(.small)
+                    .tint(.purple)
+                }
+
+                Divider().padding(.leading, 44)
+
+                // MARK: Cenários (3 modos principais — sincroniza com Supabase)
+                SettingsRow(
+                    title: "Simular cenário",
+                    subtitle: "Altera o estado no servidor (Supabase)"
+                ) {
+                    HStack(spacing: 8) {
+                        // FREE — PATCH server: plan=free, status=inactive + expira trial
+                        Button("Free") {
+                            devStatusMessage = "Sincronizando..."
                             Task {
+                                trial.devExpireTrial()
                                 let ok = await subscription.devSetPlanOnSupabase("free")
-                                subscription.deactivateForceFree()
+                                subscription.devSetWhisperUsage(0)
+                                let _ = await subscription.devSetFreeUsageOnSupabase(0)
                                 await MainActor.run {
-                                    devLoading = false
-                                    devStatusMessage = ok ? "plan → free" : "ERRO"
+                                    subscription.devResetOnlineValidation()
+                                    settings.selectedMode = .text
+                                    settings.outputLanguage = .portuguese
+                                    UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
+                                    devStatusMessage = ok ? "→ FREE (server ✓)" : "→ FREE (local only ⚠️)"
                                 }
                             }
                         }
                         .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(devLoading)
+                        .foregroundStyle(.orange)
 
-                        Button("Pro (DB)") {
-                            devLoading = true
+                        // TRIAL — PATCH server: plan=free + inicia trial (registra device no server)
+                        Button("Trial") {
+                            devStatusMessage = "Sincronizando..."
                             Task {
-                                // deactivateForceFree() is called inside devSetPlanOnSupabase("pro")
-                                // BEFORE fetchProfile(), so enforceFreeTierDefaults sees isPro=true
-                                let ok = await subscription.devSetPlanOnSupabase("pro")
+                                // 1. Reset + start trial FIRST (so isTrialActive()=true before fetchProfile)
+                                trial.devResetTrial()
+                                await trial.startTrial()
+                                // 2. Now PATCH server (fetchProfile inside will see trial active → won't disable wake word)
+                                let ok = await subscription.devSetPlanOnSupabase("free")
+                                subscription.devSetWhisperUsage(0)
+                                let _ = await subscription.devSetFreeUsageOnSupabase(0)
                                 await MainActor.run {
-                                    devLoading = false
-                                    devStatusMessage = ok ? "plan → pro" : "ERRO"
+                                    subscription.devResetOnlineValidation()
+                                    settings.wakeWordEnabled = true  // Re-enable wake word for trial
+                                    UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
+                                    devStatusMessage = ok ? "→ TRIAL (server ✓)" : "→ TRIAL (local only ⚠️)"
+                                }
+                            }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+                        .foregroundStyle(.green)
+
+                        // PRO — PATCH server: plan=pro, status=active, expires_at=+30d
+                        Button("Pro") {
+                            devStatusMessage = "Sincronizando..."
+                            Task {
+                                let ok = await subscription.devSetPlanOnSupabase("pro", expiresInDays: 30)
+                                await MainActor.run {
+                                    subscription.devResetOnlineValidation()
+                                    settings.wakeWordEnabled = true  // Enable wake word for Pro
+                                    devStatusMessage = ok ? "→ PRO (server ✓)" : "→ PRO (local only ⚠️)"
                                 }
                             }
                         }
                         .buttonStyle(.borderedProminent).controlSize(.small)
-                        .disabled(devLoading)
-
-                        Button(subscription.forceFreeMode ? "Local ON" : "Local") {
-                            if subscription.forceFreeMode {
-                                subscription.deactivateForceFree()
-                            } else {
-                                subscription.activateForceFree()
-                            }
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .foregroundStyle(subscription.forceFreeMode ? .orange : .primary)
                     }
                 }
 
@@ -647,229 +687,99 @@ struct SettingsDetailView: View {
                         Text(devStatusMessage)
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(devStatusMessage.contains("ERRO") ? .red : .green)
-                            .padding(.trailing, 16)
-                            .padding(.bottom, 4)
                     }
-                }
-
-                if devLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                            .scaleEffect(0.6)
-                            .padding(.trailing, 16)
-                            .padding(.bottom, 4)
-                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 6)
                 }
 
                 Divider().padding(.leading, 44)
 
-                // Wizard reset
+                // MARK: Testar Modais
                 SettingsRow(
-                    title: "Wizard / Onboarding",
-                    subtitle: "Reseta onboarding e abre o wizard novamente"
-                ) {
-                    Button("Abrir Wizard") {
-                        NotificationCenter.default.post(name: .openSetupWizard, object: nil)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.small)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Free tier usage counter
-                SettingsRow(
-                    title: "Transcricoes (free)",
-                    subtitle: "\(subscription.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit) usados"
+                    title: "Testar modais",
+                    subtitle: "Abre as telas de aviso do fluxo"
                 ) {
                     HStack(spacing: 6) {
-                        Button("0") { subscription.devSetWhisperUsage(0) }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                        Button("50") { subscription.devSetWhisperUsage(50) }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                        Button("199") { subscription.devSetWhisperUsage(199) }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                        Button("200") { subscription.devSetWhisperUsage(200) }
-                            .buttonStyle(.bordered).controlSize(.mini)
+                        Button("Welcome") {
+                            NotificationCenter.default.post(name: .showWelcomeTrial, object: nil)
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                        Button("Expired") {
+                            NotificationCenter.default.post(name: .showTrialExpired, object: nil)
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                        Button("Locked") {
+                            NotificationCenter.default.post(name: .showMonthlyLimit, object: nil)
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
+                        Button("Reminder") {
+                            NotificationCenter.default.post(name: .showUpgradeReminder, object: nil)
+                        }
+                        .buttonStyle(.bordered).controlSize(.mini)
                     }
                 }
 
                 Divider().padding(.leading, 44)
 
-                // Trial controls
+                // MARK: Free tx (local + Supabase)
                 SettingsRow(
-                    title: "Trial",
-                    subtitle: trialStateLabel
+                    title: "Free tx (local + server)",
+                    subtitle: "Seta \(subscription.whisperTranscriptionsUsed)/\(SubscriptionManager.whisperMonthlyLimit) — sincroniza com Supabase"
                 ) {
                     HStack(spacing: 6) {
-                        Button("Start") {
-                            Task { await trial.startTrial() }
+                        ForEach([0, 50, 74, 75], id: \.self) { count in
+                            Button("\(count)") {
+                                subscription.devSetWhisperUsage(count)
+                                Task {
+                                    let ok = await subscription.devSetFreeUsageOnSupabase(count)
+                                    await MainActor.run {
+                                        devStatusMessage = ok ? "→ Free tx: \(count)/75 ✓ server" : "→ Free tx: \(count) (local only)"
+                                    }
+                                }
+                            }
+                            .buttonStyle(.bordered).controlSize(.mini)
+                            .foregroundStyle(count == 75 ? VoxTheme.danger : count == 74 ? .orange : .primary)
                         }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .disabled(trial.isTrialActive())
-
-                        Button("Expire") {
-                            trial.devExpireTrial()
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .foregroundStyle(.orange)
-
-                        Button("Reset") {
-                            trial.devResetTrial()
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .foregroundStyle(.red)
                     }
                 }
 
-                Divider().padding(.leading, 44)
-
-                // Online validation controls
+                // MARK: Trial tx (local apenas — não sincroniza com Supabase)
                 SettingsRow(
-                    title: "Online Validation (48h)",
-                    subtitle: subscription.devOnlineValidationLabel
-                ) {
-                    HStack(spacing: 6) {
-                        Button("Expirar") {
-                            subscription.devExpireOnlineValidation()
-                            devStatusMessage = "Online validation → EXPIRED"
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                        .foregroundStyle(.orange)
-
-                        Button("Reset") {
-                            subscription.devResetOnlineValidation()
-                            devStatusMessage = "Online validation → OK"
-                        }
-                        .buttonStyle(.bordered).controlSize(.small)
-                    }
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Quick simulation: simulate a pure free account
-                SettingsRow(
-                    title: "Simular Free",
-                    subtitle: "Expira trial + Force Free + Modo Texto + PT + Transcricoes 0"
-                ) {
-                    Button("Ativar") {
-                        trial.devExpireTrial()
-                        subscription.activateForceFree()
-                        subscription.devSetWhisperUsage(0)
-                        subscription.devResetOnlineValidation()
-                        // Auto-switch to free mode/language
-                        settings.selectedMode = .text
-                        settings.outputLanguage = .portuguese
-                        // Reset trial_expired_shown so launch check can trigger again
-                        UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
-                        devStatusMessage = "Simulando FREE (Texto + PT)"
-                    }
-                    .buttonStyle(.bordered).controlSize(.small)
-                    .foregroundStyle(.orange)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Trial transcription counter
-                SettingsRow(
-                    title: "Trial Transcricoes",
+                    title: "Trial tx (local)",
                     subtitle: "\(trial.trialTranscriptionsUsed)/\(TrialManager.trialTranscriptionLimit) usadas"
                 ) {
                     HStack(spacing: 6) {
-                        Button("0") {
-                            trial.trialTranscriptionsUsed = 0
-                            UserDefaults.standard.set(0, forKey: "trial_transcriptions_used")
-                        }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                        Button("49") {
-                            trial.trialTranscriptionsUsed = 49
-                            UserDefaults.standard.set(49, forKey: "trial_transcriptions_used")
-                        }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                        Button("50") {
-                            trial.trialTranscriptionsUsed = 50
-                            UserDefaults.standard.set(50, forKey: "trial_transcriptions_used")
-                        }
-                        .buttonStyle(.bordered).controlSize(.mini)
-                    }
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Quick simulation: simulate trial active
-                SettingsRow(
-                    title: "Simular Trial Ativo",
-                    subtitle: "Inicia trial + desativa Force Free + 0 transcricoes"
-                ) {
-                    Button("Ativar") {
-                        subscription.deactivateForceFree()
-                        subscription.devResetOnlineValidation()
-                        subscription.devSetWhisperUsage(0)
-                        UserDefaults.standard.removeObject(forKey: "trial_expired_shown")
-                        Task {
-                            await trial.startTrial()
-                            await MainActor.run {
-                                devStatusMessage = "Trial ATIVO (7 dias)"
-                            }
-                        }
-                    }
-                    .buttonStyle(.bordered).controlSize(.small)
-                    .foregroundStyle(.green)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Test notification modals
-                SettingsRow(
-                    title: "Testar Modais",
-                    subtitle: "Abre as telas de aviso do fluxo"
-                ) {
-                    VStack(spacing: 4) {
-                        HStack(spacing: 6) {
-                            Button("Welcome") {
-                                NotificationCenter.default.post(name: .showWelcomeTrial, object: nil)
+                        ForEach([0, 49, 50], id: \.self) { count in
+                            Button("\(count)") {
+                                trial.trialTranscriptionsUsed = count
+                                UserDefaults.standard.set(count, forKey: "trial_transcriptions_used")
+                                devStatusMessage = "→ Trial tx: \(count)/50"
                             }
                             .buttonStyle(.bordered).controlSize(.mini)
-                            Button("Expired") {
-                                NotificationCenter.default.post(name: .showTrialExpired, object: nil)
-                            }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                            Button("Locked") {
-                                NotificationCenter.default.post(name: .showMonthlyLimit, object: nil)
-                            }
-                            .buttonStyle(.bordered).controlSize(.mini)
-                        }
-                        HStack(spacing: 6) {
-                            Button("Reminder") {
-                                NotificationCenter.default.post(name: .showUpgradeReminder, object: nil)
-                            }
-                            .buttonStyle(.bordered).controlSize(.mini)
+                            .foregroundStyle(count == 50 ? VoxTheme.danger : count == 49 ? .orange : .primary)
                         }
                     }
                 }
 
                 Divider().padding(.leading, 44)
 
-                // Offline mode quick toggle
+                // MARK: Utilitários
                 SettingsRow(
-                    title: "Modo Offline",
-                    subtitle: settings.offlineMode ? "Motor local ativo" : "Vox AI na nuvem"
-                ) {
-                    Toggle("", isOn: $settings.offlineMode)
-                        .toggleStyle(.switch)
-                        .labelsHidden()
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Clear history
-                SettingsRow(
-                    title: "Historico",
-                    subtitle: "\(HistoryManager.shared.items.count) itens"
+                    title: "Utilitários",
+                    subtitle: "Ações avulsas"
                 ) {
                     HStack(spacing: 6) {
-                        Button("Limpar") {
+                        Button("Wizard") {
+                            NotificationCenter.default.post(name: .openSetupWizard, object: nil)
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+
+                        Button("Refresh") {
+                            Task { await subscription.fetchProfile() }
+                        }
+                        .buttonStyle(.bordered).controlSize(.small)
+
+                        Button("Limpar hist.") {
                             HistoryManager.shared.clear()
                         }
                         .buttonStyle(.bordered).controlSize(.small)
@@ -879,23 +789,10 @@ struct SettingsDetailView: View {
 
                 Divider().padding(.leading, 44)
 
-                // Force refresh profile
-                SettingsRow(
-                    title: "Perfil Supabase",
-                    subtitle: "Recarrega plano e contadores do servidor"
-                ) {
-                    Button("Refresh") {
-                        Task { await subscription.fetchProfile() }
-                    }
-                    .buttonStyle(.bordered).controlSize(.small)
-                }
-
-                Divider().padding(.leading, 44)
-
-                // Deactivate dev mode
+                // MARK: Sair
                 SettingsRow(
                     title: "Sair do Dev Mode",
-                    subtitle: "Remove esta seção e desativa override Pro"
+                    subtitle: "Remove esta seção e desativa overrides"
                 ) {
                     Button("Desativar") {
                         subscription.deactivateDevMode()

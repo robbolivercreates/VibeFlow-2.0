@@ -172,6 +172,9 @@ class TrialManager: ObservableObject {
         trialTranscriptionsUsed += 1
         saveTrialCount(trialTranscriptionsUsed)  // Persists counter + hash atomically
         updateTrialState()  // Re-evaluate so isTrialActive() reflects limit
+
+        // Update menu bar counter in real time
+        NotificationCenter.default.post(name: .subscriptionChanged, object: nil)
     }
 
     /// Whether trial has hit the transcription limit

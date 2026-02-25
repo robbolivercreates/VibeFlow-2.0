@@ -41,24 +41,41 @@ class SubscriptionManager: ObservableObject {
     // Force Free: dev override that makes isPro return false regardless of actual plan
     @Published private(set) var forceFreeMode: Bool = false
 
+    // Dev Pro grant: explicitly grants Pro in dev mode (separate from devModeActive)
+    // This allows Trial simulation to work: devModeActive=true (show tools) but devGrantPro=false (real plan check)
+    @Published private(set) var devGrantPro: Bool = false
+
     func activateDevMode() {
         devModeActive = true
         forceFreeMode = false
+        devGrantPro = false  // default: don't auto-grant Pro, use real plan
         // NOT persisted — session only
     }
 
     func deactivateDevMode() {
         devModeActive = false
         forceFreeMode = false
+        devGrantPro = false
     }
 
     func activateForceFree() {
         forceFreeMode = true
+        devGrantPro = false
         devModeActive = true // keep dev tools visible
     }
 
     func deactivateForceFree() {
         forceFreeMode = false
+    }
+
+    func activateDevGrantPro() {
+        devGrantPro = true
+        forceFreeMode = false
+        devModeActive = true // keep dev tools visible
+    }
+
+    func deactivateDevGrantPro() {
+        devGrantPro = false
     }
 
     private let defaults = UserDefaults.standard
@@ -204,7 +221,7 @@ class SubscriptionManager: ObservableObject {
 
     var isPro: Bool {
         if forceFreeMode { return false }
-        if devModeActive { return true }
+        if devGrantPro { return true }
         // Must have plan=pro AND active subscription status
         return plan == "pro" && subscriptionStatus == "active"
     }
@@ -218,6 +235,9 @@ class SubscriptionManager: ObservableObject {
         verifyWhisperIntegrity()  // Detect tampering before incrementing
         whisperTranscriptionsUsed += 1
         saveWhisperCount(whisperTranscriptionsUsed)
+
+        // Update menu bar counter in real time
+        NotificationCenter.default.post(name: .subscriptionChanged, object: nil)
 
         // Background sync to server (best-effort, non-blocking)
         Task {
@@ -278,7 +298,7 @@ class SubscriptionManager: ObservableObject {
     // MARK: - Dev Tools: Supabase Mutations
 
     /// Changes plan in Supabase profiles table (real server-side change)
-    func devSetPlanOnSupabase(_ newPlan: String) async -> Bool {
+    func devSetPlanOnSupabase(_ newPlan: String, expiresInDays: Int? = nil) async -> Bool {
         guard let token = AuthManager.shared.accessToken,
               let userId = AuthManager.shared.userId else { return false }
 
@@ -292,9 +312,16 @@ class SubscriptionManager: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("return=minimal", forHTTPHeaderField: "Prefer")
 
-        // When setting to pro, also set subscription_status=active so isPro works correctly
         var body: [String: Any] = ["plan": newPlan]
-        if newPlan == "pro" { body["subscription_status"] = "active" }
+        if newPlan == "pro" {
+            body["subscription_status"] = "active"
+            if let days = expiresInDays {
+                let formatter = ISO8601DateFormatter()
+                body["expires_at"] = formatter.string(from: Date().addingTimeInterval(Double(days) * 86400))
+            }
+        } else {
+            body["subscription_status"] = "inactive"
+        }
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         do {
@@ -302,9 +329,11 @@ class SubscriptionManager: ObservableObject {
             guard let http = response as? HTTPURLResponse else { return false }
             print("[DevTools] PATCH plan=\(newPlan) → \(http.statusCode)")
             if http.statusCode == 204 || http.statusCode == 200 {
-                // Deactivate force free BEFORE fetchProfile so enforceFreeTierDefaults
-                // sees isPro=true and doesn't reset mode/language back to free tier.
-                await MainActor.run { deactivateForceFree() }
+                // Deactivate session overrides so isPro uses real server state
+                await MainActor.run {
+                    deactivateForceFree()
+                    deactivateDevGrantPro()
+                }
                 await fetchProfile()
                 return true
             }
@@ -451,6 +480,9 @@ class SubscriptionManager: ObservableObject {
 
                     // Auto-downgrade mode/language if user is Free (no Pro, no trial)
                     self.enforceFreeTierDefaults()
+
+                    // Notify UI (menu bar, views) that subscription state changed
+                    NotificationCenter.default.post(name: .subscriptionChanged, object: nil)
                 }
             }
         } catch {

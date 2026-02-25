@@ -69,11 +69,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             button.target = self
         }
         
-        // Hide dock icon: switch to .accessory AFTER status item is created
-        // (creating status item in .regular ensures it appears on-screen correctly)
-        DispatchQueue.main.async {
-            NSApp.setActivationPolicy(.accessory)
-        }
+        // Keep .regular activation policy — shows icon in Dock and Force Quit (Cmd+Opt+Esc)
+        // Status item was already created in .regular mode above.
         
         // Criar view model
         let viewModel = VoxAiGoViewModel()
@@ -1543,6 +1540,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .offlineModeChanged,
             object: nil
         )
+
+        // Atualizar menu quando subscription/plan muda (dev tools, compra, webhook)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(updateMenu),
+            name: .subscriptionChanged,
+            object: nil
+        )
+
+        // Mostrar upgrade modal quando usuário free tenta usar wake word
+        NotificationCenter.default.addObserver(
+            forName: .wakeWordProLocked,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.showContextualUpgrade(context: .wakeWord)
+        }
 
         // Handle wake word commands (mode or language switch via voice)
         NotificationCenter.default.addObserver(

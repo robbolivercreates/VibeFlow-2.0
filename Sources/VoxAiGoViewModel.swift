@@ -551,6 +551,19 @@ class VoxAiGoViewModel: ObservableObject {
                         return
                     }
                     print("[DEBUG] Not a wake word → proceeding to paste")
+                } else if self.settings.wakeWordEnabled {
+                    // ── Free user tried wake word → show Pro upgrade ──
+                    let wakeBase = self.settings.wakeWord.lowercased()
+                    let textLower = finalText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                    let wakeVariants = wakeBase == "hey vox"
+                        ? [wakeBase, "ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
+                        : [wakeBase]
+                    if wakeVariants.contains(where: { textLower.hasPrefix($0) }) {
+                        print("[WakeWord] Free user attempted wake word → showing Pro upgrade")
+                        NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+                        NotificationCenter.default.post(name: .wakeWordProLocked, object: nil)
+                        return
+                    }
                 }
                 // ───────────────────────────────────────────────────────────────
 
