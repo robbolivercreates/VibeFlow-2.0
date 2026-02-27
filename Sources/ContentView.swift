@@ -257,27 +257,46 @@ struct ModernVoiceOverlay: View {
 
     private var idleContent: some View {
         HStack(spacing: 6) {
-            Text("Segure")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(VoiceColors.textSecondary)
+            if viewModel.statusText == L10n.pasted {
+                // Show success state briefly after paste (prevents "Segure" flash)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.green)
+                Text(L10n.pasted)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.green)
+            } else if let error = viewModel.error, !error.isEmpty {
+                // Show error state
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.orange)
+                Text(error)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.orange)
+                    .lineLimit(1)
+            } else {
+                Text("Segure")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(VoiceColors.textSecondary)
 
-            // Keyboard shortcut badge
-            HStack(spacing: 2) {
-                Text("⌥")
-                Text("⌘")
+                // Keyboard shortcut badge
+                HStack(spacing: 2) {
+                    Text("⌥")
+                    Text("⌘")
+                }
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundColor(VoiceColors.textPrimary)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                        )
+                )
             }
-            .font(.system(size: 11, weight: .medium, design: .rounded))
-            .foregroundColor(VoiceColors.textPrimary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color.white.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
-            )
         }
     }
 

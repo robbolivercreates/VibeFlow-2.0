@@ -26,5 +26,8 @@ xcuserdata/
 # Logs
 *.log
 
+# Whisper model files (~484MB, downloaded separately)
+Models/
+
 # Package resolved (optional - some prefer to commit this)
 # Package.resolved
