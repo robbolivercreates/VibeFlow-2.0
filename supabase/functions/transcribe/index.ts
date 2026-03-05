@@ -2,31 +2,36 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.ts";
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
+// ── Dual-Model Strategy ──────────────────────────────────────────────────
+// Fast (stable): simple formatting, translation, extraction — thinking OFF
+// Smart (preview): creative writing, code, UX design — thinking ON
+const GEMINI_MODEL_FAST = "gemini-2.5-flash-lite";
+const GEMINI_MODEL_SMART = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Per-mode thinking levels (null = omit thinkingConfig entirely, uses model default)
-const THINKING_LEVELS: Record<string, string | null> = {
-  text: null,
-  chat: null,
-  social: null,
-  x_tweet: null,
-  email: null,
-  formal: null,
-  translation: null,
-  summary: null,
-  topics: null,
-  meeting: null,
+// Modes that need reasoning → use Smart model
+const SMART_MODES = ["creative", "ux_design", "code", "vibe_coder"];
+
+// Smart model thinking levels (only used for 3.1 modes)
+const SMART_THINKING: Record<string, string> = {
   creative: "medium",
   ux_design: "medium",
   code: "high",
   vibe_coder: "high",
-  custom: null,
 };
 
-function getThinkingConfig(mode: string): Record<string, any> | undefined {
-  const level = THINKING_LEVELS[mode] ?? null;
-  if (!level) return undefined; // omit = model default (minimal for Flash-Lite)
+function getModelForMode(mode: string): string {
+  return SMART_MODES.includes(mode) ? GEMINI_MODEL_SMART : GEMINI_MODEL_FAST;
+}
+
+function getThinkingConfig(mode: string, model: string): Record<string, any> | undefined {
+  if (model === GEMINI_MODEL_FAST) {
+    // 2.5 uses thinkingBudget — 0 = completely OFF
+    return { thinkingConfig: { thinkingBudget: 0 } };
+  }
+  // 3.1 uses thinkingLevel
+  const level = SMART_THINKING[mode];
+  if (!level) return undefined;
   return { thinkingConfig: { thinkingLevel: level } };
 }
 
@@ -149,7 +154,7 @@ Deno.serve(async (req) => {
     // 5. Mode gating (instant, no I/O)
     const normalizedMode = (mode || "text").toLowerCase();
 
-    console.log(`[PERF] auth+parse=${(t1 - t0).toFixed(0)}ms usage=${(t2 - t1).toFixed(0)}ms plan=${effectivePlan} mode=${normalizedMode}`);
+    console.log(`[PERF] auth+parse=${(t1 - t0).toFixed(0)}ms usage=${(t2 - t1).toFixed(0)}ms plan=${effectivePlan} mode=${normalizedMode} model=${getModelForMode(normalizedMode).replace('gemini-','')}`);
 
     // 6. Call Gemini API
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -166,6 +171,7 @@ Deno.serve(async (req) => {
       // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
       if (systemPrompt && !targetLanguage) {
         const modeKey = (mode || "text").toLowerCase();
+        const modeModel = getModelForMode(modeKey);
         const enhancedPrompt = ANTI_CHATBOT_RULE + "\n" + systemPrompt;
         const transformBody: Record<string, any> = {
           system_instruction: {
@@ -175,14 +181,14 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: temperature ?? 0.3,
             maxOutputTokens: maxOutputTokens ?? 2048,
-            ...getThinkingConfig(modeKey),
+            ...getThinkingConfig(modeKey, modeModel),
           },
         };
         if (GROUNDING_MODES.includes(modeKey)) {
           transformBody.tools = [{ google_search: {} }];
         }
 
-        const transformUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+        const transformUrl = `${GEMINI_BASE_URL}/${modeModel}:generateContent?key=${geminiKey}`;
         const transformResponse = await fetch(transformUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -224,7 +230,7 @@ Deno.serve(async (req) => {
         generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
       };
 
-      const textGeminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+      const textGeminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL_FAST}:generateContent?key=${geminiKey}`;
       const textGeminiResponse = await fetch(textGeminiUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -258,6 +264,7 @@ Deno.serve(async (req) => {
       : "Transcreva e processe o áudio a seguir conforme suas instruções:";
 
     const audioModeKey = (mode || "text").toLowerCase();
+    const audioModel = getModelForMode(audioModeKey);
     const geminiBody: Record<string, any> = {
       system_instruction: {
         parts: [{ text: ANTI_CHATBOT_RULE + "\n" + (systemPrompt || "Transcreva o áudio fielmente.") }],
@@ -278,14 +285,14 @@ Deno.serve(async (req) => {
       generationConfig: {
         temperature: temperature ?? 0.1,
         maxOutputTokens: maxOutputTokens ?? 8192,
-        ...getThinkingConfig(audioModeKey),
+        ...getThinkingConfig(audioModeKey, audioModel),
       },
     };
     if (GROUNDING_MODES.includes(audioModeKey)) {
       geminiBody.tools = [{ google_search: {} }];
     }
 
-    const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
+    const geminiUrl = `${GEMINI_BASE_URL}/${audioModel}:generateContent?key=${geminiKey}`;
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
