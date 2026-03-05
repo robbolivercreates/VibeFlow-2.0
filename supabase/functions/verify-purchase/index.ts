@@ -29,15 +29,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createSupabaseClient(authHeader);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Direct REST API auth (bypasses gateway JWT algorithm mismatch)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    if (authError || !user) {
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: supabaseAnonKey,
+      },
+    });
+
+    if (!authResponse.ok) {
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    const user = await authResponse.json();
+    if (!user?.id) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const supabase = createSupabaseClient(authHeader);
 
     // 2. Get Eduzz token
     const eduzzToken = Deno.env.get("EDUZZ_ACCESS_TOKEN");
