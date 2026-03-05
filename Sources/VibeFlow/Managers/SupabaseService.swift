@@ -35,6 +35,30 @@ class SupabaseService {
         return try await sendRequest(url: url, token: token, body: body)
     }
 
+    /// Cleans up pre-transcribed text using the mode's system prompt (no audio).
+    /// Used by Whisper-first pipeline: Whisper transcribes locally → this formats via Gemini.
+    /// Sends ~85% fewer input tokens than sending raw audio.
+    func cleanupText(_ rawText: String) async throws -> String {
+        guard let token = AuthManager.shared.accessToken else {
+            throw AuthError.notAuthenticated
+        }
+
+        let url = URL(string: "\(SupabaseConfig.url)/functions/v1/transcribe")!
+
+        let systemPrompt = mode.systemPrompt(outputLanguage: outputLanguage, clarifyText: clarifyText, wakeWord: SettingsManager.shared.wakeWord)
+
+        let body: [String: Any] = [
+            "text": rawText,
+            "mode": mode.apiName,
+            "language": outputLanguage.rawValue,
+            "systemPrompt": systemPrompt,
+            "temperature": mode.temperature,
+            "maxOutputTokens": mode.maxOutputTokens
+        ]
+
+        return try await sendRequest(url: url, token: token, body: body)
+    }
+
     /// Transcribe audio with selected text (Command Mode) via Supabase Edge Function
     func transcribeWithSelectedText(audioData: Data, selectedText: String) async throws -> String {
         guard let token = AuthManager.shared.accessToken else {

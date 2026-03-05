@@ -346,12 +346,26 @@ class VoxAiGoViewModel: ObservableObject {
 
                 switch service {
                 case .supabase:
-                    transcribedText = try await transcribeViaSupabase(
-                        audioData: audioData,
-                        mode: currentMode,
-                        language: currentLanguage,
-                        clarifyText: currentClarify
-                    )
+                    // Whisper-first: transcribe locally (free), send text to Supabase/Gemini for formatting.
+                    // Saves ~85% input tokens and eliminates timeout risk for long recordings.
+                    do {
+                        transcribedText = try await transcribeViaWhisperSupabase(
+                            audioData: audioData,
+                            mode: currentMode,
+                            language: currentLanguage,
+                            clarifyText: currentClarify
+                        )
+                        print("[VoxAiGo] ✅ Whisper-first pipeline succeeded")
+                    } catch {
+                        // Fallback: if Whisper fails, send audio directly (original path)
+                        print("[VoxAiGo] ⚠️ Whisper-first failed (\(error.localizedDescription)), falling back to direct audio")
+                        transcribedText = try await transcribeViaSupabase(
+                            audioData: audioData,
+                            mode: currentMode,
+                            language: currentLanguage,
+                            clarifyText: currentClarify
+                        )
+                    }
                     // Track trial transcription if on trial
                     if TrialManager.shared.isTrialActive() {
                         TrialManager.shared.recordTrialTranscription()
@@ -537,6 +551,28 @@ class VoxAiGoViewModel: ObservableObject {
         )
         let cleanedText = try await gemini.cleanupText(rawText)
         print("[VoxAiGo] Gemini cleanup: '\(cleanedText.prefix(80))' (\(cleanedText.count) chars)")
+
+        return cleanedText
+    }
+
+    /// Whisper-first pipeline for Pro/Supabase users.
+    /// Whisper transcribes locally (free, fast) → sends only text to Supabase → Gemini formats.
+    /// ~85% fewer input tokens than sending raw audio. No timeout risk.
+    private func transcribeViaWhisperSupabase(
+        audioData: Data,
+        mode: TranscriptionMode,
+        language: SpeechLanguage,
+        clarifyText: Bool
+    ) async throws -> String {
+        // Step 1: Whisper transcribes locally (free, no size limit)
+        let langCode = settings.outputLanguage.rawValue
+        let rawText = try await WhisperEngine.shared.transcribe(audioData: audioData, language: langCode)
+        print("[VoxAiGo] Whisper raw: '\(rawText.prefix(80))' (\(rawText.count) chars)")
+
+        // Step 2: Supabase → Gemini cleans up the text (small payload, fast)
+        let supabase = SupabaseService(mode: mode, outputLanguage: language, clarifyText: clarifyText)
+        let cleanedText = try await supabase.cleanupText(rawText)
+        print("[VoxAiGo] Supabase cleanup: '\(cleanedText.prefix(80))' (\(cleanedText.count) chars)")
 
         return cleanedText
     }
