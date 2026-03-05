@@ -7,7 +7,7 @@ enum NavigationSection: String, CaseIterable, Identifiable {
     case modes = "Modos"
     case snippets = "Snippets"
     case style = "Estilo"
-    case dictionary = "Dictionary"
+    case dictionary = "Dicionário"
     case settings = "Ajustes"
 
     var id: String { rawValue }

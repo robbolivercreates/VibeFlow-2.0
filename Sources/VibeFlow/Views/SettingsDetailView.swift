@@ -21,6 +21,21 @@ struct SettingsDetailView: View {
     @State private var devLoading = false
     @State private var devStatusMessage = ""
 
+    // Wake word voice test
+    enum WakeTestState { case idle, recording, processing, success, failed }
+    @State private var wakeTestState: WakeTestState = .idle
+    @State private var wakeTestTranscription = ""
+    @State private var wakeTestRecorder: AVAudioRecorder?
+    private static let wakeTestFileURL: URL = FileManager.default.temporaryDirectory.appendingPathComponent("vox_test.wav")
+
+    private var wakeTestButtonLabel: String {
+        switch wakeTestState {
+        case .idle, .success, .failed: return "Gravar"
+        case .recording: return "Parar"
+        case .processing: return "Analisando..."
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Fixed header
@@ -295,12 +310,17 @@ struct SettingsDetailView: View {
                 if settings.wakeWordEnabled && (subscription.isPro || TrialManager.shared.isTrialActive()) {
                     Divider().padding(.leading, 44)
 
-                    // Live preview of commands
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("COMO USAR")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.secondary)
+                    // Vox AI branding + interactive test
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Branding
+                        HStack(spacing: 8) {
+                            VoxAiGoLogo(size: 24)
+                            Text("Agente Inteligente Vox")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(VoxTheme.accent)
+                        }
 
+                        // How to use
                         HStack(spacing: 4) {
                             Image(systemName: "info.circle")
                                 .font(.system(size: 11))
@@ -325,33 +345,88 @@ struct SettingsDetailView: View {
                             )
                         }
 
-                        // Test button
-                        HStack {
-                            Spacer()
-                            Button(action: {
-                                NotificationCenter.default.post(
-                                    name: .wakeWordCommand,
-                                    object: nil,
-                                    userInfo: [
-                                        "label": "Email",
-                                        "icon": "envelope.fill",
-                                        "type": "mode"
-                                    ]
-                                )
-                            }) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "play.fill")
-                                        .font(.system(size: 10))
-                                    Text("Testar")
-                                        .font(.system(size: 12, weight: .medium))
+                        Divider()
+
+                        // Interactive voice test
+                        VStack(spacing: 10) {
+                            Text("TESTAR VOZ")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(.secondary)
+
+                            HStack(spacing: 16) {
+                                // Record button
+                                Button(action: {
+                                    if wakeTestState == .recording {
+                                        stopWakeWordTest()
+                                    } else {
+                                        startWakeWordTest()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: wakeTestState == .recording ? "stop.fill" : "mic.fill")
+                                            .font(.system(size: 14))
+                                        Text(wakeTestButtonLabel)
+                                            .font(.system(size: 13, weight: .medium))
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(wakeTestState == .recording ? Color.red.opacity(0.15) : VoxTheme.accent.opacity(0.15))
+                                    )
+                                    .foregroundStyle(wakeTestState == .recording ? .red : VoxTheme.accent)
                                 }
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(VoxTheme.accent.opacity(0.15))
-                                .foregroundStyle(VoxTheme.accent)
-                                .cornerRadius(6)
+                                .buttonStyle(.plain)
+                                .disabled(wakeTestState == .processing)
+
+                                // Result feedback
+                                if wakeTestState == .processing {
+                                    HStack(spacing: 6) {
+                                        ProgressView()
+                                            .controlSize(.small)
+                                        Text("Analisando...")
+                                            .font(.system(size: 12))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                } else if wakeTestState == .success {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(.green)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("✓ Vox reconhecido!")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundStyle(.green)
+                                            if !wakeTestTranscription.isEmpty {
+                                                Text("Ouvido: \"\(wakeTestTranscription)\"")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                        }
+                                    }
+                                } else if wakeTestState == .failed {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.red)
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("Vox não reconhecido")
+                                                .font(.system(size: 12, weight: .medium))
+                                                .foregroundStyle(.red)
+                                            if !wakeTestTranscription.isEmpty {
+                                                Text("Ouvido: \"\(wakeTestTranscription)\"")
+                                                    .font(.system(size: 10))
+                                                    .foregroundStyle(.secondary)
+                                            }
+                                            Text("Tente falar mais claro, mais perto do microfone")
+                                                .font(.system(size: 10))
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
                             }
-                            .buttonStyle(.plain)
+
+                            Text("Diga algo como \"Vox, Email\" e veja se o assistente reconhece.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.horizontal, 16)
@@ -1020,6 +1095,97 @@ struct SettingsDetailView: View {
         case .denied: return "Negado - abra Preferencias do Sistema"
         case .authorized: return "Permitido"
         @unknown default: return "Desconhecido"
+        }
+    }
+
+    // MARK: - Wake Word Voice Test
+
+    private func startWakeWordTest() {
+        wakeTestState = .recording
+        wakeTestTranscription = ""
+
+        let audioSettings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVSampleRateKey: 16000.0,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false
+        ]
+
+        do {
+            let recorder = try AVAudioRecorder(url: SettingsDetailView.wakeTestFileURL, settings: audioSettings)
+            recorder.record()
+            wakeTestRecorder = recorder
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                if self.wakeTestState == .recording {
+                    self.stopWakeWordTest()
+                }
+            }
+        } catch {
+            print("[WakeTest] Failed to start recording: \(error)")
+            wakeTestState = .failed
+            wakeTestTranscription = "Erro ao iniciar gravação"
+        }
+    }
+
+    private func stopWakeWordTest() {
+        guard let recorder = wakeTestRecorder else { return }
+        recorder.stop()
+        wakeTestRecorder = nil
+        wakeTestState = .processing
+
+        let fileURL = SettingsDetailView.wakeTestFileURL
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            var transcription = ""
+            var detected = false
+            var hudInfo: [String: Any]? = nil
+
+            do {
+                let audioData = try Data(contentsOf: fileURL)
+
+                let semaphore = DispatchSemaphore(value: 0)
+                Task {
+                    do {
+                        let result = try await WhisperEngine.shared.transcribe(audioData: audioData, language: "auto")
+                        transcription = result.trimmingCharacters(in: .whitespacesAndNewlines)
+                    } catch {
+                        transcription = "Erro: \(error.localizedDescription)"
+                    }
+                    semaphore.signal()
+                }
+                semaphore.wait()
+
+                let voxVariants = ["vox", "fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos"]
+                let lower = transcription.lowercased()
+                detected = voxVariants.contains(where: { lower.hasPrefix($0) })
+
+                if detected, let result = VoxAiGoViewModel.detectWakeWordCommand(in: transcription) {
+                    switch result {
+                    case .mode(let mode):
+                        hudInfo = ["label": mode.localizedName, "icon": mode.icon, "type": "mode"]
+                    case .language(let lang):
+                        hudInfo = ["label": lang.displayName, "icon": "globe", "type": "language"]
+                    }
+                }
+            } catch {
+                transcription = "Erro: \(error.localizedDescription)"
+            }
+
+            try? FileManager.default.removeItem(at: fileURL)
+
+            DispatchQueue.main.async {
+                self.wakeTestTranscription = transcription
+                if detected {
+                    self.wakeTestState = .success
+                    if let hud = hudInfo {
+                        NotificationCenter.default.post(name: .wakeWordCommand, object: nil, userInfo: hud)
+                    }
+                } else {
+                    self.wakeTestState = .failed
+                }
+            }
         }
     }
 }

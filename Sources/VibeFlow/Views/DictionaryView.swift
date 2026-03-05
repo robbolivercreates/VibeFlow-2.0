@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Custom dictionary management view — word replacements and forbidden terms
+/// Dicionário personalizado — correções de palavras e termos proibidos
 struct DictionaryView: View {
     @StateObject private var dictionary = CustomDictionaryManager.shared
 
@@ -33,13 +33,13 @@ struct DictionaryView: View {
             .clipped()
         }
         .background(VoxTheme.background)
-        .alert("Clear Dictionary", isPresented: $showingClearConfirmation) {
-            Button("Cancel", role: .cancel) {}
-            Button("Clear All", role: .destructive) {
+        .alert("Limpar Dicionário", isPresented: $showingClearConfirmation) {
+            Button("Cancelar", role: .cancel) {}
+            Button("Limpar Tudo", role: .destructive) {
                 dictionary.clearAll()
             }
         } message: {
-            Text("This will remove all word corrections and forbidden terms.")
+            Text("Isso irá remover todas as correções de palavras e termos proibidos.")
         }
     }
 
@@ -48,7 +48,7 @@ struct DictionaryView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Custom Dictionary")
+                Text("Dicionário Personalizado")
                     .font(.system(size: 28, weight: .bold))
 
                 Spacer()
@@ -58,7 +58,7 @@ struct DictionaryView: View {
                         HStack(spacing: 4) {
                             Image(systemName: "trash")
                                 .font(.system(size: 11))
-                            Text("Clear All")
+                            Text("Limpar Tudo")
                                 .font(.system(size: 12))
                         }
                         .foregroundStyle(.red)
@@ -67,7 +67,7 @@ struct DictionaryView: View {
                 }
             }
 
-            Text("Teach VoxAiGo your preferred words and terms. Add corrections for names it often gets wrong, or forbid words you never want in your output.")
+            Text("Ensine ao VoxAiGo suas palavras preferidas. Adicione correções para nomes que ele erra frequentemente, ou proíba termos que você nunca quer no resultado.")
                 .font(.system(size: 14))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -78,13 +78,13 @@ struct DictionaryView: View {
 
     private var replacementsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Word Corrections", systemImage: "arrow.right.arrow.left")
+            Label("Correções de Palavras", systemImage: "arrow.right.arrow.left")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
 
             // Add new replacement
             HStack(spacing: 8) {
-                TextField("Wrong word...", text: $newWrong)
+                TextField("Palavra errada...", text: $newWrong)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13))
 
@@ -92,7 +92,7 @@ struct DictionaryView: View {
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
 
-                TextField("Correct word...", text: $newCorrect)
+                TextField("Palavra correta...", text: $newCorrect)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13))
 
@@ -119,8 +119,8 @@ struct DictionaryView: View {
             if dictionary.replacements.isEmpty {
                 emptyCard(
                     icon: "character.textbox",
-                    title: "No corrections yet",
-                    subtitle: "Add words that VoxAiGo often gets wrong, like names or technical terms."
+                    title: "Nenhuma correção ainda",
+                    subtitle: "Adicione palavras que o VoxAiGo erra frequentemente, como nomes ou termos técnicos."
                 )
             } else {
                 VStack(spacing: 6) {
@@ -164,13 +164,13 @@ struct DictionaryView: View {
 
     private var forbiddenSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Label("Forbidden Words", systemImage: "nosign")
+            Label("Palavras Proibidas", systemImage: "nosign")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
 
             // Add new forbidden word
             HStack(spacing: 8) {
-                TextField("Word to never use...", text: $newForbidden)
+                TextField("Palavra para nunca usar...", text: $newForbidden)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13))
                     .onSubmit { addForbidden() }
@@ -197,8 +197,8 @@ struct DictionaryView: View {
             if dictionary.forbidden.isEmpty {
                 emptyCard(
                     icon: "text.badge.xmark",
-                    title: "No forbidden words",
-                    subtitle: "Add words or phrases you never want VoxAiGo to use in your output."
+                    title: "Nenhuma palavra proibida",
+                    subtitle: "Adicione palavras ou frases que você nunca quer que o VoxAiGo use no resultado."
                 )
             } else {
                 FlowLayout(spacing: 8) {
@@ -273,7 +273,6 @@ struct DictionaryView: View {
         newForbidden = ""
     }
 }
-
 
 #Preview {
     DictionaryView()
