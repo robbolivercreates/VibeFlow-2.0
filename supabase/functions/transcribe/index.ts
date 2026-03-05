@@ -104,53 +104,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Usage check — ONLY blocks for Free users (Pro skips the wait)
+    // 3. Check plan and usage
     const adminClient = createSupabaseAdmin();
-    const usagePromise = adminClient.rpc("check_and_increment_usage", { p_user_id: user.id });
+    const { data: usageCheck, error: usageError } = await adminClient.rpc(
+      "check_and_increment_usage",
+      { p_user_id: user.id },
+    );
 
-    // For Pro users: don't wait for usage check (fire-and-forget, log errors only)
-    // For Free users: must wait to enforce limits
-    const clientPlan = body.clientPlan; // client sends "pro" or "free" hint
-    let effectivePlan = "free";
-    let usageCheck: any = { allowed: true, plan: "pro", used: 0, remaining: 999, limit: 999 };
+    if (usageError) {
+      console.error("Usage check error:", usageError);
+      return new Response(
+        JSON.stringify({ error: "Failed to check usage" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
-    if (clientPlan === "pro") {
-      // Pro: fire-and-forget — don't block the hot path
-      usagePromise.then(({ data, error }) => {
-        if (error) console.error("Usage check error (async):", error);
-        // If server says NOT allowed (expired sub?), log it but don't block
-        if (data && !data.allowed) {
-          console.warn(`Pro user blocked server-side: user=${user.id} error=${data.error}`);
-        }
-      });
-      effectivePlan = "pro";
-    } else {
-      // Free/Trial: must wait to enforce limits
-      const { data, error: usageError } = await usagePromise;
-      if (usageError) {
-        console.error("Usage check error:", usageError);
-        return new Response(
-          JSON.stringify({ error: "Failed to check usage" }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      usageCheck = data;
-      effectivePlan = usageCheck.plan;
+    let effectivePlan = usageCheck.plan;
 
-      if (!usageCheck.allowed) {
-        return new Response(
-          JSON.stringify({
-            error: usageCheck.error === "free_limit_reached"
-              ? "Limite de transcrições gratuitas atingido"
-              : usageCheck.error,
-            code: usageCheck.error,
-            used: usageCheck.used,
-            limit: usageCheck.limit,
-            resets_at: usageCheck.resets_at,
-          }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
+    if (!usageCheck.allowed) {
+      return new Response(
+        JSON.stringify({
+          error: usageCheck.error === "free_limit_reached"
+            ? "Limite de transcrições gratuitas atingido"
+            : usageCheck.error,
+          code: usageCheck.error,
+          used: usageCheck.used,
+          limit: usageCheck.limit,
+          resets_at: usageCheck.resets_at,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const t2 = performance.now();
