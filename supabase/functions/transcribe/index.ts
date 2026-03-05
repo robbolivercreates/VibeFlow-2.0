@@ -2,34 +2,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.ts";
 
-const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = "gemini-2.5-flash";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
-
-// Modes that get Google Search grounding (real-time web data)
-const GROUNDING_MODES = ["ux_design"];
-
-// Per-mode thinking levels (must match client-side TranscriptionMode.thinkingLevel)
-const THINKING_LEVELS: Record<string, string> = {
-  text: "minimal",
-  chat: "minimal",
-  social: "minimal",
-  x_tweet: "minimal",
-  email: "low",
-  formal: "low",
-  translation: "low",
-  summary: "low",
-  topics: "low",
-  meeting: "low",
-  creative: "medium",
-  ux_design: "medium",
-  code: "high",
-  vibe_coder: "high",
-  custom: "low",
-};
-
-function getThinkingLevel(mode: string): string {
-  return THINKING_LEVELS[mode] || "low";
-}
 
 // Free tier mode restrictions (lowercase). App sends lowercase apiName values.
 const FREE_MODES = ["text", "chat"];
@@ -151,8 +125,7 @@ Deno.serve(async (req) => {
     if (!audio && text) {
       // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
       if (systemPrompt && !targetLanguage) {
-        const useGrounding = GROUNDING_MODES.includes(normalizedMode);
-        const transformBody: Record<string, unknown> = {
+        const transformBody = {
           system_instruction: {
             parts: [{ text: systemPrompt }],
           },
@@ -160,13 +133,13 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: temperature ?? 0.3,
             maxOutputTokens: maxOutputTokens ?? 2048,
-            thinkingConfig: { thinkingLevel: getThinkingLevel(normalizedMode) },
           },
         };
-        // Activate Google Search grounding for eligible modes
-        if (useGrounding) {
+
+        const normalizedModeStr = (mode || "text").toLowerCase();
+        // Ativar grounding SOMENTE para o modo UX Design
+        if (normalizedModeStr === "ux_design") {
           transformBody.tools = [{ google_search: {} }];
-          console.log(`[Grounding] Activated for mode: ${normalizedMode}`);
         }
 
         const transformUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -208,7 +181,7 @@ Deno.serve(async (req) => {
 
       const textGeminiBody = {
         contents: [{ parts: [{ text: translationPrompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048, thinkingConfig: { thinkingLevel: "minimal" } },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
       };
 
       const textGeminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -244,8 +217,7 @@ Deno.serve(async (req) => {
       ? `[SELECTED TEXT]\n${selectedText}\n[END SELECTED TEXT]\n\nListen to the voice command and transform the selected text accordingly:`
       : "Transcreva e processe o áudio a seguir conforme suas instruções:";
 
-    const useGroundingAudio = GROUNDING_MODES.includes(normalizedMode);
-    const geminiBody: Record<string, unknown> = {
+    const geminiBody: Record<string, any> = {
       system_instruction: {
         parts: [{ text: systemPrompt || "Transcreva o áudio fielmente." }],
       },
@@ -265,15 +237,12 @@ Deno.serve(async (req) => {
       generationConfig: {
         temperature: temperature ?? 0.1,
         maxOutputTokens: maxOutputTokens ?? 8192,
-        thinkingConfig: {
-          thinkingLevel: getThinkingLevel(normalizedMode),
-        },
       },
     };
-    // Activate Google Search grounding for eligible modes (audio path fallback)
-    if (useGroundingAudio) {
+
+    const normalizedModeAudio = (mode || "text").toLowerCase();
+    if (normalizedModeAudio === "ux_design") {
       geminiBody.tools = [{ google_search: {} }];
-      console.log(`[Grounding] Activated for audio mode: ${normalizedMode}`);
     }
 
     const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
