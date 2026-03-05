@@ -5,7 +5,7 @@ import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.t
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Per-mode thinking levels (must match client-side TranscriptionMode.thinkingLevel)
+// Per-mode thinking levels
 const THINKING_LEVELS: Record<string, string> = {
   text: "minimal",
   chat: "minimal",
@@ -27,6 +27,9 @@ const THINKING_LEVELS: Record<string, string> = {
 function getThinkingLevel(mode: string): string {
   return THINKING_LEVELS[mode] || "low";
 }
+
+// Modes that get Google Search grounding
+const GROUNDING_MODES = ["ux_design"];
 
 // Free tier mode restrictions (lowercase). App sends lowercase apiName values.
 const FREE_MODES = ["text", "chat"];
@@ -50,15 +53,39 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabase = createSupabaseClient(authHeader);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Try direct REST API first (bypasses supabase-js library version issues)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    if (authError || !user) {
+    const authResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      headers: {
+        Authorization: authHeader,
+        apikey: supabaseAnonKey,
+      },
+    });
+
+    if (!authResponse.ok) {
+      const errBody = await authResponse.text();
+      console.error("[AUTH DEBUG] REST auth failed:", authResponse.status, errBody);
+      console.error("[AUTH DEBUG] supabaseUrl:", supabaseUrl);
+      console.error("[AUTH DEBUG] authHeader prefix:", authHeader?.substring(0, 30));
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token", debug: errBody }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const user = await authResponse.json();
+    if (!user?.id) {
+      console.error("[AUTH DEBUG] No user ID in response:", JSON.stringify(user));
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // Keep supabase client for admin operations later
+    const supabase = createSupabaseClient(authHeader);
 
     // 2. Parse request body
     const body = await req.json();
@@ -148,7 +175,8 @@ Deno.serve(async (req) => {
     if (!audio && text) {
       // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
       if (systemPrompt && !targetLanguage) {
-        const transformBody = {
+        const modeKey = (mode || "text").toLowerCase();
+        const transformBody: Record<string, any> = {
           system_instruction: {
             parts: [{ text: systemPrompt }],
           },
@@ -156,16 +184,12 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: temperature ?? 0.3,
             maxOutputTokens: maxOutputTokens ?? 2048,
-            thinkingConfig: {
-              thinkingLevel: getThinkingLevel((mode || "text").toLowerCase()),
-            },
+            thinkingConfig: { thinkingLevel: getThinkingLevel(modeKey) },
           },
         };
-
-        const normalizedModeStr = (mode || "text").toLowerCase();
-        // Ativar grounding SOMENTE para o modo UX Design
-        if (normalizedModeStr === "ux_design") {
+        if (GROUNDING_MODES.includes(modeKey)) {
           transformBody.tools = [{ google_search: {} }];
+          console.log(`[Grounding] Activated for mode: ${modeKey}`);
         }
 
         const transformUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -243,6 +267,7 @@ Deno.serve(async (req) => {
       ? `[SELECTED TEXT]\n${selectedText}\n[END SELECTED TEXT]\n\nListen to the voice command and transform the selected text accordingly:`
       : "Transcreva e processe o áudio a seguir conforme suas instruções:";
 
+    const audioModeKey = (mode || "text").toLowerCase();
     const geminiBody: Record<string, any> = {
       system_instruction: {
         parts: [{ text: systemPrompt || "Transcreva o áudio fielmente." }],
@@ -264,14 +289,13 @@ Deno.serve(async (req) => {
         temperature: temperature ?? 0.1,
         maxOutputTokens: maxOutputTokens ?? 8192,
         thinkingConfig: {
-          thinkingLevel: getThinkingLevel((mode || "text").toLowerCase()),
+          thinkingLevel: getThinkingLevel(audioModeKey),
         },
       },
     };
-
-    const normalizedModeAudio = (mode || "text").toLowerCase();
-    if (normalizedModeAudio === "ux_design") {
+    if (GROUNDING_MODES.includes(audioModeKey)) {
       geminiBody.tools = [{ google_search: {} }];
+      console.log(`[Grounding] Activated for audio mode: ${audioModeKey}`);
     }
 
     const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
