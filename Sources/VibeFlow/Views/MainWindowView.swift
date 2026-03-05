@@ -7,6 +7,7 @@ enum NavigationSection: String, CaseIterable, Identifiable {
     case modes = "Modos"
     case snippets = "Snippets"
     case style = "Estilo"
+    case dictionary = "Dictionary"
     case settings = "Ajustes"
 
     var id: String { rawValue }
@@ -18,6 +19,7 @@ enum NavigationSection: String, CaseIterable, Identifiable {
         case .modes: return "waveform"
         case .snippets: return "text.badge.plus"
         case .style: return "textformat"
+        case .dictionary: return "character.book.closed"
         case .settings: return "gearshape"
         }
     }
@@ -29,6 +31,7 @@ enum NavigationSection: String, CaseIterable, Identifiable {
         case .modes: return "waveform"
         case .snippets: return "text.badge.plus"
         case .style: return "textformat"
+        case .dictionary: return "character.book.closed.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -136,6 +139,8 @@ struct MainWindowView: View {
                     SnippetsView()
                 case .style:
                     StyleView()
+                case .dictionary:
+                    DictionaryView()
                 case .settings:
                     SettingsDetailView()
                 }

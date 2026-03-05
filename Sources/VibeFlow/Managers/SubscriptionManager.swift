@@ -485,6 +485,12 @@ class SubscriptionManager: ObservableObject {
                     // Auto-downgrade mode/language if user is Free (no Pro, no trial)
                     self.enforceFreeTierDefaults()
 
+                    // Auto-enable wake word for Pro users (may have been disabled by free tier)
+                    if self.isPro, !SettingsManager.shared.wakeWordEnabled {
+                        SettingsManager.shared.wakeWordEnabled = true
+                        print("[SubscriptionManager] Pro user → wake word auto-enabled")
+                    }
+
                     // Notify UI (menu bar, views) that subscription state changed
                     NotificationCenter.default.post(name: .subscriptionChanged, object: nil)
                 }

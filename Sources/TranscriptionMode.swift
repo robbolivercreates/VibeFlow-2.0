@@ -534,6 +534,11 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             finalPrompt += stylePrompt
         }
 
+        // Adicionar dicionário personalizado do usuário (correções de palavras e termos proibidos)
+        if let dictPrompt = CustomDictionaryManager.shared.getDictionaryPrompt() {
+            finalPrompt += dictPrompt
+        }
+
         // Adicionar idioma de saída
         finalPrompt += """
 
