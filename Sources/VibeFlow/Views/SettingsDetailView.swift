@@ -40,6 +40,7 @@ struct SettingsDetailView: View {
                     apiSection
                     behaviorSection
                     conversationReplySection
+                    wakeWordSection
                     shortcutsSection
                     permissionsSection
                     advancedSection
@@ -250,6 +251,155 @@ struct SettingsDetailView: View {
                     .padding(.vertical, 12)
                 }
             }
+        }
+    }
+
+    // MARK: - Wake Word / Voice Commands Section
+
+    private var wakeWordSection: some View {
+        SettingsSection(title: "Comandos de Voz", icon: "waveform.badge.mic") {
+            VStack(spacing: 0) {
+                // Enable toggle
+                HStack {
+                    SettingsToggleRow(
+                        title: "Ativar comandos de voz",
+                        subtitle: subscription.isPro || TrialManager.shared.isTrialActive()
+                            ? "Troque de modo ou idioma dizendo o nome do assistente"
+                            : "Recurso exclusivo Pro — troque de modo por voz",
+                        isOn: Binding(
+                            get: { settings.wakeWordEnabled },
+                            set: { newValue in
+                                if subscription.isPro || TrialManager.shared.isTrialActive() {
+                                    settings.wakeWordEnabled = newValue
+                                }
+                            }
+                        )
+                    )
+
+                    if !subscription.isPro && !TrialManager.shared.isTrialActive() {
+                        HStack(spacing: 3) {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 8))
+                            Text("PRO")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(VoxTheme.goldGradient)
+                        .cornerRadius(4)
+                        .padding(.trailing, 16)
+                    }
+                }
+
+                if settings.wakeWordEnabled && (subscription.isPro || TrialManager.shared.isTrialActive()) {
+                    Divider().padding(.leading, 44)
+
+                    // Custom assistant name
+                    SettingsRow(
+                        title: "Nome do assistente",
+                        subtitle: "Personalize o nome que você diz para ativar"
+                    ) {
+                        TextField("Vox", text: $settings.wakeWord)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 120)
+                            .multilineTextAlignment(.trailing)
+                    }
+
+                    Divider().padding(.leading, 44)
+
+                    // Live preview of commands
+                    VStack(alignment: .leading, spacing: 8) {
+                        let name = settings.wakeWord.isEmpty ? "Vox" : settings.wakeWord
+
+                        Text("COMO USAR")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            wakeWordExample(
+                                command: "\"\(name), Email\"",
+                                result: "Muda para modo Email"
+                            )
+                            wakeWordExample(
+                                command: "\"\(name), Português\"",
+                                result: "Muda para Português"
+                            )
+                            wakeWordExample(
+                                command: "\"\(name), Tradução\"",
+                                result: "Muda para modo Tradução"
+                            )
+                        }
+
+                        // Test button
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                NotificationCenter.default.post(
+                                    name: .wakeWordCommand,
+                                    object: nil,
+                                    userInfo: [
+                                        "label": "Email",
+                                        "icon": "envelope.fill",
+                                        "type": "mode"
+                                    ]
+                                )
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "play.fill")
+                                        .font(.system(size: 10))
+                                    Text("Testar")
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(VoxTheme.accent.opacity(0.15))
+                                .foregroundStyle(VoxTheme.accent)
+                                .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+
+                    Divider().padding(.leading, 44)
+
+                    // Command language
+                    SettingsRow(
+                        title: "Idioma dos comandos",
+                        subtitle: "Seu idioma nativo para os comandos de voz"
+                    ) {
+                        Picker("", selection: $settings.commandLanguage) {
+                            ForEach(SpeechLanguage.allCases, id: \.self) { lang in
+                                Text("\(lang.flag) \(lang.displayName)").tag(lang)
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(width: 150)
+                    }
+                }
+            }
+        }
+    }
+
+    private func wakeWordExample(command: String, result: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "mic.fill")
+                .font(.system(size: 10))
+                .foregroundStyle(VoxTheme.accent)
+                .frame(width: 16)
+
+            Text(command)
+                .font(.system(size: 12, weight: .medium))
+
+            Image(systemName: "arrow.right")
+                .font(.system(size: 9))
+                .foregroundStyle(.secondary)
+
+            Text(result)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
         }
     }
 
