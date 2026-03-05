@@ -552,11 +552,9 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         // If the audio starts with the wake word, Gemini must NOT apply mode processing.
         // It must return the raw transcription verbatim so the app can route the command.
         let base = wakeWord.lowercased()
-        var wakeVariants = [base]
-        if base == "hey vox" {
-            wakeVariants += ["ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
-        }
-        let variantsList = wakeVariants.map { "\'\($0)\'" }.joined(separator: ", ")
+        // Locked to "vox" — always include all known Whisper mishearing variants
+        let wakeVariants = [base, "fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos", "ei vox", "hey vox", "hey fox", "hey box", "a vox", "hey vocs"]
+        let variantsList = wakeVariants.map { "'\($0)'" }.joined(separator: ", ")
         finalPrompt += """
 
 

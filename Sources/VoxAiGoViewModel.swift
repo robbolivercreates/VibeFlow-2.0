@@ -613,9 +613,7 @@ class VoxAiGoViewModel: ObservableObject {
                     // ── Wake word detected but no valid command → IGNORE ──
                     let wakeBase = self.settings.wakeWord.lowercased()
                     let textLower = finalText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                    let wakeVariants = wakeBase == "hey vox"
-                        ? [wakeBase, "ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
-                        : [wakeBase]
+                    let wakeVariants: [String] = [wakeBase, "fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos", "ei vox", "hey vox", "hey fox", "hey box", "a vox", "hey vocs"]
                     if wakeVariants.contains(where: { textLower.hasPrefix($0) }) {
                         print("[DEBUG] Wake word prefix matched in '\(textLower)' → ignoring (NOT pasting)")
                         if AppDelegate.shared?.isWizardActive == true {
@@ -633,9 +631,7 @@ class VoxAiGoViewModel: ObservableObject {
                     // ── Free user tried wake word → show Pro upgrade ──
                     let wakeBase = self.settings.wakeWord.lowercased()
                     let textLower = finalText.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-                    let wakeVariants = wakeBase == "hey vox"
-                        ? [wakeBase, "ei vox", "hey fox", "hey box", "a vox", "hey vocs"]
-                        : [wakeBase]
+                    let wakeVariants: [String] = [wakeBase, "fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos", "ei vox", "hey vox", "hey fox", "hey box", "a vox", "hey vocs"]
                     if wakeVariants.contains(where: { textLower.hasPrefix($0) }) {
                         print("[WakeWord] Free user attempted wake word → showing Pro upgrade")
                         NotificationCenter.default.post(name: .recordingCancelled, object: nil)
@@ -884,12 +880,8 @@ class VoxAiGoViewModel: ObservableObject {
         // Build wake word candidate list
         let base = wakeWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         var candidates: [String] = [base]
-        if base == "vox" {
-            candidates += ["fox", "box", "vocs"]
-        } else {
-            let stripped = base.folding(options: .diacriticInsensitive, locale: .current)
-            if stripped != base { candidates.append(stripped) }
-        }
+        // Locked to "vox" — hardcoded variants for maximum recognition
+        candidates += ["fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos"]
 
         // Must start with wake word (not appear in the middle of a sentence)
         guard let wake = candidates.first(where: { normalized.hasPrefix($0) }) else {

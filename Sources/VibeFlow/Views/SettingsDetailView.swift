@@ -295,38 +295,32 @@ struct SettingsDetailView: View {
                 if settings.wakeWordEnabled && (subscription.isPro || TrialManager.shared.isTrialActive()) {
                     Divider().padding(.leading, 44)
 
-                    // Custom assistant name
-                    SettingsRow(
-                        title: "Nome do assistente",
-                        subtitle: "Personalize o nome que você diz para ativar"
-                    ) {
-                        TextField("Vox", text: $settings.wakeWord)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 120)
-                            .multilineTextAlignment(.trailing)
-                    }
-
-                    Divider().padding(.leading, 44)
-
                     // Live preview of commands
                     VStack(alignment: .leading, spacing: 8) {
-                        let name = settings.wakeWord.isEmpty ? "Vox" : settings.wakeWord
-
                         Text("COMO USAR")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundStyle(.secondary)
 
+                        HStack(spacing: 4) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                            Text("Segure ⌥⌘, diga \"Vox\" + o comando, e solte.")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
+
                         VStack(alignment: .leading, spacing: 6) {
                             wakeWordExample(
-                                command: "\"\(name), Email\"",
+                                command: "\"Vox, Email\"",
                                 result: "Muda para modo Email"
                             )
                             wakeWordExample(
-                                command: "\"\(name), Português\"",
+                                command: "\"Vox, Português\"",
                                 result: "Muda para Português"
                             )
                             wakeWordExample(
-                                command: "\"\(name), Tradução\"",
+                                command: "\"Vox, Tradução\"",
                                 result: "Muda para modo Tradução"
                             )
                         }
