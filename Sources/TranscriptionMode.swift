@@ -227,36 +227,14 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     func systemPrompt(outputLanguage: SpeechLanguage, clarifyText: Bool, wakeWord: String = "Vox") -> String {
         let basePrompt: String
 
-        // Common speech cleanup rules applied to all modes
+        // Compact speech cleanup rules (~60 tokens instead of ~200)
         let speechCleanupRules = """
-            SPEECH CLEANUP (CRITICAL):
-            Remove all speech disfluencies and verbal artifacts:
-            - Filler sounds: "uh", "um", "ah", "er", "hmm", "hm", "huh", "eh"
-            - Portuguese fillers: "é...", "então", "tipo", "né", "assim", "bem", "ahn", "éé"
-            - Verbal pauses: "so...", "well...", "like...", "you know..."
-            - False starts: "I want to- I need to" → keep only "I need to"
-            - Repetitions: "the the" → "the", "I I think" → "I think"
-            - Stutters: "c-can you" → "can you"
-            - Breath sounds and lip smacks
-
-            SELF-CORRECTION HANDLING:
-            When the user corrects themselves, use ONLY the correction:
-            - "X, no wait, Y" → Y
-            - "X, I mean Y" → Y
-            - "X, actually Y" → Y
-            - "X, sorry, Y" → Y
-            - "não, espera" / "quer dizer" / "na verdade" / "desculpa" (Portuguese)
-            Example: "create function foo, no wait, bar" → function named "bar"
-
-            PLAIN TEXT ONLY (CRITICAL):
-            NEVER use markdown formatting in your output:
-            - NO asterisks for bold (**text**) or italic (*text*)
-            - NO markdown headers (#, ##, ###)
-            - NO markdown links [text](url)
-            - NO code fences (```)
-            Use plain text only. For emphasis, use CAPS or structure with line breaks.
-
-            Output ONLY the clean, final intended message.
+            SPEECH CLEANUP:
+            - Remove fillers: "uh", "um", "ah", "é...", "tipo", "né", "assim", "hm"
+            - Remove false starts and stutters, keep only final version
+            - Self-corrections ("X, no wait, Y" / "X, quer dizer, Y") → keep only Y
+            - PLAIN TEXT ONLY: no markdown, no asterisks, no code fences, no headers
+            - Output ONLY the clean, final text
             """
 
         switch self {
@@ -285,7 +263,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             1. Curto e natural, como WhatsApp ou Slack
             2. Mantenha o tom casual, NÃO formalize
             3. NÃO corrija gírias intencionais
-            4. Pontuação mínima
+            4. Use pontuação normal (vírgulas, pontos) para clareza
             5. APENAS a mensagem pronta para enviar
             """
 
@@ -552,24 +530,16 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         // If the audio starts with the wake word, Gemini must NOT apply mode processing.
         // It must return the raw transcription verbatim so the app can route the command.
         let base = wakeWord.lowercased()
-        // Locked to "vox" — always include all known Whisper mishearing variants
         let wakeVariants = [base, "fox", "box", "vocs", "voks", "boks", "voqs", "hawks", "blocks", "bos", "vos", "ei vox", "hey vox", "hey fox", "hey box", "a vox", "hey vocs"]
-        let variantsList = wakeVariants.map { "'\($0)'" }.joined(separator: ", ")
+        _ = wakeVariants // variants still used for local matching in app
         finalPrompt += """
 
 
-            HIGHEST PRIORITY — WAKE WORD PASSTHROUGH:
-            Before applying ANY of the rules above, check if the audio transcription starts with
-            the wake word (case-insensitive): \(variantsList).
-            If YES → return the raw transcription EXACTLY as the user spoke it.
-            This rule OVERRIDES the OUTPUT LANGUAGE instruction above.
-            Do NOT translate the wake word or command into any language.
-            Do NOT apply mode formatting, language translation, or any cleanup.
-            Keep the exact words the user said, in the exact language they said them.
-            Example: if the user says "Vox, email" → return exactly "Vox, email".
-            Example: if the user says "Vox, inglês" → return exactly "Vox, inglês" (NOT "Vox, English" or a Turkish translation).
-            Example: if the user says "Vox, próximo idioma" → return exactly "Vox, próximo idioma".
-            Only apply all previous rules when the audio does NOT start with the wake word.
+            WAKE WORD OVERRIDE (HIGHEST PRIORITY):
+            If audio starts with "Vox" (or mishearings: "fox", "box", "vocs", "voks", "boks"),
+            return the raw transcription EXACTLY as spoken. Skip ALL other rules.
+            Do NOT translate or format wake word commands.
+            Example: "Vox, email" → return exactly "Vox, email".
             """
 
         return finalPrompt

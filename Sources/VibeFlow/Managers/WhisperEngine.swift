@@ -19,13 +19,13 @@ class WhisperEngine: ObservableObject {
 
         do {
             // Try to load model from app bundle first
-            let bundleModelPath = Bundle.main.resourcePath.map { "\($0)/whisper-small" }
+            let bundleModelPath = Bundle.main.resourcePath.map { "\($0)/whisper-tiny" }
 
             let config: WhisperKitConfig
             if let path = bundleModelPath,
                FileManager.default.fileExists(atPath: path) {
                 config = WhisperKitConfig(
-                    model: "openai_whisper-small",
+                    model: "openai_whisper-tiny",
                     modelFolder: path,
                     verbose: false
                 )
@@ -33,7 +33,7 @@ class WhisperEngine: ObservableObject {
             } else {
                 // Fallback: auto-download from Hugging Face (first use)
                 config = WhisperKitConfig(
-                    model: "openai_whisper-small",
+                    model: "openai_whisper-tiny",
                     verbose: false
                 )
                 print("[WhisperEngine] Model not in bundle — downloading from Hugging Face")
