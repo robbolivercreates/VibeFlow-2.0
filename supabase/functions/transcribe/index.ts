@@ -2,14 +2,16 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.ts";
 
-// ── Dual-Model Strategy ──────────────────────────────────────────────────
-// Fast (stable): simple formatting, translation, extraction — thinking OFF
-// Smart (preview): creative writing, code, UX design — thinking ON
-const GEMINI_MODEL_FAST = "gemini-2.5-flash-lite";
-const GEMINI_MODEL_SMART = "gemini-3.1-flash-lite-preview";
+// ── Three-Tier Model Strategy ────────────────────────────────────────────
+// Fast:      2.5 Flash Lite — simple formatting, no cross-language
+// Translate: 2.5 Flash     — cross-language output (EN output from PT speech)
+// Smart:     3.1 Flash Lite — creative, code, UX design (reasoning ON)
+const GEMINI_MODEL_FAST      = "gemini-2.5-flash-lite";
+const GEMINI_MODEL_TRANSLATE = "gemini-2.5-flash";
+const GEMINI_MODEL_SMART     = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Modes that need reasoning → use Smart model
+// Modes that need deep reasoning → use Smart model
 const SMART_MODES = ["creative", "ux_design", "code", "vibe_coder", "translation"];
 
 // Smart model thinking levels (only used for 3.1 modes)
@@ -18,26 +20,24 @@ const SMART_THINKING: Record<string, string> = {
   ux_design: "medium",
   code: "high",
   vibe_coder: "high",
-  translation: "low",  // needs light reasoning for natural cross-language output
+  translation: "low",
 };
 
 function getModelForMode(mode: string, systemPrompt?: string): string {
   if (SMART_MODES.includes(mode)) return GEMINI_MODEL_SMART;
-  // Auto-upgrade to SMART if output language differs from PT-BR (cross-language translation)
-  // The systemPrompt contains "output the result in {language}" from the app
+  // Auto-upgrade to TRANSLATE (2.5 Flash full) when output language is not Portuguese
   if (systemPrompt) {
     const lower = systemPrompt.toLowerCase();
-    // Detect non-Portuguese output language instruction
     if (lower.includes("output the result in") && !lower.includes("output the result in portuguese")) {
-      return GEMINI_MODEL_SMART;
+      return GEMINI_MODEL_TRANSLATE;
     }
   }
   return GEMINI_MODEL_FAST;
 }
 
 function getThinkingConfig(mode: string, model: string): Record<string, any> | undefined {
-  if (model === GEMINI_MODEL_FAST) {
-    // 2.5 uses thinkingBudget — 0 = completely OFF
+  if (model === GEMINI_MODEL_FAST || model === GEMINI_MODEL_TRANSLATE) {
+    // 2.5 models use thinkingBudget — 0 = completely OFF
     return { thinkingConfig: { thinkingBudget: 0 } };
   }
   // 3.1 uses thinkingLevel
