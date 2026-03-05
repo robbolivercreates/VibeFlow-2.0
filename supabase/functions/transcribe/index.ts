@@ -68,32 +68,36 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    // 2. LOCAL JWT decode (no network call — saves ~200ms)
+    // Extract user_id from JWT payload without calling /auth/v1/user
+    const token = authHeader.replace("Bearer ", "");
+    let user: { id: string };
+    try {
+      const payloadB64 = token.split(".")[1];
+      if (!payloadB64) throw new Error("Invalid JWT format");
+      const payload = JSON.parse(atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")));
 
-    // 2. PARALLEL: Auth check + body parse at the same time
-    const [authResponse, body] = await Promise.all([
-      fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: { Authorization: authHeader, apikey: supabaseAnonKey },
-      }),
-      req.json(),
-    ]);
+      // Check expiry
+      if (payload.exp && payload.exp < Date.now() / 1000) {
+        return new Response(
+          JSON.stringify({ error: "Token expired" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const userId = payload.sub;
+      if (!userId) throw new Error("No sub in JWT");
+      user = { id: userId };
+    } catch (_e) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // Parse body (no longer needs Promise.all since auth is instant)
+    const body = await req.json();
     const t1 = performance.now();
-
-    if (!authResponse.ok) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    const user = await authResponse.json();
-    if (!user?.id) {
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
 
     const { audio, text, targetLanguage, mode, language, systemPrompt, temperature, maxOutputTokens, selectedText } = body;
 
