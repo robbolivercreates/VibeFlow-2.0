@@ -172,10 +172,13 @@ Deno.serve(async (req) => {
       if (systemPrompt && !targetLanguage) {
         const modeKey = (mode || "text").toLowerCase();
         const modeModel = getModelForMode(modeKey);
-        const enhancedPrompt = ANTI_CHATBOT_RULE + "\n" + systemPrompt;
+        // Anti-chatbot wrapper only for Smart model (3.1 tends to chat, 2.5 Lite doesn't)
+        const finalPrompt = modeModel === GEMINI_MODEL_SMART
+          ? ANTI_CHATBOT_RULE + "\n" + systemPrompt
+          : systemPrompt;
         const transformBody: Record<string, any> = {
           system_instruction: {
-            parts: [{ text: enhancedPrompt }],
+            parts: [{ text: finalPrompt }],
           },
           contents: [{ parts: [{ text: text }] }],
           generationConfig: {
@@ -265,9 +268,14 @@ Deno.serve(async (req) => {
 
     const audioModeKey = (mode || "text").toLowerCase();
     const audioModel = getModelForMode(audioModeKey);
+    // Anti-chatbot wrapper only for Smart model
+    const audioSystemPrompt = systemPrompt || "Transcreva o áudio fielmente.";
+    const audioFinalPrompt = audioModel === GEMINI_MODEL_SMART
+      ? ANTI_CHATBOT_RULE + "\n" + audioSystemPrompt
+      : audioSystemPrompt;
     const geminiBody: Record<string, any> = {
       system_instruction: {
-        parts: [{ text: ANTI_CHATBOT_RULE + "\n" + (systemPrompt || "Transcreva o áudio fielmente.") }],
+        parts: [{ text: audioFinalPrompt }],
       },
       contents: [
         {
