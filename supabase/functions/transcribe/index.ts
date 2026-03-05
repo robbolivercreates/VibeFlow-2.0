@@ -7,13 +7,13 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 
 // Per-mode thinking levels
 const THINKING_LEVELS: Record<string, string> = {
-  text: "minimal",
-  chat: "minimal",
-  social: "minimal",
-  x_tweet: "minimal",
+  text: "none",
+  chat: "none",
+  social: "none",
+  x_tweet: "none",
   email: "low",
   formal: "low",
-  translation: "low",
+  translation: "none",
   summary: "low",
   topics: "low",
   meeting: "low",
@@ -27,6 +27,17 @@ const THINKING_LEVELS: Record<string, string> = {
 function getThinkingLevel(mode: string): string {
   return THINKING_LEVELS[mode] || "low";
 }
+
+// Anti-chatbot wrapper: prevents Gemini from responding conversationally
+const ANTI_CHATBOT_RULE = `
+CRITICAL RULE — YOU ARE A TEXT PROCESSOR, NOT A CHATBOT:
+- You receive raw speech-to-text input from a user who is DICTATING, not talking to you.
+- NEVER respond as an assistant. NEVER answer questions from the text.
+- NEVER say "Aqui está", "Claro!", "Com certeza", "Olá", or any greeting/acknowledgment.
+- NEVER add commentary, suggestions, or explanations about the text.
+- The user's words are the CONTENT to be formatted, NOT a conversation with you.
+- Output ONLY the processed/formatted text. Nothing else.
+`;
 
 // Modes that get Google Search grounding
 const GROUNDING_MODES = ["ux_design"];
@@ -65,19 +76,14 @@ Deno.serve(async (req) => {
     });
 
     if (!authResponse.ok) {
-      const errBody = await authResponse.text();
-      console.error("[AUTH DEBUG] REST auth failed:", authResponse.status, errBody);
-      console.error("[AUTH DEBUG] supabaseUrl:", supabaseUrl);
-      console.error("[AUTH DEBUG] authHeader prefix:", authHeader?.substring(0, 30));
       return new Response(
-        JSON.stringify({ error: "Invalid or expired token", debug: errBody }),
+        JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     const user = await authResponse.json();
     if (!user?.id) {
-      console.error("[AUTH DEBUG] No user ID in response:", JSON.stringify(user));
       return new Response(
         JSON.stringify({ error: "Invalid or expired token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -176,9 +182,10 @@ Deno.serve(async (req) => {
       // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
       if (systemPrompt && !targetLanguage) {
         const modeKey = (mode || "text").toLowerCase();
+        const enhancedPrompt = ANTI_CHATBOT_RULE + "\n" + systemPrompt;
         const transformBody: Record<string, any> = {
           system_instruction: {
-            parts: [{ text: systemPrompt }],
+            parts: [{ text: enhancedPrompt }],
           },
           contents: [{ parts: [{ text: text }] }],
           generationConfig: {
@@ -189,7 +196,6 @@ Deno.serve(async (req) => {
         };
         if (GROUNDING_MODES.includes(modeKey)) {
           transformBody.tools = [{ google_search: {} }];
-          console.log(`[Grounding] Activated for mode: ${modeKey}`);
         }
 
         const transformUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -270,7 +276,7 @@ Deno.serve(async (req) => {
     const audioModeKey = (mode || "text").toLowerCase();
     const geminiBody: Record<string, any> = {
       system_instruction: {
-        parts: [{ text: systemPrompt || "Transcreva o áudio fielmente." }],
+        parts: [{ text: ANTI_CHATBOT_RULE + "\n" + (systemPrompt || "Transcreva o áudio fielmente.") }],
       },
       contents: [
         {
@@ -295,7 +301,6 @@ Deno.serve(async (req) => {
     };
     if (GROUNDING_MODES.includes(audioModeKey)) {
       geminiBody.tools = [{ google_search: {} }];
-      console.log(`[Grounding] Activated for audio mode: ${audioModeKey}`);
     }
 
     const geminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
