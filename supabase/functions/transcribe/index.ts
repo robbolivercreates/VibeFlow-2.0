@@ -7,13 +7,13 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 
 // Per-mode thinking levels
 const THINKING_LEVELS: Record<string, string> = {
-  text: "none",
-  chat: "none",
-  social: "none",
-  x_tweet: "none",
+  text: "minimal",
+  chat: "minimal",
+  social: "minimal",
+  x_tweet: "minimal",
   email: "low",
   formal: "low",
-  translation: "none",
+  translation: "minimal",
   summary: "low",
   topics: "low",
   meeting: "low",
