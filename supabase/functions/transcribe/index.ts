@@ -5,27 +5,29 @@ import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.t
 const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Per-mode thinking levels
-const THINKING_LEVELS: Record<string, string> = {
-  text: "minimal",
-  chat: "minimal",
-  social: "minimal",
-  x_tweet: "minimal",
-  email: "low",
-  formal: "low",
-  translation: "minimal",
-  summary: "low",
-  topics: "low",
-  meeting: "low",
+// Per-mode thinking levels (null = omit thinkingConfig entirely, uses model default)
+const THINKING_LEVELS: Record<string, string | null> = {
+  text: null,
+  chat: null,
+  social: null,
+  x_tweet: null,
+  email: null,
+  formal: null,
+  translation: null,
+  summary: null,
+  topics: null,
+  meeting: null,
   creative: "medium",
   ux_design: "medium",
   code: "high",
   vibe_coder: "high",
-  custom: "low",
+  custom: null,
 };
 
-function getThinkingLevel(mode: string): string {
-  return THINKING_LEVELS[mode] || "low";
+function getThinkingConfig(mode: string): Record<string, any> | undefined {
+  const level = THINKING_LEVELS[mode] ?? null;
+  if (!level) return undefined; // omit = model default (minimal for Flash-Lite)
+  return { thinkingConfig: { thinkingLevel: level } };
 }
 
 // Anti-chatbot wrapper: prevents Gemini from responding conversationally
@@ -186,7 +188,7 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: temperature ?? 0.3,
             maxOutputTokens: maxOutputTokens ?? 2048,
-            thinkingConfig: { thinkingLevel: getThinkingLevel(modeKey) },
+            ...getThinkingConfig(modeKey),
           },
         };
         if (GROUNDING_MODES.includes(modeKey)) {
@@ -232,7 +234,7 @@ Deno.serve(async (req) => {
 
       const textGeminiBody = {
         contents: [{ parts: [{ text: translationPrompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048, thinkingConfig: { thinkingLevel: "minimal" } },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
       };
 
       const textGeminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -289,9 +291,7 @@ Deno.serve(async (req) => {
       generationConfig: {
         temperature: temperature ?? 0.1,
         maxOutputTokens: maxOutputTokens ?? 8192,
-        thinkingConfig: {
-          thinkingLevel: getThinkingLevel(audioModeKey),
-        },
+        ...getThinkingConfig(audioModeKey),
       },
     };
     if (GROUNDING_MODES.includes(audioModeKey)) {
