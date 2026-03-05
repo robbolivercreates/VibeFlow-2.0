@@ -2,8 +2,31 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.ts";
 
-const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_MODEL = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
+
+// Per-mode thinking levels (must match client-side TranscriptionMode.thinkingLevel)
+const THINKING_LEVELS: Record<string, string> = {
+  text: "minimal",
+  chat: "minimal",
+  social: "minimal",
+  x_tweet: "minimal",
+  email: "low",
+  formal: "low",
+  translation: "low",
+  summary: "low",
+  topics: "low",
+  meeting: "low",
+  creative: "medium",
+  ux_design: "medium",
+  code: "high",
+  vibe_coder: "high",
+  custom: "low",
+};
+
+function getThinkingLevel(mode: string): string {
+  return THINKING_LEVELS[mode] || "low";
+}
 
 // Free tier mode restrictions (lowercase). App sends lowercase apiName values.
 const FREE_MODES = ["text", "chat"];
@@ -133,6 +156,9 @@ Deno.serve(async (req) => {
           generationConfig: {
             temperature: temperature ?? 0.3,
             maxOutputTokens: maxOutputTokens ?? 2048,
+            thinkingConfig: {
+              thinkingLevel: getThinkingLevel((mode || "text").toLowerCase()),
+            },
           },
         };
 
@@ -181,7 +207,7 @@ Deno.serve(async (req) => {
 
       const textGeminiBody = {
         contents: [{ parts: [{ text: translationPrompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 2048, thinkingConfig: { thinkingLevel: "minimal" } },
       };
 
       const textGeminiUrl = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${geminiKey}`;
@@ -237,6 +263,9 @@ Deno.serve(async (req) => {
       generationConfig: {
         temperature: temperature ?? 0.1,
         maxOutputTokens: maxOutputTokens ?? 8192,
+        thinkingConfig: {
+          thinkingLevel: getThinkingLevel((mode || "text").toLowerCase()),
+        },
       },
     };
 
