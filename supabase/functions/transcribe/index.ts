@@ -21,8 +21,18 @@ const SMART_THINKING: Record<string, string> = {
   translation: "low",  // needs light reasoning for natural cross-language output
 };
 
-function getModelForMode(mode: string): string {
-  return SMART_MODES.includes(mode) ? GEMINI_MODEL_SMART : GEMINI_MODEL_FAST;
+function getModelForMode(mode: string, systemPrompt?: string): string {
+  if (SMART_MODES.includes(mode)) return GEMINI_MODEL_SMART;
+  // Auto-upgrade to SMART if output language differs from PT-BR (cross-language translation)
+  // The systemPrompt contains "output the result in {language}" from the app
+  if (systemPrompt) {
+    const lower = systemPrompt.toLowerCase();
+    // Detect non-Portuguese output language instruction
+    if (lower.includes("output the result in") && !lower.includes("output the result in portuguese")) {
+      return GEMINI_MODEL_SMART;
+    }
+  }
+  return GEMINI_MODEL_FAST;
 }
 
 function getThinkingConfig(mode: string, model: string): Record<string, any> | undefined {
@@ -155,7 +165,7 @@ Deno.serve(async (req) => {
     // 5. Mode gating (instant, no I/O)
     const normalizedMode = (mode || "text").toLowerCase();
 
-    console.log(`[PERF] auth+parse=${(t1 - t0).toFixed(0)}ms usage=${(t2 - t1).toFixed(0)}ms plan=${effectivePlan} mode=${normalizedMode} model=${getModelForMode(normalizedMode).replace('gemini-','')}`);
+    console.log(`[PERF] auth+parse=${(t1 - t0).toFixed(0)}ms usage=${(t2 - t1).toFixed(0)}ms plan=${effectivePlan} mode=${normalizedMode} model=${getModelForMode(normalizedMode, systemPrompt).replace('gemini-','')}`);
 
     // 6. Call Gemini API
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -172,7 +182,7 @@ Deno.serve(async (req) => {
       // ── Vox Transform: text + systemPrompt (no targetLanguage) → transform text ──
       if (systemPrompt && !targetLanguage) {
         const modeKey = (mode || "text").toLowerCase();
-        const modeModel = getModelForMode(modeKey);
+        const modeModel = getModelForMode(modeKey, systemPrompt);
         // Anti-chatbot wrapper only for Smart model (3.1 tends to chat, 2.5 Lite doesn't)
         const finalPrompt = modeModel === GEMINI_MODEL_SMART
           ? ANTI_CHATBOT_RULE + "\n" + systemPrompt
@@ -268,7 +278,7 @@ Deno.serve(async (req) => {
       : "Transcreva e processe o áudio a seguir conforme suas instruções:";
 
     const audioModeKey = (mode || "text").toLowerCase();
-    const audioModel = getModelForMode(audioModeKey);
+    const audioModel = getModelForMode(audioModeKey, systemPrompt);
     // Anti-chatbot wrapper only for Smart model
     const audioSystemPrompt = systemPrompt || "Transcreva o áudio fielmente.";
     const audioFinalPrompt = audioModel === GEMINI_MODEL_SMART
