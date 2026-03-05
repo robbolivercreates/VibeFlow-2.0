@@ -1,0 +1,12 @@
+{
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "abi-baseline-json" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.abi.json",
+    "const-values" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-primary.swiftconstvalues",
+    "dependencies" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-primary.d",
+    "diagnostics" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-primary.dia",
+    "objc-header" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub-Swift.h",
+    "swiftdoc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.swiftdoc",
+    "swiftmodule" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.swiftmodule",
+    "swiftsourceinfo" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/swift-transformers.build/Release/Hub.build/Objects-normal/arm64/Hub.swiftsourceinfo"
+  }
+}

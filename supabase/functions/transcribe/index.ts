@@ -10,7 +10,7 @@ const GEMINI_MODEL_SMART = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
 // Modes that need reasoning → use Smart model
-const SMART_MODES = ["creative", "ux_design", "code", "vibe_coder"];
+const SMART_MODES = ["creative", "ux_design", "code", "vibe_coder", "translation"];
 
 // Smart model thinking levels (only used for 3.1 modes)
 const SMART_THINKING: Record<string, string> = {
@@ -18,6 +18,7 @@ const SMART_THINKING: Record<string, string> = {
   ux_design: "medium",
   code: "high",
   vibe_coder: "high",
+  translation: "low",  // needs light reasoning for natural cross-language output
 };
 
 function getModelForMode(mode: string): string {

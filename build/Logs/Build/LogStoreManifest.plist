@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>logFormatVersion</key>
+	<integer>12</integer>
+	<key>logs</key>
+	<dict>
+		<key>6EFC5D07-433C-41AD-8577-F4E9FC0D472F</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>6EFC5D07-433C-41AD-8577-F4E9FC0D472F.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>S</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>0</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>VibeFlow-2.0</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>VoxAiGo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Cleaning workspace VibeFlow-2 with scheme VoxAiGo and configuration Release</string>
+			<key>timeStartedRecording</key>
+			<real>794428499.74632394</real>
+			<key>timeStoppedRecording</key>
+			<real>794428501.24811804</real>
+			<key>title</key>
+			<string>Cleaning workspace VibeFlow-2 with scheme VoxAiGo and configuration Release</string>
+			<key>uniqueIdentifier</key>
+			<string>6EFC5D07-433C-41AD-8577-F4E9FC0D472F</string>
+		</dict>
+		<key>92FD0EB8-5831-4DD8-AD32-2D51D3D83C78</key>
+		<dict>
+			<key>className</key>
+			<string>IDECommandLineBuildLog</string>
+			<key>documentTypeString</key>
+			<string>&lt;nil&gt;</string>
+			<key>domainType</key>
+			<string>Xcode.IDEActivityLogDomainType.BuildLog</string>
+			<key>fileName</key>
+			<string>92FD0EB8-5831-4DD8-AD32-2D51D3D83C78.xcactivitylog</string>
+			<key>hasPrimaryLog</key>
+			<true/>
+			<key>primaryObservable</key>
+			<dict>
+				<key>highLevelStatus</key>
+				<string>W</string>
+				<key>totalNumberOfAnalyzerIssues</key>
+				<integer>0</integer>
+				<key>totalNumberOfErrors</key>
+				<integer>0</integer>
+				<key>totalNumberOfTestFailures</key>
+				<integer>0</integer>
+				<key>totalNumberOfWarnings</key>
+				<integer>18</integer>
+			</dict>
+			<key>schemeIdentifier-containerName</key>
+			<string>VibeFlow-2.0</string>
+			<key>schemeIdentifier-schemeName</key>
+			<string>VoxAiGo</string>
+			<key>schemeIdentifier-sharedScheme</key>
+			<integer>1</integer>
+			<key>signature</key>
+			<string>Building workspace VibeFlow-2 with scheme VoxAiGo and configuration Release</string>
+			<key>timeStartedRecording</key>
+			<real>794428501.25719404</real>
+			<key>timeStoppedRecording</key>
+			<real>794428680.31477702</real>
+			<key>title</key>
+			<string>Building workspace VibeFlow-2 with scheme VoxAiGo and configuration Release</string>
+			<key>uniqueIdentifier</key>
+			<string>92FD0EB8-5831-4DD8-AD32-2D51D3D83C78</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

@@ -1,0 +1,286 @@
+{
+  "" : {
+    "const-values" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary.swiftconstvalues",
+    "dependencies" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary.d",
+    "diagnostics" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary.dia",
+    "emit-module-dependencies" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary-emit-module.dia",
+    "pch" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGo-primary.swiftdeps"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/AppIcon.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppIcon.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppIcon.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppIcon.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/AppVersion.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppVersion.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppVersion.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AppVersion.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/AudioRecorder.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AudioRecorder.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AudioRecorder.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AudioRecorder.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/ClipboardHelper.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ClipboardHelper.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ClipboardHelper.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ClipboardHelper.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/Config.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Config.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Config.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Config.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/ContentView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ContentView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/GeminiService.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/GeminiService.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/GeminiService.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/GeminiService.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/Localization.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Localization.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Localization.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/Localization.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/TranscriptionMode.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TranscriptionMode.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TranscriptionMode.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TranscriptionMode.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/DesignTokens.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DesignTokens.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DesignTokens.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DesignTokens.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/AnalyticsManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/AuthManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AuthManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AuthManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AuthManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/AutoHideManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AutoHideManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AutoHideManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AutoHideManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/ConversationReplyManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/CustomDictionaryManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/CustomDictionaryManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/CustomDictionaryManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/CustomDictionaryManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/DeviceIdentifier.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceIdentifier.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceIdentifier.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceIdentifier.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/DeviceManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DeviceManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/HistoryManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/LocalModeFormatter.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LocalModeFormatter.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LocalModeFormatter.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LocalModeFormatter.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/SettingsManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/ShortcutManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ShortcutManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ShortcutManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ShortcutManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/SnippetsManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/SoundManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SoundManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SoundManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SoundManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/SubscriptionManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SubscriptionManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SubscriptionManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SubscriptionManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/SupabaseService.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseService.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseService.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseService.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/TrialManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/WhisperEngine.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WhisperEngine.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WhisperEngine.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WhisperEngine.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/WindowManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WindowManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WindowManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WindowManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Managers/WritingStyleManager.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WritingStyleManager.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WritingStyleManager.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WritingStyleManager.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Models/SupabaseModels.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseModels.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseModels.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SupabaseModels.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/SpeechLanguage.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SpeechLanguage.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SpeechLanguage.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SpeechLanguage.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/AccountView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AccountView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AccountView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AccountView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/AnalyticsView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/AnalyticsView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/ConversationReplyView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ConversationReplyView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/DictionaryView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DictionaryView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DictionaryView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/DictionaryView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/FloatingPreviewView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/FloatingPreviewView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/FloatingPreviewView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/FloatingPreviewView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/HistoryView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HistoryView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/HomeView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HomeView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HomeView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/HomeView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/LanguageNotificationView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguageNotificationView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguageNotificationView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguageNotificationView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/LanguagesView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguagesView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguagesView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LanguagesView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/LoginView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LoginView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LoginView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/LoginView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/MainWindowView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/MainWindowView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/MainWindowView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/MainWindowView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/ModernSettingsView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModernSettingsView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModernSettingsView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModernSettingsView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/ModesView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModesView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModesView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ModesView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/SettingsDetailView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsDetailView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsDetailView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsDetailView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/SettingsView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SettingsView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/SetupWizardView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SetupWizardView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SetupWizardView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SetupWizardView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/SnippetsView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/SnippetsView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/StyleView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/StyleView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/StyleView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/StyleView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/ToastView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ToastView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ToastView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/ToastView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/TrialViews.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialViews.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialViews.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/TrialViews.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VibeFlow/Views/WakeWordNotificationView.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WakeWordNotificationView.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WakeWordNotificationView.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/WakeWordNotificationView.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VoxAiGoApp.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoApp.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoApp.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoApp.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/VoxAiGoViewModel.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoViewModel.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoViewModel.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/VoxAiGoViewModel.o"
+  },
+  "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/Sources/main.swift" : {
+    "index-unit-output-path" : "/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/main.o",
+    "llvm-bc" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/main.bc",
+    "object" : "/Users/robsonoliveira/Library/Mobile Documents/com~apple~CloudDocs/VideoCode2026/VibeFlow 2.0/VibeFlow-2.0/build/Build/Intermediates.noindex/VoxAiGo.build/Release/VoxAiGo.build/Objects-normal/arm64/main.o"
+  }
+}
