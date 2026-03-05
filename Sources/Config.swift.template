@@ -1,0 +1,9 @@
+import Foundation
+
+/// Template de configuração - Copie para Config.swift e adicione sua API key
+/// NÃO commite o Config.swift com sua chave real!
+struct Config {
+    /// Sua API Key do Google Gemini
+    /// Obtenha em: https://makersuite.google.com/app/apikey
+    static let geminiAPIKey = "YOUR_API_KEY_HERE"
+}

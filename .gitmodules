@@ -1,0 +1,3 @@
+[submodule "vibeflow-lp"]
+	path = vibeflow-lp
+	url = https://github.com/robbolivercreates/vibeflow-landing-page.git

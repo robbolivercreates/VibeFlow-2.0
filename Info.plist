@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDisplayName</key>
+	<string>VoxAiGo</string>
+	<key>CFBundleExecutable</key>
+	<string>VoxAiGo</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.voxaigo.app</string>
+	<key>CFBundleName</key>
+	<string>VoxAiGo</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>3.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<!-- NOTE: LSUIElement removed — it causes NSStatusItem to be positioned off-screen.
+	     Dock icon is hidden programmatically via NSApp.setActivationPolicy(.accessory) instead. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.voxaigo.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>voxaigo</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>VoxAiGo precisa simular teclas para colar código automaticamente no editor ativo.</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>VoxAiGo precisa acessar o microfone para gravar seu ditado de código.</string>
+</dict>
+</plist>
