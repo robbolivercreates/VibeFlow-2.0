@@ -109,7 +109,7 @@ class SupabaseService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceManager.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 30
+        request.timeoutInterval = 60
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -222,7 +222,7 @@ class SupabaseService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceManager.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 30
+        request.timeoutInterval = 90
 
         let (data, response) = try await URLSession.shared.data(for: request)
 
@@ -268,7 +268,7 @@ class SupabaseService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(DeviceManager.shared.deviceID, forHTTPHeaderField: "X-Device-ID")
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        request.timeoutInterval = 60
+        request.timeoutInterval = 120
 
         let (data, response) = try await URLSession.shared.data(for: request)
         print("[Supabase] Response received, status: \((response as? HTTPURLResponse)?.statusCode ?? -1)")

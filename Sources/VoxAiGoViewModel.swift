@@ -425,11 +425,17 @@ class VoxAiGoViewModel: ObservableObject {
 
                 // Smart fallback: on timeout or payload too large, retry via Whisper → Gemini text
                 let shouldFallbackToWhisper: Bool = {
-                    guard let geminiError = error as? GeminiError else { return false }
-                    switch geminiError {
-                    case .timeout, .payloadTooLarge: return true
-                    default: return false
+                    if let geminiError = error as? GeminiError {
+                        switch geminiError {
+                        case .timeout, .payloadTooLarge: return true
+                        default: return false
+                        }
                     }
+                    // URLSession timeout (from Supabase pipeline)
+                    if let urlError = error as? URLError, urlError.code == .timedOut {
+                        return true
+                    }
+                    return false
                 }()
 
                 if shouldFallbackToWhisper {
