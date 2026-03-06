@@ -43,8 +43,8 @@ function getThinkingConfig(mode: string, model: string): Record<string, any> | u
   }
   // 3.1 models use thinkingLevel
   const level = SMART_THINKING[mode];
-  // FAST modes (3.1 without thinking) → "none"
-  if (!level) return { thinkingConfig: { thinkingLevel: "none" } };
+  // FAST modes (3.1 without thinking) → "minimal" (lowest level)
+  if (!level) return { thinkingConfig: { thinkingLevel: "minimal" } };
   return { thinkingConfig: { thinkingLevel: level } };
 }
 
