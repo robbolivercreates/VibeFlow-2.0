@@ -11,21 +11,22 @@ const GEMINI_MODEL_TRANSLATE = "gemini-2.5-flash";
 const GEMINI_MODEL_SMART     = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
 
-// Modes that need deep reasoning → use Smart model
-const SMART_MODES = ["creative", "ux_design", "code", "vibe_coder", "translation"];
+// Modes that need deep reasoning → use Smart model (3.1 Flash Lite)
+const SMART_MODES = ["code", "ux_design"];
 
-// Smart model thinking levels (only used for 3.1 modes)
+// Modes that need quality but not deep reasoning → use Translate model (2.5 Flash full)
+const TRANSLATE_MODES = ["creative", "vibe_coder", "translation"];
+
+// Smart model thinking levels (only code and ux_design)
 const SMART_THINKING: Record<string, string> = {
-  creative: "medium",
   ux_design: "medium",
   code: "high",
-  vibe_coder: "high",
-  translation: "low",
 };
 
 function getModelForMode(mode: string, systemPrompt?: string): string {
   if (SMART_MODES.includes(mode)) return GEMINI_MODEL_SMART;
-  // Auto-upgrade to TRANSLATE (2.5 Flash full) when output language is not Portuguese
+  if (TRANSLATE_MODES.includes(mode)) return GEMINI_MODEL_TRANSLATE;
+  // Auto-upgrade to TRANSLATE when output language is not Portuguese
   if (systemPrompt) {
     const lower = systemPrompt.toLowerCase();
     if (lower.includes("output the result in") && !lower.includes("output the result in portuguese")) {
