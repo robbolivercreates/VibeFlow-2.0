@@ -3,10 +3,10 @@ import { corsHeaders } from "../_shared/cors.ts";
 import { createSupabaseClient, createSupabaseAdmin } from "../_shared/supabase.ts";
 
 // ── Three-Tier Model Strategy ────────────────────────────────────────────
-// Fast:      2.5 Flash Lite — simple formatting, no cross-language
+// Fast:      3.1 Flash Lite — simple formatting, thinking OFF
 // Translate: 2.5 Flash     — cross-language output (EN output from PT speech)
 // Smart:     3.1 Flash Lite — creative, code, UX design (reasoning ON)
-const GEMINI_MODEL_FAST      = "gemini-2.5-flash-lite";
+const GEMINI_MODEL_FAST      = "gemini-3.1-flash-lite-preview";
 const GEMINI_MODEL_TRANSLATE = "gemini-2.5-flash";
 const GEMINI_MODEL_SMART     = "gemini-3.1-flash-lite-preview";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models";
@@ -37,13 +37,14 @@ function getModelForMode(mode: string, systemPrompt?: string): string {
 }
 
 function getThinkingConfig(mode: string, model: string): Record<string, any> | undefined {
-  if (model === GEMINI_MODEL_FAST || model === GEMINI_MODEL_TRANSLATE) {
-    // 2.5 models use thinkingBudget — 0 = completely OFF
+  if (model === GEMINI_MODEL_TRANSLATE) {
+    // 2.5 Flash uses thinkingBudget — 0 = completely OFF
     return { thinkingConfig: { thinkingBudget: 0 } };
   }
-  // 3.1 uses thinkingLevel
+  // 3.1 models use thinkingLevel
   const level = SMART_THINKING[mode];
-  if (!level) return undefined;
+  // FAST modes (3.1 without thinking) → "none"
+  if (!level) return { thinkingConfig: { thinkingLevel: "none" } };
   return { thinkingConfig: { thinkingLevel: level } };
 }
 
