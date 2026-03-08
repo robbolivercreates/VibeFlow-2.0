@@ -32,6 +32,7 @@ class AudioRecorder: NSObject, ObservableObject {
     private var audioRecorder: AVAudioRecorder?
     private var recordingURL: URL?
     private var levelTimer: Timer?
+    private var micPermissionRetryTimer: Timer?
 
     override init() {
         super.init()
@@ -195,26 +196,55 @@ class AudioRecorder: NSObject, ObservableObject {
         recordingStartTime = nil
         audioLevel = 0.0
         
+        // Stop any existing retry timer
+        micPermissionRetryTimer?.invalidate()
+        micPermissionRetryTimer = nil
+        
         // Check microphone permission status (don't prompt — wizard handles it)
         let status = AVCaptureDevice.authorizationStatus(for: .audio)
         switch status {
         case .authorized:
+            self.recordingError = nil
             self.performRecording()
         case .notDetermined:
             // First time — request access
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                 DispatchQueue.main.async {
                     if granted {
+                        self?.recordingError = nil
                         self?.performRecording()
                     } else {
                         self?.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
+                        self?.startMicPermissionRetryTimer()
                         NotificationCenter.default.post(name: .recordingCancelled, object: nil)
                     }
                 }
             }
         default:
             self.recordingError = "Permissão de microfone negada. Vá em Ajustes do Sistema → Privacidade → Microfone."
+            self.startMicPermissionRetryTimer()
             NotificationCenter.default.post(name: .recordingCancelled, object: nil)
+        }
+    }
+    
+    /// Periodically re-checks microphone permission status.
+    /// Once permission is granted in System Settings, clears the error.
+    /// Note: macOS may require an app restart for AVCaptureDevice to update,
+    /// but we still try in case the user toggles it quickly.
+    private func startMicPermissionRetryTimer() {
+        // Don't create duplicates
+        guard micPermissionRetryTimer == nil else { return }
+        
+        micPermissionRetryTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] timer in
+            let status = AVCaptureDevice.authorizationStatus(for: .audio)
+            if status == .authorized {
+                DispatchQueue.main.async {
+                    self?.recordingError = nil
+                    print("[AudioRecorder] Microphone permission granted via retry!")
+                }
+                timer.invalidate()
+                self?.micPermissionRetryTimer = nil
+            }
         }
     }
     

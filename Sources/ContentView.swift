@@ -50,6 +50,11 @@ struct ModernVoiceOverlay: View {
     @State private var glowOpacity: CGFloat = 0
     @State private var micPulse = false
 
+    // Processing stage feedback
+    @State private var processingStage: Int = 0
+    @State private var processingTimer: Timer?
+    @State private var showStagedFeedback = false
+
     private var currentState: OverlayState {
         if viewModel.isProcessing {
             return .processing
@@ -89,6 +94,31 @@ struct ModernVoiceOverlay: View {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     isExpanded = false
                 }
+                // Start staged feedback after 2s delay
+                processingStage = 0
+                showStagedFeedback = false
+                processingTimer?.invalidate()
+                processingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in
+                    DispatchQueue.main.async {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showStagedFeedback = true
+                        }
+                        // Then cycle through stages every 2.5s
+                        processingTimer = Timer.scheduledTimer(withTimeInterval: 2.5, repeats: true) { _ in
+                            DispatchQueue.main.async {
+                                withAnimation(.easeInOut(duration: 0.35)) {
+                                    processingStage = min(processingStage + 1, 3)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Reset staged feedback
+                processingTimer?.invalidate()
+                processingTimer = nil
+                showStagedFeedback = false
+                processingStage = 0
             }
         }
     }
@@ -152,11 +182,12 @@ struct ModernVoiceOverlay: View {
     private var containerWidth: CGFloat {
         switch currentState {
         case .idle:
-            return 200
+            // Wider when showing favorite mode pills
+            return settings.favoriteModes.isEmpty ? 200 : 280
         case .listening:
             return 440
         case .processing:
-            return 220
+            return showStagedFeedback ? 300 : 220
         }
     }
 
@@ -274,6 +305,40 @@ struct ModernVoiceOverlay: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.orange)
                     .lineLimit(1)
+            } else if !settings.favoriteModes.isEmpty {
+                // Favorite mode pills — click to switch mode
+                HStack(spacing: 5) {
+                    ForEach(settings.favoriteModes, id: \.self) { mode in
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                settings.selectedMode = mode
+                            }
+                        }) {
+                            HStack(spacing: 3) {
+                                Image(systemName: mode.icon)
+                                    .font(.system(size: 8, weight: .semibold))
+                                Text(mode.localizedName)
+                                    .font(.system(size: 9, weight: .semibold))
+                            }
+                            .foregroundColor(mode == settings.selectedMode ? .white : VoiceColors.textSecondary)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 4)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(mode == settings.selectedMode
+                                          ? VoxTheme.accent
+                                          : Color.white.opacity(0.08))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .stroke(mode == settings.selectedMode
+                                            ? VoxTheme.accent.opacity(0.6)
+                                            : Color.white.opacity(0.06), lineWidth: 0.5)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             } else {
                 Text("Segure")
                     .font(.system(size: 13, weight: .medium))
@@ -310,19 +375,48 @@ struct ModernVoiceOverlay: View {
     private var processingContent: some View {
         HStack(spacing: 8) {
             // Spinning sparkle
-            Image(systemName: "sparkles")
+            Image(systemName: processingStageIcon)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(viewModel.isTransformMode ? VoiceColors.transform : VoiceColors.processing)
                 .rotationEffect(.degrees(viewModel.isProcessing ? 360 : 0))
                 .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: viewModel.isProcessing)
 
-            Text(viewModel.isTransformMode
-                    ? L10n.transforming
-                    : (settings.isVoxActive ? L10n.voxProcessing : L10n.processing))
+            Text(processingStageText)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(viewModel.isTransformMode ? VoiceColors.transform : VoiceColors.processing)
+                .id("stage_\(processingStage)_\(showStagedFeedback)")
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .bottom)),
+                    removal: .opacity.combined(with: .move(edge: .top))
+                ))
         }
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
+    }
+
+    /// Current processing stage text
+    private var processingStageText: String {
+        if viewModel.isTransformMode { return L10n.transforming }
+        guard showStagedFeedback else {
+            return settings.isVoxActive ? L10n.voxProcessing : L10n.processing
+        }
+        switch processingStage {
+        case 0: return "Agente Vox Ativado"
+        case 1: return "Buscando Informações..."
+        case 2: return "Analisando Dados..."
+        default: return "Sintetizando Resultados..."
+        }
+    }
+
+    /// Icon changes with stage for visual variety
+    private var processingStageIcon: String {
+        if viewModel.isTransformMode { return "wand.and.stars" }
+        guard showStagedFeedback else { return "sparkles" }
+        switch processingStage {
+        case 0: return "sparkles"
+        case 1: return "magnifyingglass"
+        case 2: return "brain.head.profile"
+        default: return "text.badge.checkmark"
+        }
     }
 
     // MARK: - Right Section (Language + Mode)

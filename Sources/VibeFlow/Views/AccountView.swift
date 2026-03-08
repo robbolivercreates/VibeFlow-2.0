@@ -284,7 +284,7 @@ extension L10n {
     static var upgradeToPro: String { t("Upgrade to Pro", "Fazer Upgrade para Pro", "Actualizar a Pro") }
     static var proFeatures: String { t("Agente Vox + Pro Features", "Agente Vox + Recursos Pro", "Agente Vox + Funciones Pro") }
     static var unlimitedTranscriptions: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
-    static var allFiveModes: String { t("All 15 AI modes (Vibe Coder, Email, Meeting...)", "Todos os 15 modos com I.A. (Vibe Coder, Email, Reuniao...)", "Los 15 modos con I.A. (Vibe Coder, Email, Reunion...)") }
+    static var allFiveModes: String { t("All AI modes + custom modes (Vibe Coder, Email, Meeting...)", "Todos os modos com I.A. + modos personalizados (Vibe Coder, Email, Reuniao...)", "Todos los modos con I.A. + modos personalizados (Vibe Coder, Email, Reunion...)") }
     static var fifteenPlusLanguages: String { t("30 languages", "30 idiomas", "30 idiomas") }
     static var monthly: String { t("Monthly", "Mensal", "Mensual") }
     static var annual: String { t("Annual", "Anual", "Anual") }

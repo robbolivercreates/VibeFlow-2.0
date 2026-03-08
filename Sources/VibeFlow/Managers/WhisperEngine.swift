@@ -19,11 +19,16 @@ class WhisperEngine: ObservableObject {
 
         do {
             // Try to load model from app bundle first
-            let bundleModelPath = Bundle.main.resourcePath.map { "\($0)/whisper-small" }
+            // Priority: Resources/Models/whisper-small (DMG layout) → Resources/whisper-small (fallback)
+            let bundleModelPaths: [String] = [
+                Bundle.main.resourcePath.map { "\($0)/Models/whisper-small" },
+                Bundle.main.resourcePath.map { "\($0)/whisper-small" }
+            ].compactMap { $0 }
+
+            let bundleModelPath = bundleModelPaths.first { FileManager.default.fileExists(atPath: $0) }
 
             let config: WhisperKitConfig
-            if let path = bundleModelPath,
-               FileManager.default.fileExists(atPath: path) {
+            if let path = bundleModelPath {
                 config = WhisperKitConfig(
                     model: "openai_whisper-small",
                     modelFolder: path,
@@ -36,7 +41,7 @@ class WhisperEngine: ObservableObject {
                     model: "openai_whisper-small",
                     verbose: false
                 )
-                print("[WhisperEngine] Model not in bundle — downloading from Hugging Face")
+                print("[WhisperEngine] ⚠️ Model not in bundle — downloading from Hugging Face (searched: \(bundleModelPaths))")
             }
 
             let kit = try await WhisperKit(config)
@@ -46,10 +51,10 @@ class WhisperEngine: ObservableObject {
                 self.isReady = true
                 self.isLoading = false
             }
-            print("[WhisperEngine] Ready")
+            print("[WhisperEngine] ✅ Ready")
         } catch {
             await MainActor.run { self.isLoading = false }
-            print("[WhisperEngine] Setup failed: \(error.localizedDescription)")
+            print("[WhisperEngine] ❌ Setup failed: \(error.localizedDescription)")
         }
     }
 

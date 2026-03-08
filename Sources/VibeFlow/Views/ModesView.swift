@@ -1,12 +1,13 @@
 import SwiftUI
 
-/// Transcription modes management view
+/// Transcription modes management view — organized by category
 struct ModesView: View {
     @StateObject private var settings = SettingsManager.shared
     @StateObject private var analytics = AnalyticsManager.shared
     @StateObject private var subscription = SubscriptionManager.shared
     @State private var showUpgradeModal = false
     @State private var upgradeContext: UpgradeContext = .generic
+    @State private var editingCustomMode: CustomModeDefinition? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -24,8 +25,9 @@ struct ModesView: View {
             // Scrollable content
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
+                    favoriteModesSection
                     currentModeSection
-                    allModesSection
+                    categorizedModesSection
                     conversationReplyModeSection
                     tipSection
                 }
@@ -53,6 +55,59 @@ struct ModesView: View {
         }
     }
 
+    // MARK: - Favorites
+
+    private var favoriteModesSection: some View {
+        Group {
+            if !settings.favoriteModes.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "star.fill")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.yellow)
+                        Text("Favoritos")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    // Favorite mode chips in a horizontal flow
+                    HStack(spacing: 8) {
+                        ForEach(settings.favoriteModes, id: \.self) { mode in
+                            Button(action: {
+                                if subscription.canUseMode(mode) {
+                                    settings.selectedMode = mode
+                                } else {
+                                    upgradeContext = .mode(mode)
+                                    showUpgradeModal = true
+                                }
+                            }) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: mode.icon)
+                                        .font(.system(size: 12))
+                                    Text(mode.localizedName)
+                                        .font(.system(size: 12, weight: .medium))
+                                }
+                                .foregroundStyle(mode == settings.selectedMode ? .white : mode.color)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(mode == settings.selectedMode ? mode.color : mode.color.opacity(0.1))
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(mode.color.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        Spacer()
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Current Mode
 
     private var currentModeSection: some View {
@@ -74,8 +129,19 @@ struct ModesView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(settings.selectedMode.localizedName)
-                        .font(.system(size: 18, weight: .semibold))
+                    HStack(spacing: 8) {
+                        Text(settings.selectedMode.localizedName)
+                            .font(.system(size: 18, weight: .semibold))
+
+                        // Show active toggle info
+                        if settings.selectedMode == .text && settings.textFormalTone {
+                            toggleBadge("Formal")
+                        } else if settings.selectedMode == .summary && settings.summaryBulletFormat {
+                            toggleBadge("Bullets")
+                        } else if settings.selectedMode == .social && settings.socialTweetMode {
+                            toggleBadge("Tweet")
+                        }
+                    }
 
                     Text(settings.selectedMode.shortDescription)
                         .font(.system(size: 13))
@@ -111,6 +177,16 @@ struct ModesView: View {
         }
     }
 
+    private func toggleBadge(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 9, weight: .bold))
+            .foregroundStyle(settings.selectedMode.color)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(settings.selectedMode.color.opacity(0.15))
+            .cornerRadius(4)
+    }
+
     private var temperatureLevel: Int {
         let temp = settings.selectedMode.temperature
         if temp < 0.3 { return 1 }
@@ -120,16 +196,35 @@ struct ModesView: View {
         return 5
     }
 
-    // MARK: - All Modes
+    // MARK: - Categorized Modes
 
-    private var allModesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Todos os Modos")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+    private var categorizedModesSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            ForEach(ModeCategory.allCases, id: \.self) { category in
+                if category == .custom {
+                    customModesSection
+                } else {
+                    categorySection(category)
+                }
+            }
+        }
+    }
 
+    private func categorySection(_ category: ModeCategory) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Category header
+            HStack(spacing: 8) {
+                Image(systemName: category.icon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                Text(category.rawValue)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+
+            // Mode cards
             VStack(spacing: 8) {
-                ForEach(TranscriptionMode.allCases, id: \.self) { mode in
+                ForEach(ModeCategory.modes(for: category), id: \.self) { mode in
                     ModeCard2(
                         mode: mode,
                         isSelected: mode == settings.selectedMode,
@@ -146,6 +241,109 @@ struct ModesView: View {
                     )
                 }
             }
+        }
+    }
+
+    // MARK: - Custom Modes (Meus Modos)
+
+    private var customModesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Category header
+            HStack(spacing: 8) {
+                Image(systemName: ModeCategory.custom.icon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                Text(ModeCategory.custom.rawValue)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                // Mode count
+                Text("\(settings.customModes.count) modo\(settings.customModes.count == 1 ? "" : "s")")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+
+            // Custom mode cards
+            VStack(spacing: 8) {
+                ForEach(settings.customModes) { customMode in
+                    CustomModeCard(
+                        customMode: customMode,
+                        isSelected: settings.selectedMode == .custom && settings.activeCustomModeId == customMode.id,
+                        onSelect: {
+                            if subscription.canUseMode(.custom) {
+                                settings.selectedMode = .custom
+                                settings.activeCustomModeId = customMode.id
+                            } else {
+                                upgradeContext = .mode(.custom)
+                                showUpgradeModal = true
+                            }
+                        },
+                        onDelete: {
+                            withAnimation {
+                                settings.customModes.removeAll { $0.id == customMode.id }
+                                if settings.activeCustomModeId == customMode.id {
+                                    settings.activeCustomModeId = settings.customModes.first?.id
+                                }
+                            }
+                        },
+                        onUpdate: { updated in
+                            if let index = settings.customModes.firstIndex(where: { $0.id == updated.id }) {
+                                settings.customModes[index] = updated
+                            }
+                        }
+                    )
+                }
+            }
+
+            // Add new custom mode button
+            Button(action: addCustomMode) {
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.gray.opacity(0.1))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "plus")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Criar Novo Modo")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Defina um prompt personalizado")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Spacer()
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [6]))
+                        .foregroundStyle(Color.secondary.opacity(0.3))
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func addCustomMode() {
+        // Check limits
+        let isPro = subscription.isPro || TrialManager.shared.isTrialActive()
+        if !isPro && settings.customModes.count >= 3 {
+            upgradeContext = .generic
+            showUpgradeModal = true
+            return
+        }
+
+        let newMode = CustomModeDefinition()
+        withAnimation {
+            settings.customModes.append(newMode)
+            settings.activeCustomModeId = newMode.id
+            settings.selectedMode = .custom
         }
     }
 
@@ -281,6 +479,21 @@ struct ModeCard2: View {
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onSelect)
 
+                // Favorite star button
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        settings.toggleFavorite(mode)
+                    }
+                }) {
+                    Image(systemName: settings.isFavorite(mode) ? "star.fill" : "star")
+                        .font(.system(size: 14))
+                        .foregroundStyle(settings.isFavorite(mode) ? .yellow : .secondary.opacity(0.5))
+                        .frame(width: 28, height: 28)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .help(settings.isFavorite(mode) ? "Remover dos favoritos" : (settings.favoriteModes.count >= 4 ? "Máximo 4 favoritos" : "Adicionar aos favoritos"))
+
                 // Expand button (separate from select area)
                 Button(action: { withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() } }) {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -304,7 +517,44 @@ struct ModeCard2: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .lineSpacing(2)
 
-                    // Custom prompt editor (only for Meu Modo)
+                    // Mode-specific toggles
+                    if mode == .text {
+                        modeToggle(
+                            label: "Tom Formal",
+                            description: "Usa linguagem corporativa e profissional",
+                            isOn: Binding(
+                                get: { settings.textFormalTone },
+                                set: { settings.textFormalTone = $0 }
+                            ),
+                            color: mode.color
+                        )
+                    }
+
+                    if mode == .summary {
+                        modeToggle(
+                            label: "Formato Tópicos",
+                            description: "Usa bullet points ao invés de parágrafos",
+                            isOn: Binding(
+                                get: { settings.summaryBulletFormat },
+                                set: { settings.summaryBulletFormat = $0 }
+                            ),
+                            color: mode.color
+                        )
+                    }
+
+                    if mode == .social {
+                        modeToggle(
+                            label: "Modo Tweet",
+                            description: "Limita a 280 caracteres (formato X/Twitter)",
+                            isOn: Binding(
+                                get: { settings.socialTweetMode },
+                                set: { settings.socialTweetMode = $0 }
+                            ),
+                            color: mode.color
+                        )
+                    }
+
+                    // Custom prompt editor (only for Meu Modo — legacy single mode)
                     if mode == .custom {
                         VStack(alignment: .leading, spacing: 8) {
                             Divider()
@@ -363,6 +613,209 @@ struct ModeCard2: View {
             withAnimation(.easeInOut(duration: 0.15)) {
                 isHovered = hovering
             }
+        }
+    }
+
+    /// Reusable toggle row for mode options
+    private func modeToggle(label: String, description: String, isOn: Binding<Bool>, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Divider()
+                .padding(.vertical, 6)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.system(size: 13, weight: .medium))
+                    Text(description)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Toggle("", isOn: isOn)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+                    .scaleEffect(0.8)
+            }
+        }
+    }
+}
+
+// MARK: - Custom Mode Card
+
+struct CustomModeCard: View {
+    let customMode: CustomModeDefinition
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onDelete: () -> Void
+    let onUpdate: (CustomModeDefinition) -> Void
+
+    @State private var isHovered = false
+    @State private var isExpanded = false
+    @State private var editName: String = ""
+    @State private var editPrompt: String = ""
+
+    private var modeColor: Color {
+        customMode.color
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Main row
+            HStack(spacing: 14) {
+                HStack(spacing: 14) {
+                    // Icon
+                    ZStack {
+                        Circle()
+                            .fill(modeColor.opacity(isSelected ? 0.2 : 0.1))
+                            .frame(width: 40, height: 40)
+
+                        Image(systemName: customMode.icon)
+                            .font(.system(size: 16))
+                            .foregroundStyle(modeColor)
+                    }
+
+                    // Info
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text(customMode.name)
+                                .font(.system(size: 14, weight: isSelected ? .semibold : .medium))
+                                .foregroundStyle(isSelected ? modeColor : .primary)
+
+                            if isSelected {
+                                Text("ATIVO")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(modeColor)
+                                    .cornerRadius(4)
+                            }
+                        }
+
+                        Text(customMode.prompt.isEmpty ? "Sem prompt definido" : String(customMode.prompt.prefix(60)) + (customMode.prompt.count > 60 ? "..." : ""))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+                .onTapGesture(perform: onSelect)
+
+                // Expand button
+                Button(action: {
+                    if !isExpanded {
+                        editName = customMode.name
+                        editPrompt = customMode.prompt
+                    }
+                    withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+                }) {
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 32)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+            }
+            .padding(14)
+
+            // Expanded: edit prompt
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+
+                    // Name field
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("NOME")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        TextField("Nome do modo", text: $editName)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 13))
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(VoxTheme.background)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
+                            )
+                            .onChange(of: editName) { newValue in
+                                var updated = customMode
+                                updated.name = newValue
+                                onUpdate(updated)
+                            }
+                    }
+
+                    // Prompt field
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("PROMPT")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.secondary)
+
+                        TextEditor(text: $editPrompt)
+                            .font(.system(size: 13))
+                            .scrollContentBackground(.hidden)
+                            .padding(10)
+                            .frame(minHeight: 100, maxHeight: 200)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(VoxTheme.background)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(VoxTheme.surfaceBorder, lineWidth: 1)
+                            )
+                            .onChange(of: editPrompt) { newValue in
+                                var updated = customMode
+                                updated.prompt = newValue
+                                onUpdate(updated)
+                            }
+
+                        if editPrompt.isEmpty {
+                            Text("Ex: \"Transcreva como legendas para YouTube\" ou \"Reformule como roteiro de podcast\"")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
+                                .italic()
+                        }
+                    }
+
+                    // Delete button
+                    HStack {
+                        Spacer()
+                        Button(action: onDelete) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 11))
+                                Text("Excluir")
+                                    .font(.system(size: 12))
+                            }
+                            .foregroundStyle(.red.opacity(0.8))
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(isSelected ? modeColor.opacity(0.06) : (isHovered ? VoxTheme.surface.opacity(0.1) : VoxTheme.surface))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(isSelected ? modeColor.opacity(0.25) : VoxTheme.surfaceBorder, lineWidth: 1)
+        )
+        .onHover { hovering in
+            withAnimation(.easeInOut(duration: 0.15)) { isHovered = hovering }
         }
     }
 }
@@ -698,7 +1151,7 @@ extension L10n {
         "Este modo con I.A. requiere el plan Pro.\nDesbloquea el Agente Vox inteligente y todas las funciones."
     ) }
     static var upgradeFeatureUnlimited: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
-    static var upgradeFeatureAllModes: String { t("All 15 AI modes (Vibe Coder, Social, Meeting...)", "Todos os 15 modos com I.A. (Vibe Coder, Social, Reuniao...)", "Los 15 modos con I.A. (Vibe Coder, Social, Reunion...)") }
+    static var upgradeFeatureAllModes: String { t("All AI modes + custom modes", "Todos os modos com I.A. + modos personalizados", "Todos los modos con I.A. + modos personalizados") }
     static var upgradeFeatureAllLanguages: String { t("30 languages available", "30 idiomas disponiveis", "30 idiomas disponibles") }
     static var upgradeFeatureSmartFormatting: String { t("Agente Vox — intelligent formatting", "Agente Vox — formatacao inteligente", "Agente Vox — formato inteligente") }
     static var upgradeFeatureSnippets: String { t("Custom snippets", "Snippets personalizados", "Fragmentos personalizados") }
@@ -714,7 +1167,7 @@ extension L10n {
     }
     static func upgradeDescription(for ctx: UpgradeContext) -> String {
         switch ctx {
-        case .mode(let m): return t("The \(m.localizedName) mode uses advanced AI.\nUnlock all 15 modes with Pro.", "O modo \(m.localizedName) usa I.A. avancada.\nDesbloqueie todos os 15 modos com o Pro.", "El modo \(m.localizedName) usa I.A. avanzada.\nDesbloquea los 15 modos con Pro.")
+        case .mode(let m): return t("The \(m.localizedName) mode uses advanced AI.\nUnlock all modes with Pro.", "O modo \(m.localizedName) usa I.A. avancada.\nDesbloqueie todos os modos com o Pro.", "El modo \(m.localizedName) usa I.A. avanzada.\nDesbloquea todos los modos con Pro.")
         case .language(let l): return t("\(l.displayName) requires Pro.\nFree: Portuguese and English.", "\(l.displayName) requer o plano Pro.\nGratuitos: Portugues e Ingles.", "\(l.displayName) requiere Pro.\nGratuitos: Portugues e Ingles.")
         case .snippets: return t("Custom snippets require Pro.", "Snippets personalizados requerem o Pro.", "Fragmentos personalizados requieren Pro.")
         case .wakeWord: return t("Voice commands require Pro.\nSwitch modes hands-free while recording.", "Comandos de voz requerem o Pro.\nAlterne modos sem as maos durante a gravacao.", "Comandos de voz requieren Pro.\nAlterna modos sin manos durante la grabacion.")

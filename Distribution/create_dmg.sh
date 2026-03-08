@@ -9,8 +9,9 @@ echo "🎨 Criando DMG do VoxAiGo..."
 
 # Configurações
 APP_NAME="VoxAiGo"
-APP_VERSION="3.0.0"
-DMG_NAME="${APP_NAME}-${APP_VERSION}.dmg"
+APP_VERSION="3.1.0"
+TIMESTAMP=$(date +"%Y%m%d_%H%M")
+DMG_NAME="${APP_NAME}-${APP_VERSION}-${TIMESTAMP}.dmg"
 VOLUME_NAME="${APP_NAME} ${APP_VERSION}"
 SOURCE_APP="../VoxAiGo.app"
 TEMP_DIR="temp_dmg"

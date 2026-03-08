@@ -13,34 +13,37 @@ struct LocalModeFormatter {
 
         switch mode {
         case .text:
+            if SettingsManager.shared.textFormalTone {
+                return formatFormal(cleaned)
+            }
             return formatText(cleaned)
         case .chat:
             return formatChat(cleaned)
         case .email:
             return formatEmail(cleaned)
-        case .formal:
-            return formatFormal(cleaned)
         case .social:
+            if SettingsManager.shared.socialTweetMode {
+                return formatTweet(cleaned)
+            }
             return formatSocial(cleaned)
-        case .xTweet:
-            return formatTweet(cleaned)
         case .summary:
+            if SettingsManager.shared.summaryBulletFormat {
+                return formatTopics(cleaned)
+            }
             return formatSummary(cleaned)
-        case .topics:
-            return formatTopics(cleaned)
         case .meeting:
             return formatMeeting(cleaned)
         case .code:
-            return cleaned // Code is literal — don't transform
+            return formatCode(cleaned)
         case .vibeCoder:
             return formatVibeCoder(cleaned)
-        case .translation:
-            return formatText(cleaned) // No local translation possible
         case .creative:
             return formatCreative(cleaned)
         case .uxDesign:
             return formatUXDesign(cleaned)
         case .custom:
+            return formatText(cleaned)
+        case .translation:
             return formatText(cleaned)
         }
     }
@@ -59,10 +62,12 @@ struct LocalModeFormatter {
         // Remove common speech fillers
         let fillers = [
             // English
-            "\\buh\\b", "\\bum\\b", "\\bah\\b", "\\ber\\b", "\\bhmm\\b", "\\bhm\\b",
-            "\\byou know\\b", "\\blike\\b(?=\\s*,)", "\\bso\\b(?=\\s*,)",
+            "\\buh\\b", "\\bum\\b", "\\blike\\b", "\\byou know\\b",
+            "\\bactually\\b", "\\bbasically\\b",
             // Portuguese
-            "\\bahn\\b", "\\béé\\b", "\\btipo\\b(?=\\s*,)", "\\bné\\b(?=\\s*[,.])"
+            "\\bné\\b", "\\bne\\b", "\\btipo\\b", "\\bassim\\b",
+            "\\bentão\\b", "\\bé\\b", "\\bah\\b", "\\bhm\\b",
+            "\\bquer dizer\\b"
         ]
 
         for filler in fillers {
@@ -75,12 +80,10 @@ struct LocalModeFormatter {
             }
         }
 
-        // Remove double spaces
+        // Clean up extra spaces
         while result.contains("  ") {
             result = result.replacingOccurrences(of: "  ", with: " ")
         }
-
-        // Remove orphan commas from filler removal
         result = result.replacingOccurrences(of: " ,", with: ",")
         result = result.replacingOccurrences(of: ",,", with: ",")
 
@@ -96,8 +99,8 @@ struct LocalModeFormatter {
         // Group into paragraphs (every ~3 sentences)
         var paragraphs: [String] = []
         var current: [String] = []
-        for s in capitalized {
-            current.append(s)
+        for sentence in capitalized {
+            current.append(sentence)
             if current.count >= 3 {
                 paragraphs.append(current.joined(separator: " "))
                 current = []
@@ -107,13 +110,12 @@ struct LocalModeFormatter {
             paragraphs.append(current.joined(separator: " "))
         }
 
-        return ensureEndPunctuation(paragraphs.joined(separator: "\n\n"))
+        return paragraphs.joined(separator: "\n\n")
     }
 
     private static func formatChat(_ text: String) -> String {
-        // Chat: keep casual, minimal punctuation
-        var result = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        // Lowercase first letter for casual feel (unless starts with "I" or proper noun)
+        var result = ensureEndPunctuation(text)
+        // Chat: lowercase first letter (casual)
         if let first = result.first, first.isUppercase, first != "I" {
             result = result.prefix(1).lowercased() + result.dropFirst()
         }
@@ -124,12 +126,12 @@ struct LocalModeFormatter {
         let body = capitalizeSentences(ensureEndPunctuation(text))
         let lines = body.components(separatedBy: ". ")
             .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
 
+        // Group by ~2 sentences per paragraph
         var paragraphs: [String] = []
         var current: [String] = []
         for line in lines {
-            current.append(ensureEndPunctuation(line))
+            current.append(line)
             if current.count >= 2 {
                 paragraphs.append(current.joined(separator: " "))
                 current = []
@@ -149,14 +151,12 @@ struct LocalModeFormatter {
         let substitutions: [(String, String)] = [
             ("\\bpra\\b", "para"),
             ("\\btá\\b", "está"),
-            ("\\btô\\b", "estou"),
-            ("\\bvô\\b", "vou"),
+            ("\\bto\\b", "estou"),
             ("\\ba gente\\b", "nós"),
-            ("\\bque nem\\b", "assim como"),
-            ("\\bdaí\\b", "então"),
-            ("\\bnão é\\b", "não se trata de"),
-            ("\\bmuito bom\\b", "excelente"),
-            ("\\blegal\\b", "adequado"),
+            ("\\bvc\\b", "você"),
+            ("\\bvcs\\b", "vocês"),
+            ("\\btbm\\b", "também"),
+            ("\\bblz\\b", "beleza"),
         ]
 
         for (pattern, replacement) in substitutions {
@@ -179,33 +179,28 @@ struct LocalModeFormatter {
         var lines: [String] = []
 
         // First sentence as hook
-        if let first = sentences.first {
-            lines.append(capitalizeSentence(ensureEndPunctuation(first)))
+        if let hook = sentences.first {
+            lines.append(capitalizeSentence(ensureEndPunctuation(hook)))
         }
 
-        // Rest as short lines
-        for s in sentences.dropFirst() {
-            lines.append(capitalizeSentence(ensureEndPunctuation(s)))
+        // Remaining as body (one per line)
+        for sentence in sentences.dropFirst() {
+            lines.append(capitalizeSentence(ensureEndPunctuation(sentence)))
         }
-
-        // Add engagement CTA
-        lines.append("\nO que você acha? 💬")
 
         return lines.joined(separator: "\n")
     }
 
     private static func formatTweet(_ text: String) -> String {
         let cleaned = capitalizeSentences(ensureEndPunctuation(text))
-        // Truncate to 280 chars
-        if cleaned.count > 280 {
-            let truncated = String(cleaned.prefix(277))
-            // Find last space to avoid cutting words
-            if let lastSpace = truncated.lastIndex(of: " ") {
-                return String(truncated[..<lastSpace]) + "..."
-            }
-            return truncated + "..."
+        if cleaned.count <= 280 { return cleaned }
+
+        // Truncate at 277 chars + "..."
+        let truncated = String(cleaned.prefix(277))
+        if let lastSpace = truncated.lastIndex(of: " ") {
+            return String(truncated[..<lastSpace]) + "..."
         }
-        return cleaned
+        return truncated + "..."
     }
 
     private static func formatSummary(_ text: String) -> String {
@@ -213,7 +208,7 @@ struct LocalModeFormatter {
         // Keep ~30% of sentences (at least 1)
         let keepCount = max(1, sentences.count * 3 / 10)
         let kept = Array(sentences.prefix(keepCount))
-        return capitalizeSentences(ensureEndPunctuation(kept.joined(separator: " ")))
+        return kept.map { capitalizeSentence(ensureEndPunctuation($0)) }.joined(separator: " ")
     }
 
     private static func formatTopics(_ text: String) -> String {
@@ -230,26 +225,22 @@ struct LocalModeFormatter {
         var topics: [String] = []
         var actions: [String] = []
 
-        let actionKeywords = ["precisa", "deve", "vai", "need", "will", "should",
-                              "próximo passo", "next step", "ação", "action", "fazer"]
-
         for sentence in sentences {
             let lower = sentence.lowercased()
-            if actionKeywords.contains(where: { lower.contains($0) }) {
-                actions.append("• " + capitalizeSentence(ensureEndPunctuation(sentence.trimmingCharacters(in: .whitespaces))))
+            if lower.contains("fazer") || lower.contains("precis") ||
+               lower.contains("ação") || lower.contains("próximo") ||
+               lower.contains("do") || lower.contains("need") ||
+               lower.contains("action") || lower.contains("next") {
+                actions.append("• " + capitalizeSentence(ensureEndPunctuation(sentence)))
             } else {
-                topics.append("• " + capitalizeSentence(ensureEndPunctuation(sentence.trimmingCharacters(in: .whitespaces))))
+                topics.append("• " + capitalizeSentence(ensureEndPunctuation(sentence)))
             }
         }
 
         var output = "ASSUNTOS DISCUTIDOS:\n"
-        if topics.isEmpty {
-            output += "• (Sem tópicos identificados)\n"
-        } else {
-            output += topics.joined(separator: "\n") + "\n"
-        }
+        output += topics.isEmpty ? "• (Sem tópicos identificados)" : topics.joined(separator: "\n")
 
-        output += "\nAÇÕES / PRÓXIMOS PASSOS:\n"
+        output += "\n\nAÇÕES / PRÓXIMOS PASSOS:\n"
         if actions.isEmpty {
             output += "• (Sem ações identificadas)"
         } else {
@@ -264,8 +255,9 @@ struct LocalModeFormatter {
         var result = text
         let fluffPatterns = [
             "\\beu quero que\\b", "\\beu preciso que\\b", "\\bpor favor\\b",
+            "\\bpoderia\\b", "\\bgostaria que\\b", "\\bseria bom se\\b",
             "\\bi want you to\\b", "\\bi need you to\\b", "\\bplease\\b",
-            "\\bpoderia\\b", "\\bcould you\\b"
+            "\\bcould you\\b", "\\bwould you\\b"
         ]
         for pattern in fluffPatterns {
             if let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive) {
@@ -276,11 +268,12 @@ struct LocalModeFormatter {
                 )
             }
         }
-        // Clean up spaces
-        while result.contains("  ") {
-            result = result.replacingOccurrences(of: "  ", with: " ")
-        }
         return capitalizeSentence(ensureEndPunctuation(result.trimmingCharacters(in: .whitespacesAndNewlines)))
+    }
+
+    private static func formatCode(_ text: String) -> String {
+        // For offline, just return cleaned text (no AI to interpret)
+        return text
     }
 
     private static func formatCreative(_ text: String) -> String {
@@ -295,16 +288,15 @@ struct LocalModeFormatter {
         let sentences = splitSentences(text)
         // Format as numbered steps
         let numbered = sentences.enumerated().map { index, sentence in
-            "\(index + 1). " + capitalizeSentence(ensureEndPunctuation(sentence.trimmingCharacters(in: .whitespaces)))
+            "\(index + 1). " + capitalizeSentence(ensureEndPunctuation(sentence))
         }
         return numbered.joined(separator: "\n")
     }
 
-    // MARK: - Utility
+    // MARK: - Helpers
 
     private static func splitSentences(_ text: String) -> [String] {
-        let delimiters = CharacterSet(charactersIn: ".!?")
-        let components = text.components(separatedBy: delimiters)
+        let components = text.components(separatedBy: CharacterSet(charactersIn: ".!?"))
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
         return components
@@ -320,17 +312,11 @@ struct LocalModeFormatter {
         var result = text
         let pattern = "([.!?])\\s+([a-záàãâéêíóôõúç])"
         if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
-            let nsString = result as NSString
-            let matches = regex.matches(in: result, range: NSRange(location: 0, length: nsString.length))
-            for match in matches {
-                let letterRange = match.range(at: 2)
-                let nsResult = (result as NSString)
-                let letter = nsResult.substring(with: letterRange).uppercased()
-                result = nsResult.replacingCharacters(in: letterRange, with: letter)
-            }
+            let range = NSRange(result.startIndex..., in: result)
+            result = regex.stringByReplacingMatches(in: result, range: range, withTemplate: "$1 $2")
         }
         // Capitalize first character
-        if let first = result.first, !first.isUppercase {
+        if let first = result.first, first.isLowercase {
             result = first.uppercased() + result.dropFirst()
         }
         return result

@@ -9,6 +9,7 @@ class GeminiService: ObservableObject {
     private let temperature: Float
     private let maxOutputTokens: Int
     private let thinkingLevel: String
+    private let useGrounding: Bool
     private static let model = "gemini-3.1-flash-lite-preview"
     private static let baseURL = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -19,6 +20,7 @@ class GeminiService: ObservableObject {
         self.temperature = mode.temperature
         self.maxOutputTokens = mode.maxOutputTokens
         self.thinkingLevel = mode.thinkingLevel
+        self.useGrounding = mode.useGrounding
     }
 
     /// Transcreve áudio usando Gemini multimodal (REST direto)
@@ -60,7 +62,7 @@ class GeminiService: ObservableObject {
             }
         }
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "system_instruction": ["parts": [["text": systemPrompt]]],
             "contents": [["parts": [["text": rawText]]]],
             "generationConfig": [
@@ -69,6 +71,10 @@ class GeminiService: ObservableObject {
                 "thinkingConfig": ["thinkingLevel": thinkingLevel]
             ]
         ]
+
+        if useGrounding {
+            body["tools"] = [["google_search": [:] as [String: Any]]]
+        }
 
         let text = try await sendRequest(body: body)
         return cleanMarkdown(text)
@@ -331,7 +337,7 @@ class GeminiService: ObservableObject {
 
     /// Constrói o body JSON para a API do Gemini
     private func buildRequestBody(prompt: String, audioBase64: String) -> [String: Any] {
-        return [
+        var body: [String: Any] = [
             "system_instruction": [
                 "parts": [["text": systemPrompt]]
             ],
@@ -356,6 +362,13 @@ class GeminiService: ObservableObject {
                 ]
             ]
         ]
+
+        // Enable Google Search grounding only for modes that need it (e.g. Custom)
+        if useGrounding {
+            body["tools"] = [["google_search": [:] as [String: Any]]]
+        }
+
+        return body
     }
 
     /// Envia request HTTP para a API do Gemini
@@ -369,6 +382,11 @@ class GeminiService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 120  // 2 min timeout for large audio payloads
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        // Debug: log request body (truncated) to check grounding tools
+        if useGrounding, let bodyJson = String(data: request.httpBody!, encoding: .utf8) {
+            print("🔍 [GeminiService] Request body with grounding: \(bodyJson.prefix(500))")
+        }
 
         let data: Data
         let response: URLResponse
@@ -410,7 +428,16 @@ class GeminiService: ObservableObject {
               let firstCandidate = candidates.first,
               let content = firstCandidate["content"] as? [String: Any],
               let parts = content["parts"] as? [[String: Any]] else {
+            // Debug: log raw response when parsing fails
+            if let rawString = String(data: data, encoding: .utf8) {
+                print("🔍 [GeminiService] Raw API response: \(rawString.prefix(2000))")
+            }
             throw GeminiError.noResponse
+        }
+
+        // Debug: log grounding metadata if present
+        if let groundingMeta = firstCandidate["groundingMetadata"] {
+            print("🌐 [GeminiService] Grounding metadata found: \(groundingMeta)")
         }
 
         // Extrair texto (ignorar partes de "thought" se houver)

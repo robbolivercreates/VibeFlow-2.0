@@ -1,18 +1,15 @@
 import Foundation
 import SwiftUI
 
-/// Modos de transcrição disponíveis
+/// Modos de transcrição disponíveis (11 modos built-in)
 enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     case text = "Texto"
     case chat = "Chat"
     case code = "Código"
     case vibeCoder = "Vibe Coder"
     case email = "Email"
-    case formal = "Formal"
-    case social = "Social"
-    case xTweet = "X"
+    case social = "Social Media"
     case summary = "Resumo"
-    case topics = "Tópicos"
     case meeting = "Reunião"
     case uxDesign = "UX Design"
     case translation = "Tradução"
@@ -25,16 +22,16 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     /// Supports Portuguese, English and common speech variations
     var voiceAliases: [String] {
         switch self {
-        case .text:        return ["texto", "text", "transcrição", "transcricao", "transcription", "normal"]
+        case .text:        return ["texto", "text", "transcrição", "transcricao", "transcription", "normal",
+                                   "formal", "profissional", "professional", "corporativo", "corporate"]
         case .chat:        return ["chat", "conversa", "conversation", "reply"]
         case .code:        return ["código", "codigo", "code", "programação", "programacao", "programming"]
         case .vibeCoder:   return ["vibe coder", "vibe", "vibe coding", "vibecoder"]
         case .email:       return ["email", "e-mail", "emails", "mensagem", "message"]
-        case .formal:      return ["formal", "profissional", "professional", "corporativo", "corporate"]
-        case .social:      return ["social", "post", "instagram", "redes sociais"]
-        case .xTweet:      return ["tweet", "x", "twitter"]
-        case .summary:     return ["resumo", "summary", "resumir", "summarize", "sintetizar"]
-        case .topics:      return ["tópicos", "topicos", "topics", "bullet points", "bullets", "lista", "list"]
+        case .social:      return ["social", "post", "instagram", "redes sociais",
+                                   "tweet", "x", "twitter", "social media"]
+        case .summary:     return ["resumo", "summary", "resumir", "summarize", "sintetizar",
+                                   "tópicos", "topicos", "topics", "bullet points", "bullets", "lista", "list"]
         case .meeting:     return ["reunião", "reuniao", "meeting", "ata", "minutes"]
         case .uxDesign:    return ["ux", "ux design", "design", "ui", "interface"]
         case .translation: return []  // Translation mode is triggered via UI button, not voice
@@ -51,11 +48,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return "code"
         case .vibeCoder:   return "vibe_coder"
         case .email:       return "email"
-        case .formal:      return "formal"
-        case .social:      return "social"
-        case .xTweet:      return "x"
+        case .social:      return SettingsManager.shared.socialTweetMode ? "x" : "social"
         case .summary:     return "summary"
-        case .topics:      return "topics"
         case .meeting:     return "meeting"
         case .uxDesign:    return "ux_design"
         case .translation: return "translation"
@@ -72,11 +66,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return "chevron.left.forwardslash.chevron.right"
         case .vibeCoder:   return "wand.and.stars"
         case .email:       return "envelope.fill"
-        case .formal:      return "building.2.fill"
         case .social:      return "megaphone.fill"
-        case .xTweet:      return "at"
         case .summary:     return "doc.text"
-        case .topics:      return "list.bullet"
         case .meeting:     return "person.3.fill"
         case .uxDesign:    return "paintbrush.pointed"
         case .translation: return "bubble.left.and.bubble.right.fill"
@@ -93,11 +84,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return Color(red: 0.2, green: 0.6, blue: 1.0)      // Blue
         case .vibeCoder:   return Color(red: 0.0, green: 0.8, blue: 0.85)     // Cyan
         case .email:       return Color(red: 1.0, green: 0.55, blue: 0.2)     // Orange
-        case .formal:      return Color(red: 0.25, green: 0.35, blue: 0.65)   // Navy
         case .social:      return Color(red: 0.9, green: 0.3, blue: 0.55)     // Pink
-        case .xTweet:      return Color(red: 0.45, green: 0.65, blue: 0.95)   // Sky blue
         case .summary:     return Color(red: 0.45, green: 0.35, blue: 0.85)   // Indigo
-        case .topics:      return Color(red: 0.2, green: 0.7, blue: 0.7)      // Teal
         case .meeting:     return Color(red: 0.5, green: 0.5, blue: 0.7)      // Slate
         case .uxDesign:    return Color(red: 0.75, green: 0.4, blue: 0.9)     // Purple
         case .translation: return Color(red: 0.98, green: 0.2, blue: 0.4)     // Rose
@@ -114,11 +102,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return L10n.codeModeShort
         case .vibeCoder:   return L10n.vibeCoderModeShort
         case .email:       return L10n.emailModeShort
-        case .formal:      return L10n.formalModeShort
         case .social:      return L10n.socialModeShort
-        case .xTweet:      return L10n.xTweetModeShort
         case .summary:     return L10n.summaryModeShort
-        case .topics:      return L10n.topicsModeShort
         case .meeting:     return L10n.meetingModeShort
         case .uxDesign:    return L10n.uxModeShort
         case .translation: return L10n.translationModeShort
@@ -135,11 +120,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return L10n.codeMode
         case .vibeCoder:   return "Vibe Coder"
         case .email:       return "Email"
-        case .formal:      return L10n.formalMode
-        case .social:      return "Social"
-        case .xTweet:      return "X"
+        case .social:      return "Social Media"
         case .summary:     return L10n.summaryMode
-        case .topics:      return L10n.topicsMode
         case .meeting:     return L10n.meetingMode
         case .uxDesign:    return L10n.uxMode
         case .translation: return L10n.translationMode ?? "Tradução"
@@ -156,11 +138,8 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         case .code:        return L10n.codeModeDetail
         case .vibeCoder:   return L10n.vibeCoderModeDetail
         case .email:       return L10n.emailModeDetail
-        case .formal:      return L10n.formalModeDetail
         case .social:      return L10n.socialModeDetail
-        case .xTweet:      return L10n.xTweetModeDetail
         case .summary:     return L10n.summaryModeDetail
-        case .topics:      return L10n.topicsModeDetail
         case .meeting:     return L10n.meetingModeDetail
         case .uxDesign:    return L10n.uxModeDetail
         case .translation: return L10n.translationModeDetail ?? "Traduz automaticamente para o idioma de saída."
@@ -172,16 +151,13 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     /// Temperatura ideal para cada modo
     var temperature: Float {
         switch self {
-        case .text:        return 0.3
+        case .text:        return SettingsManager.shared.textFormalTone ? 0.2 : 0.3
         case .chat:        return 0.4
         case .code:        return 0.1
         case .vibeCoder:   return 0.3
         case .email:       return 0.2
-        case .formal:      return 0.2
         case .social:      return 0.5
-        case .xTweet:      return 0.5
-        case .summary:     return 0.3
-        case .topics:      return 0.2
+        case .summary:     return SettingsManager.shared.summaryBulletFormat ? 0.2 : 0.3
         case .meeting:     return 0.3
         case .uxDesign:    return 0.5
         case .translation: return 0.2
@@ -195,7 +171,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .code:        return 4096
         case .translation: return 4096
-        case .xTweet:      return 512
+        case .social:      return SettingsManager.shared.socialTweetMode ? 512 : 2048
         case .vibeCoder:   return 1024
         default:           return 2048
         }
@@ -205,21 +181,34 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
     /// Controls reasoning depth: higher = better quality but slower/costlier
     var thinkingLevel: String {
         switch self {
-        case .text:        return "minimal"   // Fast transcription
+        case .text:        return SettingsManager.shared.textFormalTone ? "low" : "minimal"
         case .chat:        return "minimal"   // Quick casual messages
         case .social:      return "minimal"   // Quick posts
-        case .xTweet:      return "minimal"   // Short, fast
         case .email:       return "low"       // Some structure needed
-        case .formal:      return "low"       // Some formatting needed
         case .translation: return "low"       // Straightforward task
         case .summary:     return "low"       // Condensing, not complex
-        case .topics:      return "low"       // List extraction
         case .meeting:     return "low"       // Structured extraction
         case .creative:    return "medium"    // Benefits from reasoning
         case .uxDesign:    return "medium"    // Structural thinking
         case .code:        return "high"      // Full reasoning for code
         case .vibeCoder:   return "high"      // Full reasoning for planning
-        case .custom:      return "low"       // Default balanced
+        case .custom:      return "medium"    // Agent-level reasoning
+        }
+    }
+
+    /// Whether this mode should use Google Search grounding for real-time info
+    var useGrounding: Bool {
+        return self == .custom
+    }
+
+    /// Categoria do modo para organização visual
+    var category: ModeCategory {
+        switch self {
+        case .text, .chat, .email, .creative:       return .writing
+        case .summary, .meeting, .translation:      return .productivity
+        case .code, .vibeCoder, .uxDesign:           return .development
+        case .social:                                return .social
+        case .custom:                                return .custom
         }
     }
 
@@ -239,6 +228,15 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
 
         switch self {
         case .text:
+            let formalRules = SettingsManager.shared.textFormalTone ? """
+
+            TOM FORMAL ATIVADO:
+            1. Tom FORMAL e CORPORATIVO
+            2. "a gente" → "nós", "pra" → "para", "tá" → "está"
+            3. Conectivos formais: "portanto", "ademais", "conforme"
+            4. Mantenha o significado original intacto
+            """ : ""
+
             basePrompt = """
             Você é um assistente de transcrição inteligente. O usuário está ditando texto por voz.
 
@@ -251,6 +249,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             4. Mantenha o significado e intenção original
             5. Use parágrafos quando apropriado
             6. Retorne APENAS o texto final, sem explicações
+            \(formalRules)
             """
 
         case .chat:
@@ -330,77 +329,68 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             9. Preserve nomes próprios, datas, números e dados específicos exatamente como ditos
             """
 
-        case .formal:
-            basePrompt = """
-            Transforme a fala em texto formal e profissional.
-
-            \(speechCleanupRules)
-
-            REGRAS:
-            1. Tom FORMAL e CORPORATIVO
-            2. "a gente" → "nós", "pra" → "para", "tá" → "está"
-            3. Conectivos formais: "portanto", "ademais", "conforme"
-            4. Parágrafos bem organizados
-            5. Mantenha o significado original intacto
-            6. APENAS o texto formal
-            """
-
         case .social:
-            basePrompt = """
-            Transforme em post social engajante (IMC: Impact, Method, Call).
+            if SettingsManager.shared.socialTweetMode {
+                // Tweet mode (máx 280 chars)
+                basePrompt = """
+                Transforme em tweet de MÁXIMO 280 caracteres.
 
-            \(speechCleanupRules)
+                \(speechCleanupRules)
 
-            REGRAS:
-            1. Comece com pergunta forte ou frase de impacto
-            2. Conteúdo claro em frases curtas, uma ideia por linha
-            3. Feche com convite ao engajamento
-            4. Máximo 2 emojis estratégicos. Sem hashtags
-            5. APENAS o post final
-            """
+                REGRAS:
+                1. Hook forte + valor em 1-2 frases + fechamento sutil
+                2. Direto, punchy, sem enrolação
+                3. Máximo 1 emoji ou nenhum. Sem hashtags
+                4. APENAS o tweet
+                """
+            } else {
+                // Post longo
+                basePrompt = """
+                Transforme em post social engajante (IMC: Impact, Method, Call).
 
-        case .xTweet:
-            basePrompt = """
-            Transforme em tweet de MÁXIMO 280 caracteres.
+                \(speechCleanupRules)
 
-            \(speechCleanupRules)
-
-            REGRAS:
-            1. Hook forte + valor em 1-2 frases + fechamento sutil
-            2. Direto, punchy, sem enrolação
-            3. Máximo 1 emoji ou nenhum. Sem hashtags
-            4. APENAS o tweet
-            """
+                REGRAS:
+                1. Comece com pergunta forte ou frase de impacto
+                2. Conteúdo claro em frases curtas, uma ideia por linha
+                3. Feche com convite ao engajamento
+                4. Máximo 2 emojis estratégicos. Sem hashtags
+                5. APENAS o post final
+                """
+            }
 
         case .summary:
-            basePrompt = """
-            Crie um RESUMO conciso do que foi dito.
+            if SettingsManager.shared.summaryBulletFormat {
+                // Bullet points format (antigo .topics)
+                basePrompt = """
+                Transforme em lista organizada com bullet points.
 
-            \(speechCleanupRules)
+                \(speechCleanupRules)
 
-            REGRAS:
-            1. Reduza para 20-30% do conteúdo original
-            2. APENAS pontos essenciais e conclusões
-            3. Frases curtas e objetivas, máximo 2-3 parágrafos
-            4. Priorize: decisões, números, datas, ações
-            5. NUNCA adicione informações não ditas
-            6. Retorne direto o resumo, sem "Resumo:" ou similar
-            """
+                REGRAS:
+                1. Use "•" como marcador principal
+                2. Um tópico por ideia/item mencionado
+                3. Frases curtas e diretas
+                4. Sub-itens com "  ◦" (indentado)
+                5. Comece direto nos tópicos, sem título
+                6. APENAS a lista
+                """
+            } else {
+                // Paragraph summary
+                basePrompt = """
+                Crie um RESUMO conciso do que foi dito.
 
-        case .topics:
-            basePrompt = """
-            Transforme em lista organizada com bullet points.
+                \(speechCleanupRules)
 
-            \(speechCleanupRules)
-
-            REGRAS:
-            1. Use "•" como marcador principal
-            2. Um tópico por ideia/item mencionado
-            3. Frases curtas e diretas
-            4. Sub-itens com "  ◦" (indentado)
-            5. Comece direto nos tópicos, sem título
-            6. APENAS a lista
-            """
+                REGRAS:
+                1. Reduza para 20-30% do conteúdo original
+                2. APENAS pontos essenciais e conclusões
+                3. Frases curtas e objetivas, máximo 2-3 parágrafos
+                4. Priorize: decisões, números, datas, ações
+                5. NUNCA adicione informações não ditas
+                6. Retorne direto o resumo, sem "Resumo:" ou similar
+                """
+            }
 
         case .meeting:
             basePrompt = """
@@ -473,7 +463,7 @@ enum TranscriptionMode: String, CaseIterable, Identifiable, Codable {
             """
 
         case .custom:
-            let userInstruction = SettingsManager.shared.customModePrompt
+            let userInstruction = SettingsManager.shared.activeCustomModePrompt
             basePrompt = """
             Você é um assistente de transcrição inteligente.
 

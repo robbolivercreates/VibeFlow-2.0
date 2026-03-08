@@ -33,10 +33,16 @@ class SettingsManager: ObservableObject {
         static let enableStyleLearning = "enable_style_learning"
         static let clarifyText = "clarify_text"
         static let customModePrompt = "custom_mode_prompt"
+        static let customModes = "custom_modes_v2"
+        static let activeCustomModeId = "active_custom_mode_id"
+        static let textFormalTone = "text_formal_tone"
+        static let summaryBulletFormat = "summary_bullet_format"
+        static let socialTweetMode = "social_tweet_mode"
         static let wakeWord = "wake_word"
         static let wakeWordEnabled = "wake_word_enabled"
         static let commandLanguage = "command_language"
         static let offlineMode = "offline_mode"
+        static let favoriteModes = "favorite_modes"
     }
     
     // MARK: - Published Properties
@@ -102,9 +108,75 @@ class SettingsManager: ObservableObject {
         didSet { defaults.set(clarifyText, forKey: Keys.clarifyText) }
     }
 
-    /// Custom mode user-defined prompt
+    /// Custom mode user-defined prompt (legacy — kept for migration)
     @Published var customModePrompt: String {
         didSet { defaults.set(customModePrompt, forKey: Keys.customModePrompt) }
+    }
+
+    /// Multiple custom mode definitions (new system)
+    @Published var customModes: [CustomModeDefinition] {
+        didSet {
+            if let data = try? JSONEncoder().encode(customModes) {
+                defaults.set(data, forKey: Keys.customModes)
+            }
+        }
+    }
+
+    /// ID of the currently active custom mode
+    @Published var activeCustomModeId: UUID? {
+        didSet {
+            if let id = activeCustomModeId {
+                defaults.set(id.uuidString, forKey: Keys.activeCustomModeId)
+            } else {
+                defaults.removeObject(forKey: Keys.activeCustomModeId)
+            }
+        }
+    }
+
+    /// Toggle: formal tone for Texto mode
+    @Published var textFormalTone: Bool {
+        didSet { defaults.set(textFormalTone, forKey: Keys.textFormalTone) }
+    }
+
+    /// Toggle: bullet format for Resumo mode
+    @Published var summaryBulletFormat: Bool {
+        didSet { defaults.set(summaryBulletFormat, forKey: Keys.summaryBulletFormat) }
+    }
+
+    /// Toggle: tweet mode (280 chars) for Social Media
+    @Published var socialTweetMode: Bool {
+        didSet { defaults.set(socialTweetMode, forKey: Keys.socialTweetMode) }
+    }
+
+    /// Favorite modes (max 4) — shown as quick-switch pills in HUD
+    @Published var favoriteModes: [TranscriptionMode] {
+        didSet {
+            defaults.set(favoriteModes.map { $0.rawValue }, forKey: Keys.favoriteModes)
+        }
+    }
+
+    /// Toggle a mode as favorite (max 4)
+    func toggleFavorite(_ mode: TranscriptionMode) {
+        if let index = favoriteModes.firstIndex(of: mode) {
+            favoriteModes.remove(at: index)
+        } else if favoriteModes.count < 4 {
+            favoriteModes.append(mode)
+        }
+    }
+
+    /// Check if a mode is favorited
+    func isFavorite(_ mode: TranscriptionMode) -> Bool {
+        favoriteModes.contains(mode)
+    }
+
+    /// Returns the prompt of the currently active custom mode
+    var activeCustomModePrompt: String {
+        if let id = activeCustomModeId,
+           let mode = customModes.first(where: { $0.id == id }) {
+            return mode.prompt
+        }
+        // Fallback to first custom mode or legacy prompt
+        return customModes.first?.prompt ?? customModePrompt
     }
 
     /// Wake word used to trigger voice commands (default: "Vox")
@@ -259,6 +331,34 @@ class SettingsManager: ObservableObject {
 
         self.customModePrompt = defaults.string(forKey: Keys.customModePrompt) ?? ""
 
+        // Load custom modes
+        if let data = defaults.data(forKey: Keys.customModes),
+           let decoded = try? JSONDecoder().decode([CustomModeDefinition].self, from: data) {
+            self.customModes = decoded
+        } else {
+            self.customModes = []
+        }
+
+        // Load active custom mode ID
+        if let idString = defaults.string(forKey: Keys.activeCustomModeId),
+           let uuid = UUID(uuidString: idString) {
+            self.activeCustomModeId = uuid
+        } else {
+            self.activeCustomModeId = nil
+        }
+
+        // Mode toggles
+        self.textFormalTone = defaults.bool(forKey: Keys.textFormalTone)
+        self.summaryBulletFormat = defaults.bool(forKey: Keys.summaryBulletFormat)
+        self.socialTweetMode = defaults.bool(forKey: Keys.socialTweetMode)
+
+        // Load favorite modes (default: [.text])
+        if let savedFavModes = defaults.stringArray(forKey: Keys.favoriteModes) {
+            self.favoriteModes = savedFavModes.compactMap { TranscriptionMode(rawValue: $0) }
+        } else {
+            self.favoriteModes = [.text]
+        }
+
         // Migrate clarifyText from old ViewModel key if needed, default: true
         if defaults.object(forKey: Keys.clarifyText) != nil {
             self.clarifyText = defaults.bool(forKey: Keys.clarifyText)
@@ -292,6 +392,50 @@ class SettingsManager: ObservableObject {
         self.commandLanguage = SpeechLanguage(rawValue: cmdLangRaw) ?? .portuguese
 
         self.offlineMode = defaults.bool(forKey: Keys.offlineMode)
+
+        // ── Migration: removed modes → new equivalents ──
+        let savedModeRaw = defaults.string(forKey: Keys.selectedMode) ?? ""
+        if savedModeRaw == "Formal" {
+            self.selectedMode = .text
+            self.textFormalTone = true
+            defaults.set(TranscriptionMode.text.rawValue, forKey: Keys.selectedMode)
+            defaults.set(true, forKey: Keys.textFormalTone)
+            print("[SettingsManager] Migrated mode Formal → Texto + formalTone")
+        } else if savedModeRaw == "X" {
+            self.selectedMode = .social
+            self.socialTweetMode = true
+            defaults.set(TranscriptionMode.social.rawValue, forKey: Keys.selectedMode)
+            defaults.set(true, forKey: Keys.socialTweetMode)
+            print("[SettingsManager] Migrated mode X → Social Media + tweetMode")
+        } else if savedModeRaw == "Tópicos" {
+            self.selectedMode = .summary
+            self.summaryBulletFormat = true
+            defaults.set(TranscriptionMode.summary.rawValue, forKey: Keys.selectedMode)
+            defaults.set(true, forKey: Keys.summaryBulletFormat)
+            print("[SettingsManager] Migrated mode Tópicos → Resumo + bulletFormat")
+        } else if savedModeRaw == "Social" {
+            // rawValue changed from "Social" → "Social Media"
+            self.selectedMode = .social
+            defaults.set(TranscriptionMode.social.rawValue, forKey: Keys.selectedMode)
+            print("[SettingsManager] Migrated rawValue Social → Social Media")
+        }
+
+        // ── Migration: old single customModePrompt → first custom mode ──
+        if customModes.isEmpty && !customModePrompt.isEmpty {
+            let migrated = CustomModeDefinition(
+                name: "Meu Modo",
+                prompt: customModePrompt,
+                icon: "slider.horizontal.3",
+                colorHex: "#999999"
+            )
+            self.customModes = [migrated]
+            self.activeCustomModeId = migrated.id
+            if let data = try? JSONEncoder().encode(self.customModes) {
+                defaults.set(data, forKey: Keys.customModes)
+            }
+            defaults.set(migrated.id.uuidString, forKey: Keys.activeCustomModeId)
+            print("[SettingsManager] Migrated legacy customModePrompt → first custom mode")
+        }
 
         // Initialize favorite index based on current language
         if let index = self.favoriteLanguages.firstIndex(of: self.outputLanguage) {

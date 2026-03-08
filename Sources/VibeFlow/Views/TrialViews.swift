@@ -493,7 +493,7 @@ extension L10n {
     ) }
     static var welcomeTrialWhatYouGet: String { t("What's included in your trial:", "O que esta incluido no seu trial:", "Lo que incluye tu prueba:") }
     static var welcomeTrialGemini: String { t("Agente Vox — intelligent formatting and filler removal", "Agente Vox — formatacao inteligente e remocao de fillers", "Agente Vox — formato inteligente y eliminacion de muletillas") }
-    static var welcomeTrialAllModes: String { t("All 15 AI modes (Vibe Coder, Email, Meeting...)", "Todos os 15 modos com I.A. (Vibe Coder, Email, Reuniao...)", "Los 15 modos con I.A. (Vibe Coder, Email, Reunion...)") }
+    static var welcomeTrialAllModes: String { t("All AI modes + custom modes (Vibe Coder, Email, Meeting...)", "Todos os modos com I.A. + modos personalizados (Vibe Coder, Email, Reuniao...)", "Todos los modos con I.A. + modos personalizados (Vibe Coder, Email, Reunion...)") }
     static var welcomeTrialAllLanguages: String { t("30 languages available", "30 idiomas disponiveis", "30 idiomas disponibles") }
     static var welcomeTrialSmartFormatting: String { t("AI-powered text cleanup and restructuring", "Limpeza e reestruturacao do texto com I.A.", "Limpieza y reestructuracion del texto con I.A.") }
     static var welcomeTrialDuration: String { t("7 days free — no credit card needed", "7 dias gratis — sem cartao de credito", "7 dias gratis — sin tarjeta de credito") }
@@ -550,6 +550,6 @@ extension L10n {
     static var upgradeReminderFreeForever: String { t("75/month — Text mode only, always free", "75/mes — apenas modo Texto, sempre gratis", "75/mes — solo modo Texto, siempre gratis") }
     static var upgradeReminderUnlimited: String { t("Unlimited transcriptions + AI features", "Transcricoes ilimitadas + funcionalidades de I.A.", "Transcripciones ilimitadas + funciones de I.A.") }
     static var upgradeReminderGemini: String { t("Agente Vox — intelligent formatting", "Agente Vox — formatacao inteligente", "Agente Vox — formato inteligente") }
-    static var upgradeReminderAllModes: String { t("All 15 AI modes + 30 languages", "Todos os 15 modos com I.A. + 30 idiomas", "Los 15 modos con I.A. + 30 idiomas") }
+    static var upgradeReminderAllModes: String { t("All AI modes + custom modes + 30 languages", "Todos os modos com I.A. + modos personalizados + 30 idiomas", "Todos los modos con I.A. + modos personalizados + 30 idiomas") }
     static var upgradeReminderDismiss: String { t("No thanks, continue without AI", "Nao, continuar sem I.A.", "No, continuar sin I.A.") }
 }
